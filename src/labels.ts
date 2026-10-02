@@ -44,8 +44,9 @@ export function formatLabels(input: { start: number; end?: number; text: string 
 }
 
 export function parseLabelsFile(text: string, format: 'tsv' | 'json'): z.infer<typeof LabelInput>[] {
+  text = text.replace(/^\uFEFF/, '');
   if (format === 'json') return z.array(LabelInput).max(5000).parse(JSON.parse(text));
-  return text.replace(/^\uFEFF/, '').split(/\r?\n/).flatMap((line, i) => {
+  return text.split(/\r?\n/).flatMap((line, i) => {
     if (!line.trim()) return [];
     const parts = line.split('\t');
     if (parts.length < 3 || !parts[0]?.trim() || !parts[1]?.trim()) throw new Error(`invalid TSV label at line ${i + 1}`);
@@ -58,17 +59,27 @@ export function registerLabelTools(tool: ToolRegistrar, ops: Ops): void {
     { action: z.enum(['list', 'find', 'edit', 'delete', 'regular']), index: z.number().int().nonnegative().optional(), query: SafeString.optional(),
       trackName: SafeString.min(1).optional(), start: z.number().finite().min(0).max(86400).optional(), end: z.number().finite().min(0).max(86400).optional(),
       text: SafeString.optional(), interval: z.number().finite().positive().max(86400).optional() },
-    async ({ action, index, query, trackName, start, end, text, interval }) => {
+    async (args) => {
+      const { action, index, query, trackName, start, end, text, interval } = args;
+      const fields = {
+        list: ['trackName'], find: ['query', 'trackName'], edit: ['index', 'start', 'end', 'text'],
+        delete: ['index'], regular: ['trackName', 'start', 'end', 'text', 'interval'],
+      }[action];
+      for (const [key, value] of Object.entries(args)) {
+        if (key !== 'action' && value !== undefined && !fields.includes(key)) throw new Error(`${key} is not used by label ${action}`);
+      }
+      if (action === 'find' && query === undefined) throw new Error('find requires query');
+      if (['edit', 'delete'].includes(action) && index === undefined) throw new Error(`${action} requires index`);
+      if (action === 'edit' && start === undefined && end === undefined && text === undefined) throw new Error('edit requires start, end or text');
+      if (action === 'regular' && (interval === undefined || start === undefined || end === undefined || end < start)) throw new Error('regular needs start, end >= start, and interval');
       const current = await labels(ops);
       if (action === 'list' || action === 'find') {
-        if (action === 'find' && query === undefined) throw new Error('find requires query');
         return current.filter((l) => (trackName === undefined || l.trackName === trackName) && (query === undefined || l.text.toLowerCase().includes(query.toLowerCase())));
       }
       if (action === 'regular') {
-        if (interval === undefined || start === undefined || end === undefined || end < start) throw new Error('regular needs start, end >= start, and interval');
-        const count = Math.floor((end - start) / interval + 1e-9) + 1;
+        const count = Math.floor((end! - start!) / interval! + 1e-9) + 1;
         if (count > 500) throw new Error('regular markers exceed 500 labels');
-        await ops.setLabels(Array.from({ length: count }, (_, i) => ({ start: start + i * interval, text: `${text ?? 'Marker'} ${i + 1}` })), trackName ?? 'Labels');
+        await ops.setLabels(Array.from({ length: count }, (_, i) => ({ start: Math.min(end!, start! + i * interval!), text: `${text ?? 'Marker'} ${i + 1}` })), trackName ?? 'Labels');
         return labels(ops);
       }
       const target = current.find((l) => l.index === index);

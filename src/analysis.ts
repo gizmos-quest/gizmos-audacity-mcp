@@ -7,6 +7,7 @@ import { tmpdir } from 'node:os';
 import { dirname, extname, join, resolve } from 'node:path';
 import { z } from 'zod';
 import { SafeString } from './catalogue.js';
+import { catalogueCommand } from './format.js';
 import type { Ops, TrackInfo, TrackRef } from './ops.js';
 
 export interface WavFormat {
@@ -227,6 +228,9 @@ class Metrics {
         channel.sum += sample;
         channel.squares += sample * sample;
         this.blockSquares += sample * sample;
+        if (![channel.sum, channel.squares, this.blockSquares].every(Number.isFinite)) {
+          throw new Error('WAV sample accumulation overflowed; audio levels cannot be measured reliably');
+        }
         // This threshold is an advisory count, not proof that clipping occurred.
         if (magnitude >= 0.999) channel.clipped++;
         if (this.frames > 0 && Math.abs(sample - channel.previous) > 0.3) channel.jumps++;
@@ -270,7 +274,7 @@ class Metrics {
         dcOffset: this.frames ? round(channel.sum / this.frames) : 0, clippedSamples: channel.clipped, discontinuities: channel.jumps };
     });
     const count = this.frames * this.format.channels;
-    const rms = count ? Math.sqrt(this.channels.reduce((sum, c) => sum + c.squares, 0) / count) : 0;
+    const rms = count ? Math.sqrt(this.channels.reduce((sum, c) => sum + c.squares / count, 0)) : 0;
     const peak = Math.max(...this.channels.map((c) => c.peak));
     const quiet = percentile(this.blockRms.sort((a, b) => a - b), 10);
     const loud = percentile(this.blockRms, 95);
@@ -279,7 +283,7 @@ class Metrics {
     return { duration: this.frames / this.format.sampleRate, sampleRate: this.format.sampleRate, channels: this.format.channels,
       frames: this.frames, peak: round(peak), peakDbfs: amplitudeDb(peak), rms: round(rms), rmsDbfs: amplitudeDb(rms),
       crestDb: rms > 0 ? amplitudeDb(peak / rms) : null,
-      dcOffset: count ? round(this.channels.reduce((sum, c) => sum + c.sum, 0) / count) : 0,
+      dcOffset: count ? round(this.channels.reduce((sum, c) => sum + c.sum / count, 0)) : 0,
       clippedSamples: perChannel.reduce((sum, c) => sum + c.clippedSamples, 0),
       discontinuities: perChannel.reduce((sum, c) => sum + c.discontinuities, 0),
       silenceGaps: this.gaps, silenceGapCount: this.silenceGapCount, quietRmsDbfsEstimate: quietDb,
@@ -579,6 +583,8 @@ export async function measureScope(ops: Ops, scope: MeasureScope = {}, options: 
   const previous = await snapshotSelection(ops);
   const directory = await mkdtemp(join(tmpdir(), 'gizmos-audacity-measure-'));
   let operationError: unknown;
+  let restorationError: unknown;
+  let selectionChanged = false;
   try {
     let selected: number[];
     let start: number;
@@ -587,10 +593,6 @@ export async function measureScope(ops: Ops, scope: MeasureScope = {}, options: 
       selected = previous.selected;
       start = previous.start; end = previous.end;
       if (!selected.some((i) => previous.tracks[i]?.kind === 'wave')) throw new Error('select at least one audio track first');
-      // Clear label text editing by explicitly reselecting the same tracks/time.
-      await ops.run('SelectNone');
-      for (const track of selected) await ops.command('SelectTracks', { Track: track, TrackCount: 1, Mode: 'Add' });
-      await ops.command('SelectTime', { Start: start, End: end, RelativeTo: 'ProjectStart' });
     } else {
       const first = scope.track === undefined ? 0 : await ops.trackIndex(scope.track);
       const count = scope.track === undefined ? previous.tracks.length : scope.trackCount ?? 1;
@@ -600,9 +602,20 @@ export async function measureScope(ops: Ops, scope: MeasureScope = {}, options: 
       if (!audio.length) throw new Error('measurement needs an audio track');
       start = scope.start ?? (scope.track === undefined ? 0 : Math.min(...audio.map((t) => t.start)));
       end = scope.end ?? Math.max(...audio.map((t) => t.end));
-      await ops.command('Select', { Track: first, TrackCount: count, Start: start, End: end, Mode: 'Set' });
     }
-    if (!(end > start)) throw new Error(`measurement needs a non-empty time selection (${start}s to ${end}s)`);
+    if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || !(end > start)) {
+      throw new Error(`measurement needs a finite non-empty time selection (${start}s to ${end}s)`);
+    }
+    // Resolve and validate the entire range before changing selection.
+    selectionChanged = true;
+    if (scope.currentSelection) {
+      // Clear label text editing by explicitly reselecting the same tracks/time.
+      await ops.run('SelectNone');
+      for (const track of selected) await ops.command('SelectTracks', { Track: track, TrackCount: 1, Mode: 'Add' });
+      await ops.command('SelectTime', { Start: start, End: end, RelativeTo: 'ProjectStart' });
+    } else {
+      await ops.command('Select', { Track: selected[0]!, TrackCount: selected.length, Start: start, End: end, Mode: 'Set' });
+    }
     const file = join(directory, 'selection.wav');
     const audio = selected.map((i) => previous.tracks[i]!).filter((track) => track.kind === 'wave');
     const channels = audio.some((t) => (t.channels ?? 1) > 1) || audio.length > 1 ? 2 : 1;
@@ -616,12 +629,24 @@ export async function measureScope(ops: Ops, scope: MeasureScope = {}, options: 
     operationError = error;
     throw error;
   } finally {
-    try { await restoreSelection(ops, previous); }
+    try { if (selectionChanged && !ops.pipe?.needsRecovery) await restoreSelection(ops, previous); }
     catch (restoreError) {
-      if (operationError !== undefined) throw new Error(`${operationError instanceof Error ? operationError.message : String(operationError)}. Selection restoration also failed: ${restoreError instanceof Error ? restoreError.message : String(restoreError)}`);
+      restorationError = restoreError;
+      if (operationError !== undefined) {
+        const message = `${operationError instanceof Error ? operationError.message : String(operationError)}. Selection restoration also failed: ${restoreError instanceof Error ? restoreError.message : String(restoreError)}`;
+        if (restoreError instanceof Error) { restoreError.message = message; throw restoreError; }
+        throw new Error(message);
+      }
       throw restoreError;
     }
-    finally { await rm(directory, { recursive: true, force: true }); }
+    finally {
+      // A timed-out Export2 may still write its destination. Retain scratch
+      // and the timeout/recovery error class, including restoration failures.
+      if (ops.pipe?.needsRecovery) {
+        const error = restorationError ?? operationError;
+        if (error instanceof Error) error.message += `. Selection restoration is incomplete. Measurement scratch retained at ${directory}; inspect after audacity_recover`;
+      } else await rm(directory, { recursive: true, force: true });
+    }
   }
 }
 
@@ -653,6 +678,7 @@ export async function loudnessTarget(ops: Ops, input: unknown, measure = measure
   const before = await measure(ops, scope, { backend: 'ffmpeg' });
   const plan = planLoudnessTarget(before, targets);
   const steps = [{ command: 'Amplify', params: { Ratio: plan.ratio, AllowClipping: true }, scope }];
+  catalogueCommand('Amplify', steps[0]!.params);
   if (dryRun) return { dryRun, before, plan, steps };
   await ops.select(scope);
   // Current track gain/pan/envelopes may lower the rendered level, so
@@ -720,6 +746,13 @@ export function registerAnalysisTools(tool: RegisterTool, ops: Ops): void {
     { foreground: z.object({ track: Track, start: Seconds, end: Seconds }).strict(),
       background: z.object({ track: Track, start: Seconds, end: Seconds }).strict(), minimumDb: z.number().finite().min(0).max(100).default(20) },
     async ({ foreground, background, minimumDb }) => {
+      // Both nested intervals must pass before the first temporary export.
+      MeasureScopeSchema.parse(foreground);
+      MeasureScopeSchema.parse(background);
+      const foregroundIndex = await ops.trackIndex(foreground.track);
+      const backgroundIndex = await ops.trackIndex(background.track);
+      const tracks = await ops.tracks();
+      if (tracks[foregroundIndex]?.kind !== 'wave' || tracks[backgroundIndex]?.kind !== 'wave') throw new Error('contrast ranges require audio tracks');
       const a = await measureScope(ops, foreground, { backend: 'wav' });
       const b = await measureScope(ops, background, { backend: 'wav' });
       const differenceDb = a.rmsDbfs === null || b.rmsDbfs === null ? null : round(a.rmsDbfs - b.rmsDbfs);

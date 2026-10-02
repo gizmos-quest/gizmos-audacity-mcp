@@ -1,10 +1,10 @@
 // MCP tools for a running Audacity. The generic tools cover every command
-// Audacity reports about itself; the task tools bundle the steps an editor
+// Audacity reports about itself within the safe catalogue; task tools bundle the steps an editor
 // actually takes (import at a position, envelope, labels, effect on a range).
 import { McpServer, LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { COMMAND_IDS, EFFECT_IDS, MENU_IDS, SafeString, describeCommand } from './catalogue.js';
-import { AudacityPipe, AudacityTimeout, AudacityUnavailable } from './pipe.js';
+import { AudacityPipe, AudacityNeedsRecovery, AudacityTimeout, AudacityUnavailable } from './pipe.js';
 import { Ops, trackPanPercent, validateProjectFile } from './ops.js';
 import { launch, listWindows, quit, setWindowVisible, pipeExists } from './app.js';
 import { SerialQueue } from './queue.js';
@@ -73,9 +73,12 @@ export function buildServer(pipe = new AudacityPipe()): McpServer {
 
   tool(
     'audacity_launch',
-    'Start Audacity if it is not running, visible (live, the user watches) or hidden (headless-style work nobody needs to see). Waits until the script pipe answers.',
+    'Start or attach to Audacity with a visible or hidden Windows project window. Waits for a real script-pipe response.',
     { visible: z.boolean().default(true) },
-    async ({ visible }) => { const result = await launch(visible); if (result.started) ops.freshApplication(); return result; },
+    async ({ visible }) => {
+      if (pipe.needsRecovery) throw new AudacityNeedsRecovery('A previous pipe outcome is unknown; use audacity_recover before attaching again.');
+      const result = await launch(visible); if (result.started) ops.freshApplication(); return result;
+    },
   );
 
   tool(
@@ -159,6 +162,7 @@ export function buildServer(pipe = new AudacityPipe()): McpServer {
       solo: z.boolean().optional(),
     },
     async ({ track, name, gainDb, pan, mute, solo }) => {
+      if ([name, gainDb, pan, mute, solo].every((value) => value === undefined)) throw new Error('supply at least one track property');
       const index = await ops.trackIndex(track);
       // SetTrack's Volume is in dB (live 3.7.8: -6 reads back as ~0.501 linear).
       // Native Pan is percent (live 3.7.8: Pan=-0.4 reads back as -0.004).
@@ -184,7 +188,7 @@ export function buildServer(pipe = new AudacityPipe()): McpServer {
     'Write a volume envelope on a track: points of time (s) and linear gain (1 = unchanged, 0.5 = -6 dB, 0.25 = -12 dB). Visible as the volume curve in Audacity. replace=true clears the old points first.',
     {
       track: TrackRef,
-      points: z.array(z.object({ time: Seconds, value: z.number().finite().min(0).max(4) }).strict()).min(1).max(2000),
+      points: z.array(z.object({ time: Seconds, value: z.number().finite().min(0).max(2) }).strict()).min(1).max(2000),
       replace: z.boolean().default(true),
     },
     async ({ track, points, replace }) => ({ points: await ops.setEnvelope(track, points, replace) }),
@@ -195,7 +199,7 @@ export function buildServer(pipe = new AudacityPipe()): McpServer {
     'Write labels (point or region) into a named label track, creating it if needed. Use them to mark picture events or script lines.',
     {
       labels: z.array(z.object({ start: Seconds, end: Seconds.optional(), text: SafeString }).strict()).min(1).max(500),
-      trackName: SafeString.default('Labels'),
+      trackName: SafeString.min(1).default('Labels'),
     },
     async ({ labels, trackName }) => ({ labels: await ops.setLabels(labels, trackName) }),
   );

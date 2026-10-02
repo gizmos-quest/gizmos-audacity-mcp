@@ -10,31 +10,32 @@ import { tmpdir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AudacityPipe, AudacityNeedsRecovery, AudacityTimeout } from '../src/pipe.js';
-import { configPath, isRunning, recoveryEntries } from '../src/app.js';
+import { audacityExe, audacityProcesses, configPath, isRunning, recoveryEntries } from '../src/app.js';
 import { selectionTimes } from '../src/analysis.js';
 
 const live = process.env.AUDACITY_LIVE === '1';
 const root = fileURLToPath(new URL('..', import.meta.url));
 const testTimeout = 120_000;
-type Track = { name: string; kind: string; start: number; end: number; volume: number; pan: number; mute: number; solo: number; selected: number };
+type Track = { name: string; kind: string; start: number; end: number; volume: number; pan: number; mute: number; solo: number; selected: number; focused: number };
 type Label = { index: number; track: number; trackName: string; start: number; end: number; text: string };
 type Clip = { track: number; start: number; end: number; name: string };
 type Envelope = { track: number; points: { t: number; y: number }[] };
 type Measurement = { duration: number; sampleRate: number; rms: number; rmsDbfs: number | null; peakDbfs: number | null; integratedLufs: number | null; truePeakDbtp: number | null };
 type Windows = { windows: { title: string; visible: boolean; dialog: boolean; closed: boolean }[] };
 
-function tone(path: string, seconds: number, amplitude = 12_000, quietStart = 0, rate = 48_000): void {
-  const samples = Math.round(seconds * rate);
+function tone(path: string, seconds: number, amplitude = 12_000, quietStart = 0, rate = 48_000, channels = 1): void {
+  const samples = Math.round(seconds * rate) * channels;
   const data = Buffer.alloc(samples * 2);
   for (let i = 0; i < samples; i++) {
-    const value = i / rate < quietStart ? 0 : Math.sin((2 * Math.PI * 440 * i) / rate) * amplitude;
+    const frame = Math.floor(i / channels);
+    const value = frame / rate < quietStart ? 0 : Math.sin((2 * Math.PI * 440 * frame) / rate) * amplitude;
     data.writeInt16LE(Math.round(value), i * 2);
   }
   const header = Buffer.alloc(44);
   header.write('RIFF', 0); header.writeUInt32LE(36 + data.length, 4); header.write('WAVEfmt ', 8);
-  header.writeUInt32LE(16, 16); header.writeUInt16LE(1, 20); header.writeUInt16LE(1, 22);
-  header.writeUInt32LE(rate, 24); header.writeUInt32LE(rate * 2, 28);
-  header.writeUInt16LE(2, 32); header.writeUInt16LE(16, 34);
+  header.writeUInt32LE(16, 16); header.writeUInt16LE(1, 20); header.writeUInt16LE(channels, 22);
+  header.writeUInt32LE(rate, 24); header.writeUInt32LE(rate * channels * 2, 28);
+  header.writeUInt16LE(channels * 2, 32); header.writeUInt16LE(16, 34);
   header.write('data', 36); header.writeUInt32LE(data.length, 40);
   writeFileSync(path, Buffer.concat([header, data]));
 }
@@ -49,6 +50,7 @@ describe.skipIf(!live)('live Audacity through stdio MCP', () => {
   let fixture: string;
   let quietFixture: string;
   let lowFixture: string;
+  let multichannelFixture: string;
   const called = new Set<string>();
   let registered: string[] = [];
   let sequence = 0;
@@ -73,10 +75,22 @@ describe.skipIf(!live)('live Audacity through stdio MCP', () => {
   };
 
   beforeAll(async () => {
+    if (process.platform !== 'win32') throw new Error('Live lifecycle verification requires Windows and pinned English Audacity 3.7.8');
+    const executable = audacityExe();
+    const versionResult = spawnSync('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command',
+      `(Get-Item -LiteralPath '${executable.replace(/'/g, "''")}').VersionInfo.FileVersion`],
+    { windowsHide: true, encoding: 'utf8', timeout: 10_000 });
+    const version = versionResult.stdout?.trim().replace(/,/g, '.');
+    if (versionResult.status !== 0 || version !== '3.7.8.0') throw new Error(`Live tests require actual Audacity 3.7.8, found ${version ?? 'unknown'} at ${executable}; set AUDACITY_EXE and AUDACITY_CONFIG to the pinned installation`);
+    const existing = await audacityProcesses();
+    if (existing.some((process) => !process.executable || resolve(process.executable).toLowerCase() !== resolve(executable).toLowerCase())) {
+      throw new Error('A different Audacity executable is already running; preserve and quit it before version-isolated live tests');
+    }
     dir = mkdtempSync(join(tmpdir(), 'gizmos-audacity-live-'));
     fixture = join(dir, 'tone.wav'); tone(fixture, 2);
     quietFixture = join(dir, 'quiet-start.wav'); tone(quietFixture, 2, 12_000, 0.5);
     lowFixture = join(dir, 'room-tone.wav'); tone(lowFixture, 2, 120);
+    multichannelFixture = join(dir, 'three-channel.wav'); tone(multichannelFixture, 0.25, 12_000, 0, 48_000, 3);
     const backups = join(root, '.work', 'live-backups');
     mkdirSync(backups, { recursive: true });
     client = new Client({ name: 'live-test', version: '1' });
@@ -89,6 +103,10 @@ describe.skipIf(!live)('live Audacity through stdio MCP', () => {
     registered = (await client.listTools()).tools.map((tool) => tool.name).sort();
     await call('audacity_fresh', { visible: false, backupTo: join(backups, `before-live-${Date.now()}.aup3`) });
     await call('audacity_launch', { visible: false });
+    const processes = await audacityProcesses();
+    expect(processes).toHaveLength(1);
+    expect(resolve(processes[0]!.executable!).toLowerCase()).toBe(resolve(executable).toLowerCase());
+    expect(processes[0]!.fileVersion?.replace(/,/g, '.')).toBe('3.7.8.0');
     await call('audacity_command', { command: 'SetProject', params: { Rate: 48000 } });
   }, 120_000);
 
@@ -138,6 +156,10 @@ describe.skipIf(!live)('live Audacity through stdio MCP', () => {
     await expect(call('audacity_menu', { command: 'Record2ndChoice' })).rejects.toThrow();
     await expect(call('audacity_command', { command: 'Amplify', params: { Bogus: 1 } })).rejects.toThrow();
     await expect(call('audacity_effect', { effect: 'ClickRemoval' })).rejects.toThrow();
+    for (const effect of ['SpectralEditMultiTool', 'SpectralEditParametricEq', 'SpectralEditShelves', 'SpectralDelete', 'LabelSounds']) {
+      await expect(call('audacity_effect', { effect })).rejects.toThrow();
+      await expect(call('audacity_command', { command: effect })).rejects.toThrow();
+    }
     expect((await call<Windows>('audacity_dialogs')).windows.some((window) => window.dialog)).toBe(false);
   }, testTimeout);
 
@@ -153,6 +175,45 @@ describe.skipIf(!live)('live Audacity through stdio MCP', () => {
     await call('audacity_menu', { command: 'SelectNone' });
     expect(await call('audacity_status')).toMatchObject({ running: true, tracks: [] });
     expect(await call('audacity_project_info')).toMatchObject({ rate: null, lengthSeconds: 0 });
+  }, testTimeout);
+
+  it('rejects incomplete properties and invalid later measurement ranges without changing the project', async () => {
+    await importVoice('Voice');
+    await call('audacity_select', { track: 'Voice', start: 0.25, end: 0.75 });
+    const previousTracks = await tracks();
+    const previousSelection = await call('audacity_info', { type: 'Selection' });
+    await expect(call('audacity_track_set', { track: 'Voice' })).rejects.toThrow(/at least one track property/);
+    await expect(call('audacity_transport', { action: 'play', track: 'Voice', start: 0.5, end: 0.5 })).rejects.toThrow(/positive.duration/);
+    await expect(call('audacity_labels_set', { trackName: '', labels: [{ start: 0, text: 'Invalid' }] })).rejects.toThrow();
+    await expect(call('audacity_envelope_set', { track: 'Voice', points: [{ time: 0.1, value: 1 }, { time: 0.2, value: 2.1 }] })).rejects.toThrow();
+    await expect(call('audacity_command', { command: 'SetTrack', params: { Pan: 101 } })).rejects.toThrow();
+    await expect(call('audacity_generate', { kind: 'tone', track: 'Voice', channels: 2 })).rejects.toThrow(/existing tracks retain their channels/);
+    await expect(call('audacity_measure', { track: 'Voice', start: 3, backend: 'wav' })).rejects.toThrow(/non-empty time selection/);
+    await expect(call('audacity_contrast', { foreground: { track: 'Voice', start: 0, end: 1 },
+      background: { track: 'Voice', start: 1, end: 0 } })).rejects.toThrow(/end must be after start/);
+    expect(await tracks()).toEqual(previousTracks);
+    expect(await call('audacity_info', { type: 'Selection' })).toEqual(previousSelection);
+    expect((await call<Windows>('audacity_dialogs')).windows.filter((window) => window.dialog)).toEqual([]);
+  }, testTimeout);
+
+  it('reports multi-track imports explicitly and cleans every confirmed batch temporary track', async () => {
+    await importVoice('Original');
+    const previous = await tracks();
+    await expect(call('audacity_import', { file: multichannelFixture, name: 'Unsupported multi-track' })).rejects.toThrow(/import added.*tracks/);
+    const imported = await tracks();
+    expect(imported.length).toBeGreaterThan(previous.length + 1);
+    const { focused: _focused, selected: _selected, ...originalAudio } = previous[0]!;
+    expect(imported[0]).toMatchObject(originalAudio);
+    await call('audacity_track_edit', { action: 'remove', track: previous.length, trackCount: imported.length - previous.length });
+    await call('audacity_select', { track: 'Original', start: 0.1, end: 0.2 });
+    const selection = await call('audacity_info', { type: 'Selection' });
+    const beforeBatch = await tracks();
+    const file = output('multi-track-batch-refusal');
+    await expect(call('audacity_batch', { jobs: [{ file: multichannelFixture, output: file }], measure: false })).rejects.toThrow(/import added.*tracks/);
+    expect(await tracks()).toEqual(beforeBatch);
+    expect(await call('audacity_info', { type: 'Selection' })).toEqual(selection);
+    expect(existsSync(file)).toBe(false);
+    expect((await call<Windows>('audacity_dialogs')).windows.filter((window) => window.dialog)).toEqual([]);
   }, testTimeout);
 
   it('preserves the integration argument shapes, boolean encoding and explicit export selection', async () => {
@@ -471,6 +532,29 @@ describe.skipIf(!live)('live Audacity through stdio MCP', () => {
     await call('audacity_effect', { effect: 'NoiseReduction', track: 'Low 8k', params: {} });
     expect((await tracks()).find((track) => track.name === 'Low 8k')).toMatchObject({ start: 0, end: 1 });
     expect((await call<Windows>('audacity_dialogs')).windows.filter((window) => window.dialog)).toEqual([]);
+    await call('audacity_recover');
+    await expect(call('audacity_effect', { effect: 'NoiseReduction', track: 'Low 8k', params: {} })).rejects.toThrow(/fresh Audacity process/);
+  }, testTimeout);
+
+  it('preflights native source-rate filter failures before changing selection or earlier pipeline samples', async () => {
+    const lowRate = output('filter-source-8000'); tone(lowRate, 1, 12_000, 0, 8000);
+    await importVoice('Low 8k', lowRate); await importVoice('Unrelated');
+    await call('audacity_command', { command: 'SetProject', params: { Rate: 48000 } });
+    await call('audacity_select', { track: 'Unrelated', start: 0.25, end: 0.5 });
+    const previous = await tracks(); const selection = await call('audacity_info', { type: 'Selection' });
+    const clips = await call('audacity_info', { type: 'Clips' });
+    const before = await call<Measurement>('audacity_measure', { track: 'Low 8k', backend: 'wav' });
+    for (const effect of ['High-passFilter', 'Low-passFilter', 'NotchFilter']) {
+      await expect(call('audacity_effect', { effect, track: 'Low 8k', params: { FREQUENCY: 5000 } })).rejects.toThrow(/source|Nyquist|sample rate/i);
+    }
+    await expect(call('audacity_effect', { effect: 'Low-passFilter', track: 'Low 8k', params: {} })).rejects.toThrow(/explicit|FREQUENCY/);
+    await expect(call('audacity_effect', { effect: 'Tremolo', track: 'Low 8k', start: 0, end: 0.000001, params: {} })).rejects.toThrow(/source frame/);
+    await expect(call('audacity_pipeline', { preset: 'lofi', track: 'Low 8k' })).rejects.toThrow(/source|Nyquist|sample rate/i);
+    expect(await tracks()).toEqual(previous); expect(await call('audacity_info', { type: 'Selection' })).toEqual(selection);
+    expect(await call('audacity_info', { type: 'Clips' })).toEqual(clips);
+    expect((await call<Measurement>('audacity_measure', { track: 'Low 8k', backend: 'wav' })).rms).toBeCloseTo(before.rms, 5);
+    await call('audacity_effect', { effect: 'Low-passFilter', track: 'Low 8k', params: { FREQUENCY: 1000, ROLLOFF: 'dB12' } });
+    expect((await call<Windows>('audacity_dialogs')).windows.filter((window) => window.dialog)).toEqual([]);
   }, testTimeout);
 
   it('finds/edits/deletes overlapping labels and preserves other label tracks', async () => {
@@ -571,6 +655,11 @@ describe.skipIf(!live)('live Audacity through stdio MCP', () => {
     expect(await tracks()).toEqual(previous); expect(await call('audacity_info', { type: 'Selection' })).toEqual(selected);
     expect((await call<Measurement>('audacity_measure_file', { file, backend: 'wav' })).peakDbfs).toBeCloseTo(-3, 1);
     await expect(call('audacity_batch', { jobs })).rejects.toThrow(/exists/);
+    const timingOutput = output('batch-timing-refusal');
+    await expect(call('audacity_batch', { jobs: [{ file: fixture, output: timingOutput,
+      options: { preset: 'cleanup', shortenPauses: { minimum: 0.5, truncateTo: 0.25 } } }], measure: false })).rejects.toThrow(/sync.lock/i);
+    expect(existsSync(timingOutput)).toBe(false);
+    expect(await tracks()).toEqual(previous); expect(await call('audacity_info', { type: 'Selection' })).toEqual(selected);
   }, testTimeout);
 
   it('plays with estimated position, pauses/resumes/stops and records a short real input', async () => {
@@ -655,16 +744,26 @@ describe.skipIf(!live)('live Audacity through stdio MCP', () => {
     // Intentional unsafe command ONLY in this integration test. The public
     // catalogue refuses Preferences; root verification records live 3.7.8.
     try {
-      await expect(privatePipe.send('Preferences:', 1_000)).rejects.toBeInstanceOf(AudacityTimeout);
+      // Give the disposable TypeScript helper time to start and write once.
+      // A shorter timeout can expire before the command reaches Audacity;
+      // that unknown outcome must never be retried just to open the dialog.
+      await expect(privatePipe.send('Preferences:', 10_000)).rejects.toBeInstanceOf(AudacityTimeout);
       expect(privatePipe.needsRecovery).toBe(true);
       await expect(privatePipe.send('GetInfo: Type=Tracks Format=JSON', 5_000)).rejects.toBeInstanceOf(AudacityNeedsRecovery);
-      expect((await call<Windows>('audacity_dialogs')).windows.some((window) => window.dialog)).toBe(true);
+      let windows: Windows = { windows: [] };
+      const deadline = Date.now() + 10_000;
+      do {
+        windows = await call<Windows>('audacity_dialogs');
+        if (windows.windows.some((window) => window.dialog)) break;
+        await new Promise((resolve) => setTimeout(resolve, 200));
+      } while (Date.now() < deadline);
+      expect(windows.windows.some((window) => window.dialog), JSON.stringify(windows)).toBe(true);
     } finally {
       await call('audacity_dialogs', { close: true });
       await call('audacity_recover', { closeDialogs: true });
     }
-    privatePipe.reset(); expect(privatePipe.needsRecovery).toBe(false);
-    const reply = await privatePipe.send('GetInfo: Type=Tracks Format=JSON', 5_000);
+    const reply = await privatePipe.reconnect(5_000);
+    expect(privatePipe.needsRecovery).toBe(false);
     expect(reply.ok).toBe(true); expect(reply.body).toContain('Voice');
     expect((await call<Windows>('audacity_dialogs')).windows.some((window) => window.dialog)).toBe(false);
     expect(await call('audacity_recover', { reconnect: false })).toMatchObject({ running: true, needsRecovery: false });

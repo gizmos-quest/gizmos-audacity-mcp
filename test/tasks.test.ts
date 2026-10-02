@@ -6,6 +6,8 @@ import {
   autoDuck, clipSet, edit, fade, generate, pipeline, planPipeline, trackEdit,
 } from '../src/tasks.js';
 
+vi.mock('../src/source-rate.js', () => ({ measureSourceRate: vi.fn(async () => 48_000) }));
+
 function wave(name = 'Voice', start = 2, end = 10): TrackInfo {
   return { name, kind: 'wave', start, end, channels: 1 };
 }
@@ -34,6 +36,11 @@ function expectNoMutation(mocks: ReturnType<typeof mockOps>): void {
 }
 
 describe('strict task contracts', () => {
+  it('accepts consistent nonnegative track indices beyond 255', () => {
+    expect(PipelineSchema.parse({ track: 256 }).track).toBe(256);
+    expect(GenerateSchema.parse({ kind: 'tone', track: 256 }).track).toBe(256);
+    expect(EditSchema.parse({ action: 'split', track: 256 }).track).toBe(256);
+  });
   it.each([
     ['pipeline', PipelineSchema, { track: 0 }],
     ['edit', EditSchema, { action: 'split', track: 0 }],
@@ -65,8 +72,14 @@ describe('strict task contracts', () => {
     { kind: 'tone', frequency: Number.NaN },
     { kind: 'tone', amplitude: Number.POSITIVE_INFINITY },
     { kind: 'chirp', duration: 0 },
+    { kind: 'tone', track: 0, channels: 1 },
+    { kind: 'tone', track: 0, channels: 2 },
   ])('rejects invalid or irrelevant generation settings %#', (input) => {
     expect(() => GenerateSchema.parse(input)).toThrow();
+  });
+
+  it.each(['clickThreshold', 'clickWidth'])('rejects unused click removal option %s', (key) => {
+    expect(() => PipelineSchema.parse({ track: 0, [key]: 200 })).toThrow();
   });
 
   it.each([
@@ -238,6 +251,13 @@ describe('pipeline execution', () => {
 });
 
 describe('audio generation', () => {
+  it('rejects channel overrides on existing tracks before reading or changing Audacity', async () => {
+    const mocks = mockOps();
+    await expect(generate(mocks.ops, { kind: 'tone', track: 0, channels: 2 })).rejects.toThrow('existing tracks retain their channels');
+    expect(mocks.tracks).not.toHaveBeenCalled();
+    expect(mocks.trackIndex).not.toHaveBeenCalled();
+    expectNoMutation(mocks);
+  });
   it.each([
     ['tone', 'Tone', { Frequency: 440, Amplitude: 0.25, Waveform: 'Sine' }],
     ['noise', 'Noise', { Type: 'White', Amplitude: 0.25 }],

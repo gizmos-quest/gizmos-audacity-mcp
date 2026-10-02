@@ -4,11 +4,12 @@
 import { z } from 'zod';
 import { MENU_IDS, SafeString } from './catalogue.js';
 import { catalogueCommand, type ParamValue } from './format.js';
-import { Ops, type TrackRef, type TrackInfo } from './ops.js';
+import { Ops, errorWithContext, type TrackRef, type TrackInfo } from './ops.js';
+import { preflightEffectParameters, preflightScopedEffects } from './effect-safety.js';
 
 const Seconds = z.number().finite().min(0).max(86_400);
-const Track = z.union([z.number().int().min(0).max(255), SafeString.min(1)]);
-const Gain = z.number().finite().min(-60).max(36);
+const Track = z.union([z.number().int().nonnegative(), SafeString.min(1)]);
+const Gain = z.number().finite().min(-50).max(36);
 const Frequency = z.number().finite().min(1).max(20_000);
 const Amplitude = z.number().finite().min(0).max(1);
 const Waveform = z.enum(['Sine', 'Square', 'Sawtooth', 'Square, no alias', 'Triangle']);
@@ -41,8 +42,6 @@ export const PipelineSchema = z.object({
   removeClicks: z.boolean().default(false).refine((enabled) => !enabled, {
     message: 'Click removal is unavailable: Audacity 3.7.8 opens a blocking modal dialog when no clicks are found.',
   }).describe('must remain false: native Click Removal can open a blocking result dialog'),
-  clickThreshold: z.number().int().min(0).max(900).default(200),
-  clickWidth: z.number().int().min(0).max(40).default(20),
   compress: z.boolean().optional(),
   thresholdDb: z.number().finite().min(-60).max(0).optional(),
   ratio: z.number().finite().min(1).max(20).optional(),
@@ -98,6 +97,7 @@ export function planPipeline(input: unknown): { preset: string; steps: PipelineS
   const steps: PipelineStep[] = [];
   const add = (name: string, command: string, params: Record<string, ParamValue>, stepScope = scope) => {
     catalogueCommand(command, params);
+    preflightEffectParameters(command, params);
     steps.push({ name, command, params, scope: stepScope });
   };
   if (args.noiseProfile) {
@@ -154,11 +154,12 @@ export async function pipeline(ops: Ops, input: unknown): Promise<unknown> {
   if (args.dryRun) return { dryRun: true, ...plan };
   // Preflight the processing range before capturing a profile (which changes
   // Audacity's effect state). Subsequent steps still recalculate track extents.
-  await resolveRange(ops, args);
+  const processingRange = await resolveRange(ops, args);
   if (args.noiseProfile) {
     const { info } = await audioTrack(ops, args.track);
     if (args.noiseProfile.start < info.start || args.noiseProfile.end > info.end) throw new Error('noise profile must be inside the target track extent');
   }
+  await preflightScopedEffects(ops, plan.steps, processingRange);
   const applied: string[] = [];
   for (const step of plan.steps) {
     try {
@@ -170,7 +171,7 @@ export async function pipeline(ops: Ops, input: unknown): Promise<unknown> {
       }
       applied.push(step.name);
     } catch (error) {
-      throw new Error(`pipeline stopped at "${step.name}" after ${applied.length} completed steps: ${error instanceof Error ? error.message : String(error)}`);
+      throw errorWithContext(error, `pipeline stopped at "${step.name}" after ${applied.length} completed steps: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
   return { dryRun: false, ...plan, applied };
@@ -229,7 +230,7 @@ export const GenerateSchema = z.object({
   kind: z.enum(['tone', 'noise', 'silence', 'chirp', 'dtmf', 'rhythm']),
   track: Track.optional().describe('omit to create a new track; supplying it replaces audio in the range'),
   name: SafeString.min(1).optional(),
-  channels: z.number().int().min(1).max(2).default(1),
+  channels: z.number().int().min(1).max(2).optional().describe('new-track channel count; defaults to mono and must be omitted for an existing track'),
   start: Seconds.default(0),
   duration: z.number().finite().positive().max(3600).default(1),
   frequency: Frequency.optional(),
@@ -247,6 +248,7 @@ export const GenerateSchema = z.object({
   clickSound: z.enum(['Metronome', 'Ping (short)', 'Ping (long)', 'Cowbell', 'ResonantNoise', 'NoiseClick', 'Drip (short)', 'Drip (long)']).optional(),
 }).strict().superRefine((args, ctx) => {
   if (args.start + args.duration > 86_400) ctx.addIssue({ code: 'custom', message: 'generation range exceeds 24 hours' });
+  if (args.track !== undefined && args.channels !== undefined) ctx.addIssue({ code: 'custom', path: ['channels'], message: 'channels is used only when creating a new track; existing tracks retain their channels' });
   const allowed: Record<typeof args.kind, string[]> = {
     tone: ['frequency', 'amplitude', 'waveform'], noise: ['amplitude', 'noiseType'], silence: [],
     chirp: ['frequency', 'amplitude', 'waveform', 'endFrequency', 'endAmplitude', 'interpolation'],
@@ -268,11 +270,13 @@ export async function generate(ops: Ops, input: unknown): Promise<unknown> {
   if (args.kind === 'dtmf') Object.assign(params, { Sequence: (args.sequence ?? '0123456789').toUpperCase(), 'Duty Cycle': args.dutyCycle ?? 55, Amplitude: args.amplitude ?? 0.25 });
   if (args.kind === 'rhythm') Object.assign(params, { TEMPO: args.tempo ?? 120, TIMESIG: args.beatsPerBar ?? 4, SWING: args.swing ?? 0, BARS: 0, 'CLICK-TRACK-DUR': args.duration, OFFSET: 0, 'CLICK-TYPE': args.clickSound ?? 'Metronome', HIGH: 84, LOW: 80 });
   catalogueCommand(command, params);
+  preflightEffectParameters(command, params);
   let index: number;
   if (args.track === undefined) {
+    const channels = args.channels ?? 1;
     index = (await ops.tracks()).length;
-    safeMenu(args.channels === 2 ? 'NewStereoTrack' : 'NewMonoTrack');
-    await ops.run(args.channels === 2 ? 'NewStereoTrack' : 'NewMonoTrack');
+    safeMenu(channels === 2 ? 'NewStereoTrack' : 'NewMonoTrack');
+    await ops.run(channels === 2 ? 'NewStereoTrack' : 'NewMonoTrack');
   } else index = (await audioTrack(ops, args.track)).index;
   await ops.select({ track: index, start: args.start, end: args.start + args.duration });
   await ops.command(command, params, 600_000);

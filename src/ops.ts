@@ -1,10 +1,12 @@
 // The operations behind the MCP tools. Each one is a short, ordered series
 // of pipe commands; every reply is checked, so a failed step stops the rest.
 import { AudacityPipe, type PipeReply } from './pipe.js';
+import { z } from 'zod';
 import { catalogueCommand, formatCommand, parseInfoJson, type ParamValue } from './format.js';
-import { COMMAND_IDS, MENU_IDS, commandSchema } from './catalogue.js';
+import { COMMAND_IDS, MENU_IDS, SafeString, commandSchema } from './catalogue.js';
 import { existsSync, statSync } from 'node:fs';
 import { dirname, extname, resolve } from 'node:path';
+import { needsEffectContext, preflightEffect, preflightEffectParameters } from './effect-safety.js';
 
 export class CommandFailed extends Error {
   constructor(
@@ -13,6 +15,12 @@ export class CommandFailed extends Error {
   ) {
     super(`Audacity rejected "${command}": ${reply.body || reply.status}`);
   }
+}
+
+/** Keep transport error classes so the server can attach recovery guidance. */
+export function errorWithContext(error: unknown, message: string): Error {
+  if (error instanceof Error) { error.message = message; return error; }
+  return new Error(message);
 }
 
 export interface TrackInfo {
@@ -31,6 +39,16 @@ export interface TrackInfo {
 
 export type TrackRef = number | string;
 
+const Seconds = z.number().finite().min(0).max(86_400);
+const Track = z.union([z.number().int().nonnegative(), SafeString.min(1)]);
+const SelectionScope = z.object({
+  start: Seconds.optional(), end: Seconds.optional(), track: Track.optional(),
+  trackCount: z.number().int().min(1).max(256).optional(),
+}).strict();
+const EnvelopePoints = z.array(z.object({ time: Seconds, value: z.number().finite().min(0).max(2) }).strict()).min(1).max(2000);
+const LabelsInput = z.array(z.object({ start: Seconds, end: Seconds.optional(), text: SafeString }).strict()
+  .refine((label) => label.end === undefined || label.end >= label.start, 'label end must be at least start')).min(1);
+
 export class Ops {
   constructor(readonly pipe: AudacityPipe) {}
   private noiseProfile: 'unknown' | { track: number; name: string; start: number; end: number } | undefined = 'unknown';
@@ -38,6 +56,9 @@ export class Ops {
 
   /** Only call after starting a new Audacity process, never after a pipe reset. */
   freshApplication(): void { this.noiseProfile = undefined; }
+
+  /** Recovery may reconnect to a restarted process with recycled track indices. */
+  unknownApplication(): void { this.noiseProfile = 'unknown'; }
 
   requireNoiseProfile(): void {
     if (this.noiseProfile === undefined || this.noiseProfile === 'unknown') {
@@ -47,7 +68,7 @@ export class Ops {
 
   private invalidateNoiseProfile(id: string, params: Record<string, unknown>): void {
     if (this.noiseProfile && this.noiseProfile !== 'unknown' &&
-        (['Import2', 'OpenProject2', 'RemoveTracks', 'NewMonoTrack', 'NewStereoTrack', 'NewLabelTrack', 'MixAndRender', 'MixAndRenderToNewTrack', 'Duplicate', 'SplitNew', 'Undo', 'Redo'].includes(id) ||
+        (['Import2', 'OpenProject2', 'RemoveTracks', 'NewMonoTrack', 'NewStereoTrack', 'NewLabelTrack', 'NewTimeTrack', 'MixAndRender', 'MixAndRenderToNewTrack', 'StereoToMono', 'SortByTime', 'SortByName', 'Duplicate', 'SplitNew', 'Cut', 'SplitCut', 'Paste', 'Join', 'Undo', 'Redo'].includes(id) ||
          (['SetTrack', 'SetTrackStatus'].includes(id) && params.Name !== undefined))) this.noiseProfile = 'unknown';
   }
 
@@ -82,8 +103,14 @@ export class Ops {
       this.requireNoiseProfile();
       return this.reduceProfiledNoise(command, timeoutMs);
     }
+    if (needsEffectContext(id)) return this.guardedEffect(id, params, command, timeoutMs);
     this.invalidateNoiseProfile(id, params);
     return id === 'Import2' ? this.importWithoutTempoDetection(command, timeoutMs) : this.raw(command, timeoutMs);
+  }
+
+  private async guardedEffect(id: string, params: Record<string, unknown>, command: string, timeoutMs?: number): Promise<string> {
+    await preflightEffect(this, id, params);
+    return this.raw(command, timeoutMs);
   }
 
   /** Restore pending import guards after an explicitly recovered pipe. */
@@ -124,7 +151,7 @@ export class Ops {
       if (!this.pipe.needsRecovery) {
         try { await this.restoreImportPreferences(); }
         catch (error) {
-          if (operationError !== undefined) throw new Error(`${operationError instanceof Error ? operationError.message : String(operationError)}. Import preference restoration also failed: ${error instanceof Error ? error.message : String(error)}`);
+          if (operationError !== undefined) throw errorWithContext(error, `${operationError instanceof Error ? operationError.message : String(operationError)}. Import preference restoration also failed: ${error instanceof Error ? error.message : String(error)}`);
           throw error;
         }
       }
@@ -169,6 +196,12 @@ export class Ops {
   }
 
   async select(scope: { start?: number; end?: number; track?: TrackRef; trackCount?: number }): Promise<void> {
+    await this.run('Select', await this.resolveSelection(scope));
+  }
+
+  /** Resolve and validate a selection without changing it, for transport preflight. */
+  async resolveSelection(scope: { start?: number; end?: number; track?: TrackRef; trackCount?: number }): Promise<Record<string, ParamValue | undefined>> {
+    scope = SelectionScope.parse(scope);
     const params: Record<string, ParamValue | undefined> = { Mode: 'Set' };
     if (scope.trackCount !== undefined && scope.track === undefined) throw new Error('trackCount requires track');
     if (scope.start !== undefined && scope.end !== undefined && scope.end < scope.start) throw new Error('end must be at least start');
@@ -186,9 +219,8 @@ export class Ops {
     if (params.Track === undefined) {
       const tracks = await this.tracks();
       if (!tracks.length) throw new Error('the project has no tracks to select');
-      await this.run('Select', { Track: 0, TrackCount: tracks.length, Start: params.Start ?? 0,
-        End: params.End ?? await this.projectEnd(), Mode: 'Set' });
-      return;
+      params.Track = 0; params.TrackCount = tracks.length;
+      params.Start = params.Start ?? 0; params.End = params.End ?? await this.projectEnd();
     }
     if (params.Start === undefined) {
       // Only the tracks' own extent: an effect over empty timeline would fill it with silence clips.
@@ -197,7 +229,9 @@ export class Ops {
       params.End = scope.end ?? Math.max(...tracks.map((t) => t.end ?? 0));
     }
     if ((params.End as number) < (params.Start as number)) throw new Error('end must be at least start within the selected tracks');
-    await this.run('Select', params);
+    if (!Number.isFinite(params.Start) || !Number.isFinite(params.End)) throw new Error('selected tracks have invalid time extents');
+    catalogueCommand('Select', params);
+    return params;
   }
 
   async projectEnd(): Promise<number> {
@@ -207,13 +241,19 @@ export class Ops {
 
   /** Import a file as a new track, name it and place its clip at `start` seconds. */
   async importTrack(file: string, name?: string, start = 0): Promise<{ track: number; name: string }> {
+    SafeString.min(1).parse(file); Seconds.parse(start);
+    if (name !== undefined) catalogueCommand('SetTrack', { Name: name });
+    catalogueCommand('Import2', { Filename: file });
+    catalogueCommand('SetClip', { At: 0, Start: start });
     if (!existsSync(file) || !statSync(file).isFile()) throw new Error(`${file} is not an existing audio file`);
     const before = (await this.tracks()).length;
     await this.run('Import2', { Filename: file }, 300_000);
     const after = await this.tracks();
     if (after.length <= before) throw new Error(`import added no track: ${file}`);
+    if (after.length !== before + 1) throw new Error(`import added ${after.length - before} tracks; this tool requires one audio track. Imported tracks remain in the project; inspect them before continuing.`);
+    if (after[before]!.kind !== 'wave') throw new Error('import did not add an audio track; inspect the imported track before continuing');
     const track = before; // a stereo file is one track
-    if (name) {
+    if (name !== undefined) {
       await this.run('SelectTracks', { Track: track, TrackCount: 1, Mode: 'Set' });
       await this.run('SetTrack', { Name: name });
     }
@@ -225,6 +265,7 @@ export class Ops {
   }
 
   async moveClip(track: TrackRef, at: number, start: number): Promise<void> {
+    Track.parse(track); Seconds.parse(at); Seconds.parse(start);
     const index = await this.trackIndex(track);
     const clips = await this.info('Clips') as { track: number; start: number; end: number }[];
     const matches = clips.filter((clip) => clip.track === index && clip.start <= at && at < clip.end);
@@ -244,7 +285,9 @@ export class Ops {
    * track that covers their time.
    */
   async setEnvelope(track: TrackRef, points: { time: number; value: number }[], replace = true): Promise<number> {
+    Track.parse(track); EnvelopePoints.parse(points); z.boolean().parse(replace);
     const index = await this.trackIndex(track);
+    if ((await this.tracks())[index]!.kind !== 'wave') throw new Error('envelope target must be an audio track');
     const end = await this.projectEnd();
     await this.run('Select', { Track: index, TrackCount: 1, Start: 0, End: Math.max(end, 0.001), Mode: 'Set' });
     if (replace) await this.run('SetEnvelope', { Delete: true });
@@ -258,8 +301,8 @@ export class Ops {
   async setLabels(unsorted: { start: number; end?: number; text: string }[], trackName = 'Labels'): Promise<number> {
     // SetLabel uses a flat index across label tracks. Audacity sorts insertions
     // by time, so identify the added tuple rather than assuming an append index.
-    const labels = [...unsorted].sort((a, b) => a.start - b.start);
-    if (labels.some((label) => label.end !== undefined && label.end < label.start)) throw new Error('label end must be at least start');
+    const labels = LabelsInput.parse(unsorted).sort((a, b) => a.start - b.start);
+    SafeString.min(1).parse(trackName);
     const tracks = await this.tracks();
     const matchingTracks = tracks.flatMap((t, i) => t.kind === 'label' && t.name === trackName ? [i] : []);
     if (matchingTracks.length > 1) throw new Error(`multiple label tracks named ${trackName}; rename them uniquely`);
@@ -308,12 +351,18 @@ export class Ops {
   ): Promise<string> {
     preflightCommand(effect, params); // Validate safety as well as types before changing selection.
     if (effect === 'NoiseReduction') this.requireNoiseProfile();
+    if (needsEffectContext(effect)) {
+      const selected = await this.resolveSelection(scope);
+      await preflightEffect(this, effect, params, { track: Number(selected.Track), trackCount: Number(selected.TrackCount), start: Number(selected.Start), end: Number(selected.End) });
+    }
     await this.select(scope);
     return this.command(effect, params, 600_000);
   }
 
   /** Capture a noise profile from a stretch of pure noise (Noise Reduction step one). */
   async captureNoiseProfile(track: TrackRef, start: number, end: number): Promise<void> {
+    Track.parse(track);
+    if (!Seconds.safeParse(start).success || !Seconds.safeParse(end).success || !(end > start)) throw new Error('noise profile must be a non-empty interval inside an audio track');
     const index = await this.trackIndex(track);
     const info = (await this.tracks())[index]!;
     if (info.kind !== 'wave' || start < info.start || end > info.end || !(end > start)) throw new Error('noise profile must be a non-empty interval inside an audio track');
@@ -347,7 +396,10 @@ export class Ops {
 
   /** Export the mix of all unmuted tracks (or a time range of it) to a file. */
   async exportMix(file: string, channels = 2, start?: number, end?: number): Promise<void> {
+    z.union([z.literal(1), z.literal(2)]).parse(channels);
+    Seconds.optional().parse(start); Seconds.optional().parse(end);
     validateExportFile(file);
+    catalogueCommand('Export2', { Filename: file, NumChannels: channels });
     // An explicit time and track selection, never Select All: with a label in text editing
     // Select All selects the label's text and the export comes out empty.
     const tracks = await this.tracks();
@@ -367,6 +419,7 @@ export function trackPanPercent(value: number): number {
 }
 
 export function validateExportFile(file: string): void {
+  SafeString.min(1).parse(file);
   // Opus Export2 opens a modal error; AIFF fails (live 3.7.8, 2026-10-02).
   if (!['.wav', '.flac', '.mp3', '.ogg'].includes(extname(file).toLowerCase())) {
     throw new Error('export requires a .wav, .flac, .mp3 or .ogg filename');
@@ -377,6 +430,7 @@ export function validateExportFile(file: string): void {
 }
 
 export function validateProjectFile(file: string, save: boolean): void {
+  SafeString.min(1).parse(file);
   if (extname(file).toLowerCase() !== '.aup3') throw new Error('project paths must end in .aup3');
   if (save && existsSync(file)) throw new Error(`${file} exists; save under a new name to avoid a blocking modal error`);
   if (!save && (!existsSync(file) || !statSync(file).isFile())) throw new Error(`${file} is not an existing project file`);
@@ -388,12 +442,16 @@ export function validateProjectFile(file: string, save: boolean): void {
 export function preflightCommand(id: string, params: Record<string, unknown> = {}): string {
   if (!COMMAND_IDS.includes(id)) throw new Error(`command is reserved or not in the safe catalogue: ${id}`);
   const command = catalogueCommand(id, params);
+  // Live English 3.7.8, 2026-10-02: Ratio=3 AllowClipping=0 on a 0.5
+  // amplitude tone returned OK and exported 2364 near-full-scale samples.
+  // AmplifyBase::Parameters forces mCanClip=true in native batch mode.
+  if (id === 'Amplify' && params.AllowClipping === false) throw new Error('Amplify ignores AllowClipping=false in Audacity batch processing; measure headroom before choosing a gain');
+  preflightEffectParameters(id, params);
   if (id === 'Export2') validateExportFile(String(params.Filename ?? ''));
   if (id === 'Import2' && (!existsSync(String(params.Filename ?? '')) || !statSync(String(params.Filename)).isFile())) throw new Error('import file does not exist or is not a regular file');
   if (id === 'SampleDataExport' && (params.MESSAGES !== 'None' || !params.FILENAME)) {
     throw new Error('SampleDataExport requires MESSAGES=None and an explicit FILENAME to avoid modal result dialogs');
   }
   if (id === 'NoiseGate' && params.MODE === 'Analyze') throw new Error('NoiseGate Analyze opens a result dialog; use audacity_measure');
-  if (id === 'RegularIntervalLabels' && params.VERBOSE !== 'None') throw new Error('RegularIntervalLabels requires VERBOSE=None; use audacity_labels regular');
   return command;
 }

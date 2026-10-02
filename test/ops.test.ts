@@ -41,6 +41,18 @@ function project(tracks: TrackInfo[], initialLabels: LabelTrack[] = [], initialC
         selection.track = Number(parameters.Track);
       } else if (id === 'Select') {
         selection = { track: Number(parameters.Track), start: Number(parameters.Start), end: Number(parameters.End) };
+      } else if (id === 'RemoveTracks') {
+        tracks.splice(selection.track, 1);
+        for (let i = labelTracks.length - 1; i >= 0; i--) {
+          const labelTrack = labelTracks[i]!;
+          if (labelTrack[0] === selection.track) labelTracks.splice(i, 1);
+          else if (labelTrack[0] > selection.track) labelTrack[0]--;
+        }
+        for (let i = clips.length - 1; i >= 0; i--) {
+          const clip = clips[i]!;
+          if (clip.track === selection.track) clips.splice(i, 1);
+          else if (clip.track > selection.track) clip.track--;
+        }
       } else if (id === 'SetClip') {
         // Audacity includes both clip boundaries when applying this command.
         const matches = clips.filter((clip) => clip.track === selection.track && clip.start <= Number(parameters.At) && Number(parameters.At) <= clip.end);
@@ -89,7 +101,7 @@ describe('explicit operation selection', () => {
   it('selects all tracks and an explicit full-project time range when no track is supplied', async () => {
     const fixture = project([wave('Voice', 2, 4), label('Cues'), wave('Bed', 0, 10)]);
     await fixture.ops.select({});
-    expect(edits(fixture.calls)).toEqual(['Select: Track=0 TrackCount=3 Start=0 End=10 Mode=Set']);
+    expect(edits(fixture.calls)).toEqual(['Select: Mode=Set Track=0 TrackCount=3 Start=0 End=10']);
   });
 
   it.each([{ trackCount: 2 }, { track: 0, start: 2, end: 1 }])('refuses invalid scope before touching selection: %j', async (scope) => {
@@ -108,6 +120,42 @@ describe('explicit operation selection', () => {
   it('validates effect parameters before changing selection', async () => {
     const fixture = project([wave('Voice')]);
     await expect(fixture.ops.applyEffect('Amplify', { Unknown: 1 }, { track: 0 })).rejects.toThrow();
+    expect(fixture.calls).toEqual([]);
+  });
+
+  it('resolves a transport selection without sending an edit', async () => {
+    const fixture = project([wave('Voice', 2, 4), wave('Bed', 0, 10)]);
+    expect(await fixture.ops.resolveSelection({ track: 'Voice', start: 3 })).toEqual({ Mode: 'Set', Track: 0, TrackCount: 1, Start: 3, End: 4 });
+    expect(edits(fixture.calls)).toEqual([]);
+  });
+
+  it.each([{ start: NaN }, { end: Infinity }, { track: 0, trackCount: 0 }, { track: 0, trackCount: 1.5 }])('rejects malformed internal selections before pipe reads %#', async (scope) => {
+    const fixture = project([wave('Voice')]);
+    await expect(fixture.ops.select(scope)).rejects.toThrow();
+    expect(fixture.calls).toEqual([]);
+  });
+
+  it('validates every envelope point before clearing the existing curve', async () => {
+    const fixture = project([wave('Voice')]);
+    await expect(fixture.ops.setEnvelope(0, [{ time: 0, value: 1 }, { time: 2, value: NaN }])).rejects.toThrow();
+    expect(fixture.calls).toEqual([]);
+  });
+
+  it('rejects a later envelope value above the native maximum before clearing the curve', async () => {
+    const fixture = project([wave('Voice')]);
+    await expect(fixture.ops.setEnvelope(0, [{ time: 0, value: 1 }, { time: 2, value: 2.1 }])).rejects.toThrow();
+    expect(fixture.calls).toEqual([]);
+  });
+
+  it('refuses envelope operations on label tracks before changing selection', async () => {
+    const fixture = project([label('Cues')], [[0, [[0, 1, 'keep']]]]);
+    await expect(fixture.ops.setEnvelope(0, [{ time: 0, value: 1 }])).rejects.toThrow('audio track');
+    expect(edits(fixture.calls)).toEqual([]);
+  });
+
+  it.each([{ name: 'bad"name', start: 0 }, { name: 'valid', start: Infinity }, { name: 'valid', start: -1 }])('validates import metadata before Import2 or track queries %#', async ({ name, start }) => {
+    const fixture = project([wave('Voice')]);
+    await expect(fixture.ops.importTrack('package.json', name, start)).rejects.toThrow();
     expect(fixture.calls).toEqual([]);
   });
 
@@ -167,6 +215,18 @@ describe('flat label insertion', () => {
     expect(fixture.calls).toEqual([]);
   });
 
+  it.each([{ start: 1, text: 'bad"text' }, { start: Infinity, text: 'bad' }, { start: 1, end: NaN, text: 'bad' }])('preflights every label before creating or changing a label track %#', async (invalid) => {
+    const fixture = project([wave('Audio')]);
+    await expect(fixture.ops.setLabels([{ start: 0, text: 'valid' }, invalid])).rejects.toThrow();
+    expect(fixture.calls).toEqual([]);
+  });
+
+  it('refuses an empty label-track name before creating a track', async () => {
+    const fixture = project([wave('Audio')]);
+    await expect(fixture.ops.setLabels([{ start: 0, text: 'valid' }], '')).rejects.toThrow();
+    expect(fixture.calls).toEqual([]);
+  });
+
   it('refuses duplicate destination track names without adding or changing labels', async () => {
     const fixture = project([label('Cues'), label('Cues')], [[0, []], [1, []]]);
     await expect(fixture.ops.setLabels([{ start: 0, text: 'new' }], 'Cues')).rejects.toThrow('multiple');
@@ -188,6 +248,12 @@ describe('export and Audacity failures', () => {
   it('refuses unsupported export formats before reading or changing the project', async () => {
     const fixture = project([wave('Voice')]);
     await expect(fixture.ops.exportMix('mix.aup3')).rejects.toThrow('filename');
+    expect(fixture.calls).toEqual([]);
+  });
+
+  it.each([{ channels: 0 }, { channels: 3 }, { channels: NaN }, { channels: 2, start: Infinity }])('validates export controls before changing selection %#', async ({ channels, start }) => {
+    const fixture = project([wave('Voice')]);
+    await expect(fixture.ops.exportMix('mix.wav', channels, start)).rejects.toThrow();
     expect(fixture.calls).toEqual([]);
   });
 
@@ -222,6 +288,7 @@ describe('shared safety preflight', () => {
     ['NoiseGate', { MODE: 'Analyze' }],
     ['RegularIntervalLabels', { VERBOSE: 'Details' }],
     ['RegularIntervalLabels', {}],
+    ['RegularIntervalLabels', { MODE: 'Number', TOTALNUM: 2, REGION: 0, VERBOSE: 'None' }],
     ['SampleDataExport', { MESSAGES: 'None' }],
     ['SampleDataExport', { FILENAME: 'samples.txt', MESSAGES: 'Yes' }],
     ['Export2', { Filename: 'out.aup3' }],
@@ -236,6 +303,7 @@ describe('shared safety preflight', () => {
   it.each([
     'ClickRemoval:Threshold=200 Width=20',
     'NoiseGate:MODE=Analyze', 'RegularIntervalLabels:VERBOSE=Details',
+    'RegularIntervalLabels:MODE=Number TOTALNUM=2 REGION=0 VERBOSE=None',
     'SampleDataExport:MESSAGES=None', 'Export2:Filename=out.aup3',
     'Import2:Filename=definitely-missing-audio-fixture.wav',
   ])('rejects unsafe later macro steps during planning: %s', (step) => {
@@ -277,6 +345,17 @@ describe('label deletion preflight', () => {
     await expect(labelHandler(fixture.ops)({ action: 'delete', index: 0 })).rejects.toThrow('double quotes');
     expect(edits(fixture.calls)).toEqual([]);
     expect(fixture.labelTracks[0]?.[1]).toHaveLength(2);
+  });
+
+  it('reconstructs a native label track larger than the public insertion limit without losing remaining labels', async () => {
+    const nativeLabels: LabelTuple[] = Array.from({ length: 502 }, (_, i) => [i, i + 1, `Native label ${i}`]);
+    const fixture = project([label('Cues'), wave('Audio'), label('Other')], [[0, nativeLabels], [2, [[0, 2, 'preserve other track']]]]);
+    const result = await labelHandler(fixture.ops)({ action: 'delete', index: 0 }) as { track: number; text: string }[];
+    expect(fixture.tracks.map((track) => track.name)).toEqual(['Audio', 'Other', 'Cues']);
+    expect(fixture.labelTracks).toEqual([[1, [[0, 2, 'preserve other track']]], [2, nativeLabels.slice(1)]]);
+    expect(result).toHaveLength(502);
+    expect(result[0]).toMatchObject({ track: 1, text: 'preserve other track' });
+    expect(result.at(-1)).toMatchObject({ track: 2, text: 'Native label 501' });
   });
 });
 

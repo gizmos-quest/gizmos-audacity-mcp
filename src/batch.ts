@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { z } from 'zod';
 import { SafeString } from './catalogue.js';
 import { measureFile, measureScope, compareMeasurements, selectionTimes } from './analysis.js';
-import { validateExportFile, type Ops } from './ops.js';
+import { errorWithContext, validateExportFile, type Ops } from './ops.js';
 import { PipelineSchema, pipeline, planPipeline } from './tasks.js';
 import type { ToolRegistrar } from './tools.js';
 
@@ -15,7 +15,7 @@ export const BatchSchema = z.object({
 }).strict();
 
 export function registerBatchTool(tool: ToolRegistrar, ops: Ops): void {
-  tool('audacity_batch', 'Clean/master audio files in Audacity using isolated temporary tracks and the reviewed pipeline. Preflights all paths/steps, dryRun lists jobs, and original tracks stay intact. Stops at the first failure; completed outputs are retained. Optional before/after reports measure the rendered result. Current solo tracks are refused because they could silence temporary-track exports.',
+  tool('audacity_batch', 'Clean/master audio files in Audacity using isolated temporary tracks and the reviewed pipeline. Preflights all paths/steps, dryRun lists jobs, and original tracks stay intact. Pause shortening requires an empty project because sync-lock may shift other tracks. Stops at the first failure; completed outputs are retained. Optional before/after reports measure the rendered result. Current solo tracks are refused because they could silence temporary-track exports.',
     BatchSchema.shape, async (input) => {
       const args = BatchSchema.parse(input);
       const outputs = new Set<string>();
@@ -28,16 +28,21 @@ export function registerBatchTool(tool: ToolRegistrar, ops: Ops): void {
         outputs.add(output);
         return { file: job.file, output: job.output, plan: planPipeline({ ...job.options, track: '(temporary imported track)', dryRun: true }) };
       });
-      if (args.dryRun) return { dryRun: true, jobs: plans };
+      const requiresEmptyProject = args.jobs.some((job) => job.options.shortenPauses !== undefined);
+      if (args.dryRun) return { dryRun: true, jobs: plans, requiresEmptyProject,
+        ...(requiresEmptyProject ? { notes: ['Pause shortening requires an empty project; sync-lock can shift existing tracks. Use audacity_fresh with backupTo before processing.'] } : {}) };
       const previous = await ops.tracks();
+      if (requiresEmptyProject && previous.length) throw new Error('batch pause shortening requires an empty project because sync-lock can shift existing tracks; use audacity_fresh with backupTo first');
       if (previous.some((t) => t.solo)) throw new Error('clear track solo before batch; temporary exports must not be silenced by other tracks');
       const selection = selectionTimes(await ops.info('Selection'));
       const results: unknown[] = [];
+      let operationError: unknown;
       try {
         for (const job of args.jobs) {
-          let imported: number | undefined;
+          const firstTemporary = (await ops.tracks()).length;
+          let jobError: unknown;
           try {
-            imported = (await ops.importTrack(job.file, 'Batch temporary')).track;
+            const imported = (await ops.importTrack(job.file, 'Batch temporary')).track;
             const before = args.measure ? await measureScope(ops, { track: imported }) : undefined;
             const applied = await pipeline(ops, { ...job.options, track: imported });
             await ops.select({ track: imported });
@@ -45,18 +50,44 @@ export function registerBatchTool(tool: ToolRegistrar, ops: Ops): void {
             const after = args.measure ? await measureFile(job.output) : undefined;
             results.push({ file: job.file, output: job.output, applied, ...(before && after ? { before, after, delta: compareMeasurements(before, after) } : {}) });
           } catch (error) {
-            throw new Error(`batch stopped on ${job.file} after ${results.length} completed jobs: ${(error as Error).message}`);
+            jobError = errorWithContext(error, `batch stopped on ${job.file} after ${results.length} completed jobs: ${error instanceof Error ? error.message : String(error)}`);
+            throw jobError;
           } finally {
-            if (imported !== undefined && !ops.pipe.needsRecovery) {
-              await ops.command('SelectTracks', { Track: imported, TrackCount: 1, Mode: 'Set' }); await ops.run('RemoveTracks');
+            try {
+              if (!ops.pipe.needsRecovery) {
+                // A multi-stream Import2 can add several tracks before the
+                // single-track helper refuses it. Remove every known temporary
+                // track after a certain reply, including a failed pipeline.
+                const temporaryCount = (await ops.tracks()).length - firstTemporary;
+                if (temporaryCount > 0) {
+                  await ops.command('SelectTracks', { Track: firstTemporary, TrackCount: temporaryCount, Mode: 'Set' });
+                  await ops.run('RemoveTracks');
+                }
+              }
+            } catch (error) {
+              if (jobError !== undefined) throw errorWithContext(error, `${(jobError as Error).message}. Temporary-track cleanup also failed: ${error instanceof Error ? error.message : String(error)}`);
+              throw error;
             }
           }
         }
+      } catch (error) {
+        operationError = error; throw error;
       } finally {
-        if (!ops.pipe.needsRecovery) {
-          await ops.run('SelectNone');
-          for (const [i, track] of previous.entries()) if (track.selected) await ops.command('SelectTracks', { Track: i, TrackCount: 1, Mode: 'Add' });
-          await ops.command('SelectTime', { Start: selection.start, End: selection.end, RelativeTo: 'ProjectStart' });
+        try {
+          if (!ops.pipe.needsRecovery) {
+            const focused = previous.findIndex((track) => track.focused);
+            const currentFocus = focused >= 0 ? focused : (await ops.tracks()).findIndex((track) => track.focused);
+            if (currentFocus >= 0) {
+              await ops.command('SelectTracks', { Track: currentFocus, TrackCount: 1, Mode: 'Set' });
+              await ops.command('SetTrackStatus', { Focused: focused >= 0 });
+            }
+            await ops.run('SelectNone');
+            for (const [i, track] of previous.entries()) if (track.selected) await ops.command('SelectTracks', { Track: i, TrackCount: 1, Mode: 'Add' });
+            await ops.command('SelectTime', { Start: selection.start, End: selection.end, RelativeTo: 'ProjectStart' });
+          }
+        } catch (error) {
+          if (operationError !== undefined) throw errorWithContext(error, `${operationError instanceof Error ? operationError.message : String(operationError)}. Selection restoration also failed: ${error instanceof Error ? error.message : String(error)}`);
+          throw error;
         }
       }
       return { dryRun: false, completed: results.length, results };

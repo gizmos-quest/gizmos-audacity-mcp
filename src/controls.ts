@@ -6,8 +6,9 @@ import type { ParamValue } from './format.js';
 import { configPath, discardStaleRecovery, isRunning, launch, listWindows, recoveryEntries } from './app.js';
 import { measureScope, selectionTimes } from './analysis.js';
 import type { Ops } from './ops.js';
-import { CommandFailed, preflightCommand } from './ops.js';
+import { CommandFailed, errorWithContext, preflightCommand } from './ops.js';
 import type { ToolRegistrar } from './tools.js';
+import { preflightMacroEffects } from './effect-safety.js';
 
 export interface MacroStep { command: string; params: Record<string, ParamValue> }
 /** Parse saved Audacity macros, validating every step before any of them runs. */
@@ -31,6 +32,7 @@ export function parseMacro(source: string, outputTo?: string): MacroStep[] {
     }
     if (!COMMAND_IDS.includes(command) && !MENU_IDS.includes(command)) throw new Error(`unsafe or unavailable macro command: ${command}`);
     const params: Record<string, ParamValue> = {};
+    const keys = new Set<string>();
     const tokens = /\s*(?:"([A-Za-z_][A-Za-z0-9_ -]*)"|([A-Za-z_][A-Za-z0-9_ -]*?))=(?:"([^"\r\n]*)"|([^\s]+))/y;
     let offset = 0;
     while (offset < text.length) {
@@ -38,18 +40,20 @@ export function parseMacro(source: string, outputTo?: string): MacroStep[] {
       if (!token) { if (!text.slice(offset).trim()) break; throw new Error(`invalid parameters on macro line ${lineNumber + 1}`); }
       offset = tokens.lastIndex;
       const key = (token[1] ?? token[2])!; const value = (token[3] ?? token[4])!;
+      if (keys.has(key)) throw new Error(`duplicate macro parameter: ${key}`);
+      keys.add(key);
       if (key === 'Use_Preset') {
         if (value !== '<Current Settings>' || (describeCommand(command)?.params?.length ?? 0) > 0) {
           throw new Error(`macro preset ${value} is implicit; use explicit catalogue parameters`);
         }
         continue;
       }
-      if (key in params) throw new Error(`duplicate macro parameter: ${key}`);
       const type = describeCommand(command)?.params?.find((p) => p.key === key)?.type;
       if (type === 'bool') {
         if (!['0', '1'].includes(value)) throw new Error(`macro boolean ${key} must be 1/0`);
         params[key] = value === '1';
       } else if (type && ['double', 'float', 'int', 'size_t'].includes(type)) {
+        if (!value.trim()) throw new Error(`macro numeric parameter ${key} must not be empty`);
         params[key] = Number(value);
       } else params[key] = value;
     }
@@ -88,10 +92,13 @@ export function registerControlTools(tool: ToolRegistrar, ops: Ops): void {
     async ({ action, start, end, track, duration, newTrack }) => {
       if (end !== undefined && start !== undefined && end < start) throw new Error('end must be at least start');
       if (duration !== undefined && action !== 'record') throw new Error('duration is used only by record');
+      if (!newTrack && action !== 'record') throw new Error('newTrack is used only by record');
       if (action === 'record' && end !== undefined) throw new Error('record takes start and optional duration, not end');
       if (!['play', 'record'].includes(action) && [start, end, track].some((v) => v !== undefined)) throw new Error('scope is used only by play/record');
       if (action === 'play') {
-        await ops.run('Stop'); await ops.select({ start, end, track });
+        const scope = await ops.resolveSelection({ start, end, track });
+        if (!(Number(scope.End) > Number(scope.Start))) throw new Error('play requires a positive-duration time range');
+        await ops.run('Stop'); await ops.run('Select', scope);
         const selection = selectionTimes(await ops.info('Selection'));
         await ops.run('Play'); playback = { mode: 'playing', start: selection.start, end: selection.end, at: selection.start, epoch: performance.now() };
       } else if (action === 'record') {
@@ -185,8 +192,16 @@ export function registerControlTools(tool: ToolRegistrar, ops: Ops): void {
   tool('audacity_macros', 'List or apply saved local Audacity macros without opening the Macro Manager. Every step is parsed and checked first; dryRun lists steps. Modal/lifecycle commands and implicit effect presets are refused. Export macros need explicit outputTo.',
     { action: z.enum(['list', 'apply']), name: SafeString.min(1).optional(), dryRun: z.boolean().default(false), outputTo: SafeString.min(1).optional() },
     async ({ action, name, dryRun, outputTo }) => {
+      if (action === 'list' && (name !== undefined || outputTo !== undefined || dryRun)) throw new Error('macro list takes no name, outputTo or dryRun');
+      if (action === 'apply' && name === undefined) throw new Error('macro apply requires name');
       const directory = join(dirname(configPath()), 'Macros');
-      const files = (await readdir(directory)).filter((f) => f.toLowerCase().endsWith('.txt')).sort();
+      let entries: string[];
+      try { entries = await readdir(directory); }
+      catch (error) {
+        if ((error as NodeJS.ErrnoException).code === 'ENOENT') entries = [];
+        else throw error;
+      }
+      const files = entries.filter((f) => f.toLowerCase().endsWith('.txt')).sort();
       if (action === 'list') {
         return { directory, macros: await Promise.all(files.map(async (file) => {
           try { return { name: file.slice(0, -4), steps: parseMacro(await readFile(join(directory, file), 'utf8')), safe: true }; }
@@ -197,11 +212,18 @@ export function registerControlTools(tool: ToolRegistrar, ops: Ops): void {
       if (!file) throw new Error('macro name does not exist; use list');
       const steps = parseMacro(await readFile(join(directory, file), 'utf8'), outputTo);
       if (dryRun) return { name, dryRun, steps };
+      await preflightMacroEffects(ops, steps);
       if (steps.some((step) => step.command === 'NoiseReduction')) ops.requireNoiseProfile();
+      let completed = 0;
       for (const step of steps) {
-        if (step.command === 'Export2') await ops.exportMix(String(step.params.Filename), Number(step.params.NumChannels));
-        else if (COMMAND_IDS.includes(step.command)) await ops.command(step.command, step.params, 600_000);
-        else await ops.run(step.command, step.params, 600_000);
+        try {
+          if (step.command === 'Export2') await ops.exportMix(String(step.params.Filename), Number(step.params.NumChannels));
+          else if (COMMAND_IDS.includes(step.command)) await ops.command(step.command, step.params, 600_000);
+          else await ops.run(step.command, step.params, 600_000);
+          completed++;
+        } catch (error) {
+          throw errorWithContext(error, `macro stopped at ${step.command} after ${completed} completed steps: ${error instanceof Error ? error.message : String(error)}`);
+        }
       }
       return { name, dryRun, completed: steps.length };
     });
@@ -214,8 +236,10 @@ export function registerControlTools(tool: ToolRegistrar, ops: Ops): void {
       const discarded = discardRecovery && entries.length ? await discardStaleRecovery() : null;
       if (!reconnect) return { running, entries, windows, discarded, needsRecovery: ops.pipe.needsRecovery };
       if (windows.some((w) => w.dialog && !w.closed)) throw new Error('blocking dialogs remain; use closeDialogs=true');
-      ops.pipe.reset();
+      ops.unknownApplication();
       if (!running) { await launch(visible); ops.freshApplication(); }
+      const reply = await ops.pipe.reconnect();
+      if (!reply.ok) throw new CommandFailed('GetInfo', reply);
       const tracks = await ops.tracks();
       await ops.restoreImportPreferences();
       return { running: true, entries: recoveryEntries(), windows: process.platform === 'win32' ? await listWindows(false) : [], discarded, tracks };

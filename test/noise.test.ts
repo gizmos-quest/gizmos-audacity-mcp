@@ -4,9 +4,9 @@ import { AudacityPipe, AudacityTimeout, type PipeReply } from '../src/pipe.js';
 import { Ops, type TrackInfo } from '../src/ops.js';
 import { PipelineSchema, pipeline, planPipeline } from '../src/tasks.js';
 
-const { measureScopeMock, measureSourceFramesMock } = vi.hoisted(() => ({ measureScopeMock: vi.fn(), measureSourceFramesMock: vi.fn() }));
-vi.mock('../src/analysis.js', () => ({ measureScope: measureScopeMock }));
-vi.mock('../src/source-rate.js', () => ({ measureSourceFrames: measureSourceFramesMock }));
+const { measureScopeMock, measureSourceFramesMock, measureSourceRateMock } = vi.hoisted(() => ({ measureScopeMock: vi.fn(), measureSourceFramesMock: vi.fn(), measureSourceRateMock: vi.fn() }));
+vi.mock('../src/analysis.js', async (importOriginal) => ({ ...await importOriginal<typeof import('../src/analysis.js')>(), measureScope: measureScopeMock }));
+vi.mock('../src/source-rate.js', () => ({ measureSourceFrames: measureSourceFramesMock, measureSourceRate: measureSourceRateMock }));
 
 function fixture(tracks: TrackInfo[] = [
   { name: 'Voice', kind: 'wave', start: 0, end: 10 },
@@ -17,14 +17,16 @@ function fixture(tracks: TrackInfo[] = [
   const clips = tracks.flatMap((track, index) => track.kind === 'wave' ? [{ track: index, start: track.start, end: track.end }] : []);
   let rejection: string | undefined;
   let timeout = false;
+  let selection = { Start: 0, End: 10 };
   const pipe = new AudacityPipe({ to: 'fixture.to', from: 'fixture.from' }, 100,
     async (_paths, command): Promise<PipeReply> => {
       calls.push(command);
-      if (command.startsWith('GetInfo:')) return { ok: true, status: 'OK', body: JSON.stringify(command.includes('Type=Clips') ? clips : tracks) };
+      if (command.startsWith('GetInfo:')) return { ok: true, status: 'OK', body: JSON.stringify(command.includes('Type=Clips') ? clips : command.includes('Type=Selection') ? selection : tracks) };
       if (command.startsWith('Select:')) {
         const first = Number(/\bTrack=(\d+)/.exec(command)?.[1]);
         const count = Number(/\bTrackCount=(\d+)/.exec(command)?.[1]);
         for (const [index, track] of tracks.entries()) track.selected = Number(index >= first && index < first + count);
+        selection = { Start: Number(/\bStart=([\d.]+)/.exec(command)?.[1]), End: Number(/\bEnd=([\d.]+)/.exec(command)?.[1]) };
       }
       if (command.startsWith('NoiseReduction:')) {
         if (timeout) throw new AudacityTimeout('fixture native profile reply was lost');
@@ -44,6 +46,7 @@ const mutations = (calls: string[]) => calls.filter((command) => !command.starts
 beforeEach(() => {
   measureScopeMock.mockReset().mockResolvedValue({ frames: 4096 });
   measureSourceFramesMock.mockReset().mockResolvedValue(4096);
+  measureSourceRateMock.mockReset().mockResolvedValue(48_000);
 });
 
 describe('noise profile process state', () => {

@@ -1,8 +1,11 @@
-import { access, writeFile } from 'node:fs/promises';
+import { access, writeFile, rm } from 'node:fs/promises';
+import { dirname, resolve, sep } from 'node:path';
+import { tmpdir } from 'node:os';
+import { AudacityTimeout } from '../src/pipe.js';
 import { describe, expect, it, vi } from 'vitest';
 import { catalogueCommand } from '../src/format.js';
 import type { Ops, TrackInfo } from '../src/ops.js';
-import { measureSourceFrames, parseSampleDataRate } from '../src/source-rate.js';
+import { measureSourceFrames, measureSourceRate, parseSampleDataRate } from '../src/source-rate.js';
 
 describe('source sample rate header', () => {
   it.each([1, 8000, 44_100, 48_000, 768_000])('reads the native English %i Hz header', (rate) => {
@@ -21,7 +24,7 @@ describe('source sample rate header', () => {
   });
 });
 
-function fixture(options: { rate?: number; header?: string; exportError?: Error; restoreError?: Error; focusError?: Error; missingFile?: boolean; tracks?: TrackInfo[] } = {}) {
+function fixture(options: { rate?: number; header?: string; exportError?: Error; restoreError?: Error; focusError?: Error; missingFile?: boolean; tracks?: TrackInfo[]; recoveryOnExport?: boolean; recoveryOnRestore?: boolean } = {}) {
   const calls: { command: string; params?: Record<string, unknown> }[] = [];
   const files: string[] = [];
   const setterSelections: number[][] = [];
@@ -31,8 +34,10 @@ function fixture(options: { rate?: number; header?: string; exportError?: Error;
     { name: 'Previously selected labels', kind: 'label', start: 0, end: 10, selected: 1, focused: 0 },
   ]).map((track) => ({ ...track }));
   let selection = { Start: 2, End: 4 };
+  let needsRecovery = false;
   const setFocus = (index: number) => tracks.forEach((track, current) => { track.focused = Number(current === index); });
   const ops = {
+    pipe: { get needsRecovery() { return needsRecovery; } },
     tracks: vi.fn(async () => tracks.map((track) => ({ ...track }))), info: vi.fn(async () => ({ ...selection })),
     select: vi.fn(async (scope: { track: number; start: number; end: number }) => {
       calls.push({ command: 'select', params: scope });
@@ -50,7 +55,7 @@ function fixture(options: { rate?: number; header?: string; exportError?: Error;
       if (command === 'SampleDataExport') {
         setFocus(tracks.findIndex((track) => track.selected));
         const file = String(params.FILENAME); files.push(file);
-        if (options.exportError) throw options.exportError;
+        if (options.exportError) { needsRecovery = options.recoveryOnExport ?? false; throw options.exportError; }
         if (!options.missingFile) await writeFile(file, options.header ?? `source-rate.txt   1 channel (mono)\nSample Rate: ${options.rate ?? 8000} Hz. Sample values on linear scale.\nLength processed: 1 samples 0.000125 seconds.\n\n0.00000\n`);
       }
       if (command === 'SelectTracks') {
@@ -60,7 +65,7 @@ function fixture(options: { rate?: number; header?: string; exportError?: Error;
       }
       if (command === 'SetTrackStatus') {
         setterSelections.push(tracks.flatMap((track, index) => track.selected ? [index] : []));
-        if (options.focusError) throw options.focusError;
+        if (options.focusError) { needsRecovery = options.recoveryOnRestore ?? false; throw options.focusError; }
         for (const [index, track] of tracks.entries()) {
           if (!track.selected) continue;
           if (params.Focused === true) setFocus(index);
@@ -72,10 +77,33 @@ function fixture(options: { rate?: number; header?: string; exportError?: Error;
     }),
   };
   return { ops, calls, files, tracks, setterSelections, selection: () => ({ ...selection }),
-    measure: (scope: Parameters<typeof measureSourceFrames>[1] = { track: 0, start: 0, end: 0.1 }) => measureSourceFrames(ops as unknown as Ops, scope) };
+    measure: (scope: Parameters<typeof measureSourceFrames>[1] = { track: 0, start: 0, end: 0.1 }) => measureSourceFrames(ops as unknown as Ops, scope),
+    rate: (scope: Parameters<typeof measureSourceRate>[1] = { track: 0, start: 0, end: 0.1 }) => measureSourceRate(ops as unknown as Ops, scope) };
 }
 
 describe('source frame measurement', () => {
+  it.each([8000, 44_100, 48_000])('exposes the exact %i Hz source rate with the same silent query and restoration', async (rate) => {
+    const project = fixture({ rate });
+    const previous = project.tracks.map((track) => ({ ...track }));
+    expect(await project.rate()).toBe(rate);
+    expect(project.calls[1]?.command).toBe('SampleDataExport');
+    expect(project.calls.at(-1)?.command).toBe('SelectTime');
+    expect(project.tracks).toEqual(previous);
+    expect(project.selection()).toEqual({ Start: 2, End: 4 });
+    await expect(access(project.files[0]!)).rejects.toMatchObject({ code: 'ENOENT' });
+  });
+  it.each(['export', 'restore'])('retains in-flight scratch after an uncertain %s outcome and preserves the error class', async (failure) => {
+    const error = new AudacityTimeout('native reply lost');
+    const project = fixture(failure === 'export' ? { exportError: error, recoveryOnExport: true } : { focusError: error, recoveryOnRestore: true });
+    await expect(project.measure()).rejects.toBe(error);
+    expect(error.message).toContain('scratch retained for inspection after audacity_recover');
+    if (failure === 'export') expect(project.calls.map((call) => call.command)).toEqual(['select', 'SampleDataExport']);
+    else expect(project.calls.at(-1)?.command).toBe('SetTrackStatus');
+    const scratch = resolve(dirname(project.files[0]!));
+    expect(scratch.startsWith(resolve(tmpdir()) + sep)).toBe(true);
+    expect(scratch).toContain('gizmos-audacity-source-rate-');
+    await access(scratch); await rm(scratch, { recursive: true, force: true });
+  });
   it('counts source frames rather than a higher-rate rendered WAV and restores sparse audio/label selection', async () => {
     const project = fixture({ rate: 8000 });
     const previous = project.tracks.map((track) => ({ ...track }));
@@ -166,8 +194,9 @@ describe('source frame measurement', () => {
     { track: -1, start: 0, end: 1 }, { track: 0.5, start: 0, end: 1 },
     { track: 0, start: NaN, end: 1 }, { track: 0, start: 0, end: Infinity },
     { track: 0, start: 0, end: 86_401 }, { track: 0, start: 0, end: 1, typo: 1 },
-  ])('validates scope before Ops access: %j', async (scope) => {
+  ])('validates both frame and rate scope before Ops access: %j', async (scope) => {
     const project = fixture(); await expect(project.measure(scope)).rejects.toThrow();
+    await expect(project.rate(scope)).rejects.toThrow();
     expect(project.ops.tracks).not.toHaveBeenCalled(); expect(project.calls).toEqual([]);
   });
   it.each([{ track: 3, start: 0, end: 1 }, { track: 2, start: 0, end: 1 }, { track: 0, start: 0, end: 11 }])('refuses unavailable/non-audio/out-of-track scope %j before mutation', async (scope) => {

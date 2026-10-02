@@ -34,8 +34,8 @@ async function readRate(file: string): Promise<number> {
   } finally { await handle.close(); }
 }
 
-/** Count source-track frames, which can differ from a project-rate WAV render. */
-export async function measureSourceFrames(ops: Ops, input: z.input<typeof SourceScope>): Promise<number> {
+/** Query the native source-track rate, which can differ from a project-rate WAV render. */
+export async function measureSourceRate(ops: Ops, input: z.input<typeof SourceScope>): Promise<number> {
   const scope = SourceScope.parse(input);
   const tracks = await ops.tracks();
   const target = tracks[scope.track];
@@ -62,30 +62,49 @@ export async function measureSourceFrames(ops: Ops, input: z.input<typeof Source
       NUMBER: 1, UNITS: 'Linear', FILENAME: file, FILEFORMAT: 'None',
       HEADER: 'Standard', OPTEXT: '', 'CHANNEL-LAYOUT': 'SameLine', MESSAGES: 'None',
     });
-    return Math.floor((scope.end - scope.start) * await readRate(file));
+    return await readRate(file);
   } catch (error) {
     operationError = error;
     throw error;
   } finally {
+    let restorationError: unknown;
     try {
       // SampleDataExport focuses its source track. SetTrackStatus acts on
       // selected tracks; Focused=false only clears an already-focused target.
       // Restore focus before sparse selection, including an originally
       // focused track that was not selected. No unlisted setter scope keys.
-      await ops.command('SelectTracks', { Track: focused >= 0 ? focused : scope.track, TrackCount: 1, Mode: 'Set' });
-      await ops.command('SetTrackStatus', { Focused: focused >= 0 });
-      await ops.run('SelectNone');
-      for (const track of selected) await ops.command('SelectTracks', { Track: track, TrackCount: 1, Mode: 'Add' });
-      await ops.command('SelectTime', { Start: previous.start, End: previous.end, RelativeTo: 'ProjectStart' });
+      if (!ops.pipe?.needsRecovery) {
+        await ops.command('SelectTracks', { Track: focused >= 0 ? focused : scope.track, TrackCount: 1, Mode: 'Set' });
+        await ops.command('SetTrackStatus', { Focused: focused >= 0 });
+        await ops.run('SelectNone');
+        for (const track of selected) await ops.command('SelectTracks', { Track: track, TrackCount: 1, Mode: 'Add' });
+        await ops.command('SelectTime', { Start: previous.start, End: previous.end, RelativeTo: 'ProjectStart' });
+      }
     } catch (restoreError) {
-      if (operationError !== undefined) throw new Error(`${operationError instanceof Error ? operationError.message : String(operationError)}. Selection restoration also failed: ${restoreError instanceof Error ? restoreError.message : String(restoreError)}`);
+      restorationError = restoreError;
+      if (operationError !== undefined) {
+        const message = `${operationError instanceof Error ? operationError.message : String(operationError)}. Selection restoration also failed: ${restoreError instanceof Error ? restoreError.message : String(restoreError)}`;
+        if (restoreError instanceof Error) { restoreError.message = message; throw restoreError; }
+        throw new Error(message);
+      }
       throw restoreError;
     } finally {
       const scratch = resolve(directory);
       if (!scratch.startsWith(resolve(tmpdir()) + sep) || !scratch.includes('gizmos-audacity-source-rate-')) {
         throw new Error(`refusing unsafe source-rate scratch cleanup: ${scratch}`);
       }
-      await rm(scratch, { recursive: true, force: true });
+      if (ops.pipe?.needsRecovery) {
+        // A blocked SampleDataExport may still create its output after the
+        // client times out. Keep its directory and avoid further pipe edits.
+        const error = restorationError ?? operationError;
+        if (error instanceof Error) error.message += `. Selection restoration is incomplete; scratch retained for inspection after audacity_recover: ${scratch}`;
+      } else await rm(scratch, { recursive: true, force: true });
     }
   }
+}
+
+/** Count source-track frames using the same strict scope and silent native query. */
+export async function measureSourceFrames(ops: Ops, input: z.input<typeof SourceScope>): Promise<number> {
+  const scope = SourceScope.parse(input);
+  return Math.floor((scope.end - scope.start) * await measureSourceRate(ops, scope));
 }

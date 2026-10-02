@@ -15,14 +15,15 @@ describe('catalogue boundaries', () => {
     expect(catalogueCommand('NoiseGate', { 'STEREO-LINK': 'LinkStereo', 'GATE-FREQ': 0 })).toContain('STEREO-LINK=LinkStereo');
     expect(catalogueCommand('FindClipping', { 'Duty Cycle Start': 3 })).toBe('FindClipping: "Duty Cycle Start"=3');
   });
-  it.each(['New', 'Save', 'ManageMacros', 'About', 'TrackGain', 'Resample', 'RepeatLastEffect', 'ShareAudioTB', 'Record1stChoice', 'Record2ndChoice'])('excludes unsafe menu %s', (command) => {
+  it.each(['New', 'Save', 'ManageMacros', 'About', 'TrackGain', 'Resample', 'RepeatLastEffect', 'ShareAudioTB', 'Record1stChoice', 'Record2ndChoice', 'RegularIntervalLabels'])('excludes unsafe menu %s', (command) => {
     expect(MENU_IDS).not.toContain(command);
   });
-  it.each(['MeasureRms', 'ClickRemoval', 'Repair', 'Drag', 'OpenProject2', 'SaveProject2', 'SaveCopy', 'NyquistPrompt', 'SetPreference'])('excludes generic unsafe command %s', (command) => {
+  it.each(['MeasureRms', 'ClickRemoval', 'Repair', 'SpectralEditMultiTool', 'SpectralEditParametricEq', 'SpectralEditShelves', 'SpectralDelete', 'LabelSounds', 'RegularIntervalLabels', 'Drag', 'OpenProject2', 'SaveProject2', 'SaveCopy', 'NyquistPrompt', 'SetPreference'])('excludes generic unsafe command %s', (command) => {
     expect(COMMAND_IDS).not.toContain(command);
   });
   it('effects do not contain lifecycle/getter/track setters, and discovery exposes only declared parameters', () => {
     expect(EFFECT_IDS).not.toContain('SetTrack'); expect(EFFECT_IDS).not.toContain('GetPreference');
+    expect(EFFECT_IDS).not.toContain('RegularIntervalLabels');
     expect(describeCommand('NoiseReduction')?.params).toEqual([]);
     expect(() => catalogueCommand('NoiseReduction', { Reduction: 6 })).toThrow();
     expect(describeCommand('SetEnvelope')?.params?.map((p) => p.key)).toEqual(['Time', 'Value', 'Delete']);
@@ -40,6 +41,20 @@ describe('catalogue boundaries', () => {
   it('preserves raw Windows paths containing JSON escape letters and valid escaped paths', () => {
     expect(parseInfoJson(String.raw`[{"file":"C:\new\test\rms.ny"}]`)).toEqual([{ file: String.raw`C:\new\test\rms.ny` }]);
     expect(parseInfoJson(JSON.stringify([{ file: String.raw`C:\new\test.wav`, name: 'line\nnext' }]))).toEqual([{ file: String.raw`C:\new\test.wav`, name: 'line\nnext' }]);
+  });
+  it.each([
+    ['SetTrack', 'Volume', -37], ['SetTrackAudio', 'Volume', 37], ['SetTrack', 'Pan', -101], ['SetTrackAudio', 'Pan', 101],
+    ['SetTrackVisuals', 'Height', 43], ['SetTrack', 'Height', 2001], ['SetTrackVisuals', 'VZoomHigh', 2.1], ['SetTrack', 'VZoomLow', -2.1],
+    ['SetEnvelope', 'Time', -1], ['SetEnvelope', 'Value', -0.1], ['SetEnvelope', 'Value', 2.1], ['SetClip', 'At', -1], ['SetClip', 'Start', -5.1],
+  ] as const)('refuses native numeric bound violation %s.%s=%s before transport', (command, key, value) => {
+    const transport = vi.fn(); const ops = new Ops(new AudacityPipe(undefined, 10, transport));
+    expect(() => ops.command(command, { [key]: value })).toThrow();
+    expect(() => ops.run(command, { [key]: value })).toThrow();
+    expect(transport).not.toHaveBeenCalled();
+  });
+  it('describes verified native bounds and retains intentional negative native clip starts', () => {
+    expect(describeCommand('SetTrackAudio')?.params?.find((param) => param.key === 'Pan')).toMatchObject({ minimum: -100, maximum: 100 });
+    expect(catalogueCommand('SetClip', { At: 1, Start: -5 })).toBe('SetClip: At=1 Start=-5');
   });
   it.each(['out.xyz', 'out.aup3', 'out.aiff', '', 'wav'])('refuses unsupported export %s before Audacity', (file) => {
     expect(() => validateExportFile(file)).toThrow();
@@ -63,7 +78,7 @@ describe('safe saved macros and preferences', () => {
       { command: 'Select', params: { Start: 0, End: 1 } }, { command: 'FadeIn', params: {} },
       { command: 'Select', params: { Start: 0, End: 1, RelativeTo: 'ProjectEnd' } }, { command: 'FadeOut', params: {} },
     ]);
-    expect(parseMacro('Amplify:Ratio="0.5" AllowClipping="0"')[0]?.params).toEqual({ Ratio: 0.5, AllowClipping: false });
+    expect(parseMacro('Amplify:Ratio="0.5" AllowClipping="1"')[0]?.params).toEqual({ Ratio: 0.5, AllowClipping: true });
     expect(parseMacro('SelectTracks:Track=1 TrackCount=2 Mode=Set')[0]?.params).toEqual({ Track: 1, TrackCount: 2, Mode: 'Set' });
   });
   it.each(['SetTrack', 'SetTrackStatus', 'SetTrackAudio', 'SetTrackVisuals', 'SetClip', 'SetEnvelope'].flatMap((command) =>

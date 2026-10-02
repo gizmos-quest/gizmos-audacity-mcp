@@ -50,6 +50,11 @@ coverage.
 | Native RMS analyzer | Local catalogue | `MeasureRms` opens blocking result dialogs on this 3.7.8 installation; excluded. Use `audacity_measure`. |
 | Native Click Removal | X3, X4, MAX, FF, AN3, PIMP | Skipped: even valid no-click audio opens a blocking error dialog on live 3.7.8. Generic effect/menu calls, macros and pipeline `removeClicks:true` refuse it before editing. |
 | Native Repair | X3, X4, MAX, FF, AN3, PIMP | Skipped: native modals occur for selections over 128 samples, missing surrounding context, or pitch/speed clips. GetInfo omits clip pitch/speed state, so bounding length alone cannot guarantee dialog-free repair. Advisory discontinuity measurement remains available. |
+| Native spectral Nyquist editing | Local catalogue | Skipped: SpectralEditMultiTool, SpectralEditParametricEq, SpectralEditShelves and SpectralDelete require spectrogram/frequency-selection UI state that GetInfo does not report. Missing state opens a blocking native dialog before the plug-in runs. Ordinary frequency filters remain available. |
+| Native sound labeling | X3, X4, MAX, FF, PIMP | Skipped: LabelSounds returns blocking result dialogs when no sound is detected or between-sound labeling finds fewer than two sounds; no silent mode exists. audacity_silence supplies advisory quiet intervals, and audacity_labels_set writes explicitly reviewed markers with different detection semantics. |
+| Regular interval labels | X3, X4, MAX, FF | Equivalent: audacity_labels action=regular writes explicit interval markers. Native RegularIntervalLabels is reserved: trace errors leave debug state that opens modals even on later valid VERBOSE=None calls after recovery. Native count/region/adjust modes are not claimed. |
+| Nyquist parameter and audio context guards | Local catalogue | Explicit controls and source-rate queries preflight filters, NoiseGate, LegacyLimiter and other retained effects. Processing requires source frames and an intersecting audio clip; CrossfadeClips also checks each participating portion because gaps are removed. See the compact effect requirements in README.md. |
+| Native amplification limits | Local catalogue | Amplify Ratio is bounded to 0.003162..316.227766; clip sample gain is -50..36 dB. Native batch processing ignores AllowClipping=false, so the server rejects it instead of promising clipping prevention. Measure headroom before choosing gain. |
 | Loudness reports and targets | MAX, DPF, BUCK | File/selection measurement, before/after comparisons and numeric target evaluation. No unsupported compliance or true-peak claim. |
 | Cleanup and mastering | X3, FF, MAX, DPF, X4 | Reviewed, parameterized dry-run chains for cleanup, speech, podcast, interview, audiobook, vocals, live recordings, music and lo-fi. Noise capture requires explicit room tone in a known fresh process; reduction uses saved Audacity settings. |
 | Native Noise Reduction controls | X3, X4, MAX, FF, AN3, PIMP, TACH | Partial: profile capture and reduction are supported, but 3.7.8 ignores Reduction/Sensitivity/Smoothing wire keys. NoiseReduction accepts only empty params and saved UI settings. One profile is captured per known fresh process; the identical track/interval can reuse it. Capture must fit wholly inside one audio clip and contain at least 4096 rendered and source frames. A silent one-sample SampleDataExport header supplies source rate; GetInfo does not report it. Reduction remains conservatively limited to the same captured audio track with unchanged identity; a different profile requires orderly restart. |
@@ -67,10 +72,10 @@ coverage.
 | Whisper transcription/subtitle/model jobs | X3, FF, MAX, X4, BUCK | Optional feature not taken: upstream implementations require Python/faster-whisper, model downloads and GPU/runtime management. Export plus timestamped labels supports an external transcription stage without a hard dependency. |
 | Neural denoise/dereverb/de-echo and stem isolation | DPF | Optional feature not taken: DeepFilterNet, Demucs and RoFormer use a large Python/ML stack and models. Audacity noise reduction and filtering are distinct available alternatives; this host does not expose VocalReductionAndIsolation. |
 | General offline DSP/ML CLI, client installation and plugin bootstrap | DPF, MAX, AN3, PIMP | Skipped: this is an Audacity MCP server, not a second audio runtime or a client/plugin installer. |
-| BPM/spectral centroid/flatness | DPF | Partial: BeatFinder and spectral effects are available, but no claimed tempo/centroid/flatness meter. Upstream uses librosa/NumPy; adding an unverified approximate music analyzer is not needed by the integration. |
+| BPM/spectral centroid/flatness | DPF | Partial: BeatFinder and ordinary frequency filters are available, but no claimed tempo/centroid/flatness meter. Spectral Nyquist editing is reserved because its required UI state cannot be verified safely. Upstream uses librosa/NumPy; adding an unverified approximate music analyzer is not needed by the integration. |
 | Raw modal menus, printing, help browser, configuration reset and UI drags | AN3, PIMP, FF | Skipped: blocking dialogs, actions outside audio editing, or explicitly forbidden mouse/keyboard simulation. Safe menu actions remain catalogue-bound. |
 | Export codec coverage | X3, MAX, FF, DPF, PIMP, TACH | WAV/FLAC/MP3/OGG verified live on 3.7.8. AIFF returned Audacity's own `Could not export to AIFF format!`; Opus opened blocking result/error dialogs. AIFF/Opus are not offered, despite upstream extension lists. |
-| Result-producing Nyquist modes | FF, PIMP, X3, MAX | SampleDataExport requires explicit FILENAME and MESSAGES=None; its silent one-sample Standard header supplies the native source rate for profile preflight, with selection restored and scratch removed. RegularIntervalLabels requires VERBOSE=None; NoiseGate MODE=Analyze is refused because result dialogs block the pipe. Task regular labels and exported measurement avoid those modes. |
+| Result-producing Nyquist modes | FF, PIMP, X3, MAX | SampleDataExport requires explicit FILENAME and MESSAGES=None; its silent one-sample Standard header supplies source rate, with selection restored and scratch removed after confirmed replies. RegularIntervalLabels and NoiseGate MODE=Analyze are refused because native dialogs can block the pipe. Task regular labels and exported measurement avoid those modes. |
 
 Noise Reduction parameter/profile limitations were measured on live Audacity
 3.7.8 and checked against its official
@@ -86,6 +91,17 @@ reports the selected track's source rate, passed to Nyquist by
 [NyquistBase](https://github.com/audacity/audacity/blob/Audacity-3.7.8/libraries/lib-nyquist-effects/NyquistBase.cpp).
 A higher-rate render can contain enough output frames while native profiling
 still has too few source frames; both minima are checked before capture.
+
+The official 3.7.8
+[Nyquist host](https://github.com/audacity/audacity/blob/Audacity-3.7.8/libraries/lib-nyquist-effects/NyquistBase.cpp)
+shows nonempty plug-in result strings in message boxes, even during scripted
+processing. The spectral plug-ins also require UI state before processing.
+Their exclusions and the LabelSounds exclusion apply to generic commands,
+effects, menus and saved macros. RegularIntervalLabels enables trace: evaluation
+errors open a modal debug window and leave persistent debug state, including
+after dialog closure and pipe recovery. It is reserved in favor of typed regular
+markers. Untraced evaluation errors and printed log messages are distinct from
+those blocking result/debug dialogs.
 
 Individual scripting effect/command calls use `kSkipState` in the official
 [3.7.8 batch command path](https://github.com/audacity/audacity/blob/Audacity-3.7.8/src/BatchCommands.cpp).
@@ -111,10 +127,10 @@ The totals count each distinct upstream ID once, including wrapper aliases:
 
 | Status | Named IDs | Wrapper IDs | Total IDs |
 | --- | ---: | ---: | ---: |
-| Covered | 167 | 125 | 292 |
-| Equivalent | 34 | 76 | 110 |
+| Covered | 165 | 124 | 289 |
+| Equivalent | 35 | 76 | 111 |
 | Partial | 19 | 1 | 20 |
-| Skipped | 35 | 84 | 119 |
+| Skipped | 36 | 85 | 121 |
 | Total | 255 | 286 | 541 |
 
 | Upstream named tool | Sources | Status | Coverage or reason |
@@ -126,8 +142,8 @@ The totals count each distinct upstream ID once, including wrapper aliases:
 | `analyze_beat_finder` | X3, X4, MAX, FF | Covered | audacity_effect / audacity_command: `BeatFinder`. Parameters come from the installed catalogue, not historical upstream aliases. |
 | `analyze_contrast` | X3, MAX, FF | Equivalent | audacity_contrast measures foreground/background RMS difference by temporary export; ContrastAnalyser is modal. |
 | `analyze_find_clipping` | X3, MAX, FF | Covered | audacity_effect / audacity_command: `FindClipping`. Parameters come from the installed catalogue, not historical upstream aliases. |
-| `analyze_label_sounds` | X3, X4, MAX, FF | Covered | audacity_effect / audacity_command: `LabelSounds`. Parameters come from the installed catalogue, not historical upstream aliases. |
-| `analyze_plot_spectrum` | X3, MAX, FF | Skipped | PlotSpectrum opens a modal window. Spectral editing remains catalogue-bound; no speculative spectrum meter. |
+| `analyze_label_sounds` | X3, X4, MAX, FF | Skipped | LabelSounds opens blocking result dialogs on empty detections and insufficient between-sound regions; no silent mode exists. audacity_silence and audacity_labels_set provide advisory quiet intervals and explicit markers with different detection semantics. |
+| `analyze_plot_spectrum` | X3, MAX, FF | Skipped | PlotSpectrum opens a modal window. Spectral Nyquist editing also requires UI state that GetInfo cannot verify; no speculative spectrum meter. |
 | `analyze_sample_data_export` | X3, X4, MAX, FF | Covered | SampleDataExport via audacity_command requires MESSAGES=None and explicit FILENAME, avoiding result dialogs; explicit output ran live on 3.7.8. |
 | `analyze_selection` | BUCK | Covered | audacity_measure reports selection peak/RMS/clipping and optional ffmpeg LUFS/true peak, with explicit unavailable metrics and restored selection. |
 | `apply_effect` | BUCK | Covered | audacity_info/describe discovers installed typed effects; audacity_effect or ordered audited macro/pipeline steps applies them. |
@@ -291,7 +307,7 @@ The totals count each distinct upstream ID once, including wrapper aliases:
 | `label_import` | X3, X4, MAX, FF | Covered | audacity_labels_file: TSV/JSON import; TSV/JSON/SRT/VTT/chapters/CUE/Podlove/ffmetadata export. |
 | `label_join_regions` | X3, X4, FF | Covered | audacity_menu `JoinLabels` for selected label regions; select time/tracks explicitly. |
 | `label_list` | X3, X4, FF | Covered | audacity_labels list/find/edit/delete/regular; delete reconstructs only the affected label track and returns updated indices. |
-| `label_regular_intervals` | X3, X4, MAX, FF | Covered | audacity_labels list/find/edit/delete/regular; delete reconstructs only the affected label track and returns updated indices. |
+| `label_regular_intervals` | X3, X4, MAX, FF | Equivalent | audacity_labels action=regular writes explicit interval markers. Native RegularIntervalLabels is reserved because traced debug state can open persistent modals; native count/region/adjust modes are not claimed. |
 | `label_remove` | X4 | Covered | audacity_labels list/find/edit/delete/regular; delete reconstructs only the affected label track and returns updated indices. |
 | `label_silence_regions` | X3, X4, FF | Covered | audacity_menu `SilenceLabels` for selected label regions; select time/tracks explicitly. |
 | `label_split_regions` | X3, X4, FF | Covered | audacity_menu `SplitLabels` for selected label regions; select time/tracks explicitly. |
@@ -443,7 +459,7 @@ The server never executes an upstream identifier merely because it appears here.
 | `cmd_InputDevice` (AN3, PIMP); `raw_input_device` (FF) | `InputDevice` | Skipped | Opens UI/dialogs, external help, or administrative views; not offered through the pipe. Typed alternatives are listed in the decisions table where applicable. |
 | `cmd_Invert` (AN3, PIMP) | `Invert` | Covered | `audacity_command` / `audacity_effect`: `Invert`; strict live catalogue parameters. |
 | `cmd_Karaoke` (AN3, PIMP); `raw_karaoke` (FF) | `Karaoke` | Skipped | Opens UI/dialogs, external help, or administrative views; not offered through the pipe. Typed alternatives are listed in the decisions table where applicable. |
-| `cmd_LabelSounds` (PIMP) | `LabelSounds` | Covered | `audacity_command` / `audacity_effect`: `LabelSounds`; strict live catalogue parameters. |
+| `cmd_LabelSounds` (PIMP) | `LabelSounds` | Skipped | LabelSounds has blocking result dialogs and no silent mode. audacity_silence plus explicit audacity_labels_set markers uses different detection semantics. |
 | `cmd_LastTrack` (AN3, PIMP); `raw_last_track` (FF) | `LastTrack` | Equivalent | Use explicit track/time selection through audacity_select and SelectTime/SelectTracks; focus/window navigation has no headless audio benefit. |
 | `cmd_Limiter` (PIMP) | `Limiter` | Covered | `audacity_command` / `audacity_effect`: `Limiter`; strict live catalogue parameters. |
 | `cmd_Log` (AN3, PIMP); `raw_log` (FF) | `Log` | Skipped | Opens UI/dialogs, external help, or administrative views; not offered through the pipe. Typed alternatives are listed in the decisions table where applicable. |
