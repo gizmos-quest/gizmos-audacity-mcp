@@ -5,7 +5,7 @@
 import { describe, expect, it, beforeAll, afterAll } from 'vitest';
 import { Client } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
-import { mkdtempSync, existsSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, existsSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -53,11 +53,11 @@ describe.skipIf(!live)('live Audacity', () => {
   beforeAll(async () => {
     client = new Client({ name: 'live-test', version: '0' });
     await client.connect(new StdioClientTransport({ command: process.execPath, args: [join(root, 'dist', 'main.js')] }));
-    await call('audacity_launch', { visible: false });
-    await call('audacity_project', { action: 'new' });
+    await call('audacity_fresh', { visible: false, backupTo: join(dir, 'before.aup3') });
   }, 90_000);
 
   afterAll(async () => {
+    await call('audacity_quit').catch(() => undefined); // leaves no crash-recovery entry behind
     await client?.close();
     rmSync(dir, { recursive: true, force: true });
   });
@@ -90,5 +90,9 @@ describe.skipIf(!live)('live Audacity', () => {
     const out = join(dir, 'mix.wav');
     await call('audacity_export', { file: out, channels: 1 });
     expect(existsSync(out)).toBe(true);
+    // 3.5 s of 48 kHz 16-bit mono; an empty selection would leave only the header
+    expect(statSync(out).size).toBeGreaterThan(48_000 * 2 * 3);
+    const after = (await call('audacity_status')) as { tracks: { name: string; start: number }[] };
+    expect(after.tracks.find((t) => t.name === 'Voice')?.start).toBeCloseTo(1.5, 2);
   }, 120_000);
 });

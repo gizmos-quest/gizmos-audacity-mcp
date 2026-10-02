@@ -4,9 +4,10 @@
 import { McpServer, LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { COMMAND_IDS, MENU_IDS, SafeString, describeCommand } from './catalogue.js';
-import { AudacityPipe, AudacityUnavailable } from './pipe.js';
+import { AudacityPipe, AudacityTimeout, AudacityUnavailable } from './pipe.js';
 import { Ops } from './ops.js';
-import { launch, quit, setWindowVisible, pipeExists } from './app.js';
+import { existsSync } from 'node:fs';
+import { launch, listWindows, quit, setWindowVisible, pipeExists } from './app.js';
 
 const Seconds = z.number().finite().min(0).max(86_400);
 const TrackRef = z.union([z.number().int().min(0), SafeString.min(1)]).describe('track index (0-based) or unique track name');
@@ -52,6 +53,9 @@ export function buildServer(pipe = new AudacityPipe()): McpServer {
           return ok(await handler(z.object(shape).strict().parse(args) as z.infer<z.ZodObject<S>>));
         } catch (error) {
           if (error instanceof AudacityUnavailable) return fail(`${error.message} Use audacity_launch.`);
+          if (error instanceof AudacityTimeout) {
+            return fail(`${error.message}. A modal dialog may be blocking Audacity: check audacity_dialogs.`);
+          }
           return fail(error);
         }
       },
@@ -136,18 +140,19 @@ export function buildServer(pipe = new AudacityPipe()): McpServer {
 
   tool(
     'audacity_track_set',
-    'Set track properties: name, volume (linear gain), pan (-1..1), mute, solo.',
+    "Set track properties: name, gain in dB (the track's volume slider; status reports it back as a linear factor), pan (-1..1), mute, solo.",
     {
       track: TrackRef,
       name: SafeString.optional(),
-      volume: z.number().min(0).max(10).optional(),
+      gainDb: z.number().min(-36).max(36).optional(),
       pan: z.number().min(-1).max(1).optional(),
       mute: z.boolean().optional(),
       solo: z.boolean().optional(),
     },
-    async ({ track, name, volume, pan, mute, solo }) => {
+    async ({ track, name, gainDb, pan, mute, solo }) => {
       const index = await ops.trackIndex(track);
-      await ops.run('SetTrack', { Track: index, Name: name, Volume: volume, Pan: pan, Mute: mute, Solo: solo });
+      // SetTrack's Volume is in dB (verified on 3.7.8: Volume=0.811 reads back as 1.098 linear).
+      await ops.run('SetTrack', { Track: index, Name: name, Volume: gainDb, Pan: pan, Mute: mute, Solo: solo });
       return (await ops.tracks())[index];
     },
   );
@@ -212,12 +217,34 @@ export function buildServer(pipe = new AudacityPipe()): McpServer {
 
   tool(
     'audacity_project',
-    'New, open or save an .aup3 project.',
-    { action: z.enum(['new', 'open', 'save']), file: SafeString.optional() },
+    'Open or save an .aup3 project. (Opening into a project that has tracks opens a second window; prefer audacity_fresh first.)',
+    { action: z.enum(['open', 'save']), file: SafeString.min(1) },
     async ({ action, file }) => {
-      if (action === 'new') return ops.run('New');
-      if (!file) throw new Error(`${action} needs file`);
+      // Saving over an existing project makes Audacity show a modal error that blocks the pipe.
+      if (action === 'save' && existsSync(file)) throw new Error(`${file} exists; save under a new name or move it first`);
+      if (action === 'open' && !existsSync(file)) throw new Error(`${file} does not exist`);
       return ops.run(action === 'open' ? 'OpenProject2' : 'SaveProject2', { Filename: file, AddToHistory: false }, 300_000);
+    },
+  );
+
+  tool(
+    'audacity_dialogs',
+    "List Audacity's open windows and dialogs; close=true closes the dialogs (WM_CLOSE, like the window's X; Cancel for questions). Use it when a call times out: a modal dialog blocks the pipe.",
+    { close: z.boolean().default(false) },
+    async ({ close }) => ({ windows: await listWindows(close) }),
+  );
+
+  tool(
+    'audacity_fresh',
+    'Get an empty project in a single window. If the open project has tracks it is saved to backupTo (required then), Audacity quits without a prompt and starts again. Never use the New menu: a second project window has crashed Audacity 3.7 under scripting.',
+    { visible: z.boolean().default(true), backupTo: SafeString.optional().describe('.aup3 path for the current project') },
+    async ({ visible, backupTo }) => {
+      if (!pipeExists()) return { ...(await launch(visible)), backedUpTo: null };
+      const tracks = await ops.tracks();
+      if (tracks.length === 0) return { started: false, visible, backedUpTo: null };
+      if (!backupTo) throw new Error(`the open project has ${tracks.length} tracks; pass backupTo to keep them`);
+      await quit(pipe, backupTo);
+      return { ...(await launch(visible)), backedUpTo: backupTo };
     },
   );
 

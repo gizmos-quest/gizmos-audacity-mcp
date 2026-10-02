@@ -62,14 +62,24 @@ export class AudacityPipe {
     let to: FileHandle | undefined;
     let from: FileHandle | undefined;
     try {
-      try {
-        to = await open(this.paths.to, 'w');
-        from = await open(this.paths.from, 'r');
-      } catch (error) {
-        throw new AudacityUnavailable(
-          `Audacity's script pipe is not reachable (${(error as NodeJS.ErrnoException).code ?? 'error'}). ` +
-            'Start Audacity 3.x with mod-script-pipe enabled.',
-        );
+      // Audacity re-creates the pipe instance after each client disconnects; a command that
+      // follows quickly can find it missing for a moment, so opening is retried briefly.
+      const deadline = Date.now() + 5_000;
+      for (;;) {
+        try {
+          to ??= await open(this.paths.to, 'w');
+          from = await open(this.paths.from, 'r');
+          break;
+        } catch (error) {
+          const code = (error as NodeJS.ErrnoException).code ?? 'error';
+          if (Date.now() < deadline && (code === 'ENOENT' || code === 'EBUSY')) {
+            await new Promise((r) => setTimeout(r, 50));
+            continue;
+          }
+          throw new AudacityUnavailable(
+            `Audacity's script pipe is not reachable (${code}). Start Audacity 3.x with mod-script-pipe enabled.`,
+          );
+        }
       }
       await to.write(`${command}\r\n\0`);
       const reader = from;

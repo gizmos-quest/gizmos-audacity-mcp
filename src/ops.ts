@@ -85,8 +85,10 @@ export class Ops {
       return;
     }
     if (params.Start === undefined) {
-      params.Start = 0;
-      params.End = await this.projectEnd();
+      // Only the tracks' own extent: an effect over empty timeline would fill it with silence clips.
+      const tracks = (await this.tracks()).slice(params.Track as number, (params.Track as number) + (params.TrackCount as number));
+      params.Start = Math.min(...tracks.map((t) => t.start ?? 0));
+      params.End = Math.max(...tracks.map((t) => t.end ?? 0));
     }
     await this.run('Select', params);
   }
@@ -133,7 +135,10 @@ export class Ops {
   }
 
   /** Add a label track (or reuse the last one) and write the labels in order. */
-  async setLabels(labels: { start: number; end?: number; text: string }[], trackName = 'Labels'): Promise<number> {
+  async setLabels(unsorted: { start: number; end?: number; text: string }[], trackName = 'Labels'): Promise<number> {
+    // SetLabel addresses labels by a flat index; Audacity keeps each track's labels in time order,
+    // so adding them in time order makes the new label's index "existing count + i".
+    const labels = [...unsorted].sort((a, b) => a.start - b.start);
     const existing = ((await this.info('Labels')) as [number, unknown[]][]).reduce((n, [, l]) => n + l.length, 0);
     const tracks = await this.tracks();
     let labelTrack = tracks.findIndex((t) => t.kind === 'label' && t.name === trackName);
@@ -148,6 +153,9 @@ export class Ops {
       await this.run('AddLabel');
       await this.run('SetLabel', { Label: existing + i, Text: label.text, Start: label.start, End: end });
     }
+    // AddLabel leaves the last label in text editing, where Select All would select its text.
+    await this.run('SetLabel', { Label: existing + labels.length - 1, Selected: false });
+    await this.run('SelectNone');
     return labels.length;
   }
 
@@ -168,10 +176,14 @@ export class Ops {
 
   /** Export the mix of all unmuted tracks (or a time range of it) to a file. */
   async exportMix(file: string, channels = 2, start?: number, end?: number): Promise<void> {
-    await this.run('SelectAll');
-    if (start !== undefined || end !== undefined) {
-      await this.run('SelectTime', { Start: start ?? 0, End: end ?? (await this.projectEnd()) });
-    }
+    // An explicit time and track selection, never Select All: with a label in text editing
+    // Select All selects the label's text and the export comes out empty.
+    const tracks = await this.tracks();
+    if (tracks.length === 0) throw new Error('the project has no tracks to export');
+    const from = start ?? 0;
+    const to = end ?? (await this.projectEnd());
+    if (!(to > from)) throw new Error(`nothing to export between ${from}s and ${to}s`);
+    await this.run('Select', { Start: from, End: to, Track: 0, TrackCount: tracks.length, Mode: 'Set' });
     await this.run('Export2', { Filename: file, NumChannels: channels }, 600_000);
   }
 }

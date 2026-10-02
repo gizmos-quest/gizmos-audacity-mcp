@@ -41,7 +41,12 @@ export const COMMAND_IDS = COMMANDS.map((c) => c.id).filter((id) => !RESERVED.ha
  * Menu commands that run without a dialog. Items whose label ends in "..."
  * open a modal window, which would block the pipe until a person closes it.
  */
-const MENU_DENY = new Set(['Exit', 'Close', 'Preferences', 'ManageTools', 'Macros', 'ApplyMacrosPalette']);
+const MENU_DENY = new Set([
+  'Exit', 'Close', 'New', 'Preferences', 'ManageTools', 'Macros', 'ApplyMacrosPalette',
+  // open a dialog although their label has no "..." (collected from other Audacity MCP servers)
+  'TrackGain', 'TrackPan', 'ChangeAudio', 'InputDevice', 'OutputDevice', 'EditLabels', 'TimerRecord', 'Resample',
+  'EditMetaData', 'PlotSpectrum', 'ContrastAnalyser', 'MixerBoard', 'UndoHistory', 'Log',
+]);
 /** Transport and view commands from the hidden "Extra" menu, which GetInfo does not list (verified live on 3.7.8). */
 const EXTRA_MENU = ['Play', 'Stop', 'Pause', 'Record1stChoice', 'CursProjectStart', 'CursProjectEnd', 'ZoomSel', 'FitInWindow'];
 export const MENU_IDS = [
