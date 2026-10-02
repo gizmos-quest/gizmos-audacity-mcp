@@ -16,9 +16,18 @@
 - Before trusting a parameter/command absent from the catalogue, test it
   against live pinned English Audacity 3.7.8 and record the evidence in a code
   comment. Do not guess older upstream aliases or Audacity 4 fork APIs.
+  Verify the running executable path and actual file version first; a 3.7.*
+  gating pin is not an exact 3.7.8 pin. Forward explicit AUDACITY_* overrides
+  through the SDK's restricted stdio environment for isolated-version tests.
+- Native SetTrack/SetTrackStatus/SetTrackAudio/SetTrackVisuals/SetClip/SetEnvelope
+  ignore unlisted Track/TrackCount/Channel/ChannelCount keys. Reject those keys
+  and select targets explicitly with Select/SelectTracks before setters.
+  Live targeting tests must begin with a different track selected.
 - Never offer modal commands. Deny ellipsis menus and known exceptions;
-  MeasureRms/Contrast/PlotSpectrum, ClickRemoval and unbounded Repair are unsafe;
+  MeasureRms/Contrast/PlotSpectrum, ClickRemoval and Repair are unsafe;
   ClickRemoval opens a modal error even on valid audio without removable clicks.
+  Repair also rejects pitch/speed clips whose state GetInfo does not expose;
+  bounding selection length alone cannot guarantee dialog-free processing.
   Keep raw lifecycle commands and
   unrestricted preferences/macros/Nyquist programs reserved. Require silent
   explicit-file options for result-producing sample/label commands.
@@ -27,6 +36,8 @@
   disposable client helper; never terminate Audacity. A timeout or lost post-send reply leaves outcome
   unknown: require recovery and never replay an edit automatically.
 - Encode booleans as 1/0. Track Volume input is dB, reported volume is linear.
+  Public audacity_track_set pan is normalized [-1,1]; native SetTrack/SetTrackAudio
+  Pan uses percentage [-100,100]. Convert public pan before sending it.
   Select explicit tracks/time before exports; AddLabel can leave text focus.
   Default effects to the track extent to avoid creating silent gap clips.
   Refuse existing .aup3 save destinations before the pipe. Never use New;
@@ -34,6 +45,12 @@
   restarting empty projects to reset process-wide effect state. Trim all audio
   outside the retained range on selected tracks without shifting the timeline;
   clip metadata changes require a time strictly inside one clip.
+- Raw recording menu commands are reserved. The transport tool uses a cursor
+  selection, maps new/append recording through /GUI/PreferNewTrackRecord, and
+  preflights append to one explicit audio track matching /AudioIO/RecordChannels.
+  Clear unrelated track selection for untargeted new recording; mixed rates or
+  incompatible channels can open native dialogs. Invalidate known noise-profile
+  state before recording, including an uncertain reply.
 - Every Import2 path must temporarily disable asynchronous Music Import prompts
   and automatic tempo alignment using the live-verified 3.7.8 choices
   /FileFormats/MusicFileImportSettingChoice=No and
@@ -48,9 +65,14 @@
   reduction; capture only one room-tone interval per process, reuse an identical
   interval, and require audacity_fresh for a different profile. Reduction must
   select only the same captured audio track, with its original index/name;
-  track-structure/history changes invalidate known profile state. Enforce the
-  conservative minimum of 4096 rendered samples for profile capture. The pipe
-  does not expose source-track sample rates, so cross-track reduction is refused.
+  track-structure/history changes invalidate known profile state. Capture must
+  fit wholly inside one audio clip, with at least 4096 rendered frames and 4096
+  source frames. GetInfo does not report source-track rates: query the selected
+  track silently using SampleDataExport NUMBER=1, HEADER=Standard, MESSAGES=None
+  and an explicit temporary text file; restore selection/focus and remove scratch.
+  A higher project render rate does not establish enough source frames.
+  Cross-track reduction remains conservatively refused; use only the captured
+  audio track with unchanged index/name and source identity.
   A new MCP server attaching to an existing Audacity must treat profile state as unknown.
 - Audacity's individual scripting effect/command path uses kSkipState and does
   not add an undo entry per call. History tools operate existing native undo

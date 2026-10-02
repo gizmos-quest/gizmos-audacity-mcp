@@ -15,11 +15,11 @@ Windows is the verified host for hidden-window operation and dialog recovery.
 The pipe client also supports standard macOS/Linux user-ID FIFOs; their native
 window lifecycle is not part of the Windows live verification.
 
-1. Install and pin Audacity 3.7.8. On this host:
+1. Install and pin the exact verification target, Audacity 3.7.8:
 
    ```powershell
    winget install --id Audacity.Audacity -e --version 3.7.8
-   winget pin add --id Audacity.Audacity --version 3.7.*
+   winget pin add --id Audacity.Audacity --version 3.7.8
    ```
 
 2. In Audacity Preferences > Modules, enable `mod-script-pipe`, then restart.
@@ -40,7 +40,14 @@ window lifecycle is not part of the Windows live verification.
    ```
 
 Audacity and the server must run as the same Windows user. `AUDACITY_EXE`
-overrides executable discovery; `AUDACITY_CONFIG` overrides the config path.
+overrides executable discovery; `AUDACITY_CONFIG` selects the config the server
+inspects. Audacity must itself use that file, for example through Portable
+Settings beside its executable; this variable does not redirect Audacity's settings.
+Check the executable's actual version before testing: a `3.7.*` gating pin
+permits newer patch versions. This host was found running 3.7.9; exact 3.7.8
+verification uses the official portable archive with isolated Portable Settings,
+without replacing the user's installed application. The live client forwards
+explicit `AUDACITY_*` executable/config/ffmpeg overrides to its stdio server.
 Keep `mod-cloud-audiocom` and `mod-musehub-ui` disabled on the pinned host:
 they appeared in a crash stack and are unrelated to the scripting module.
 
@@ -74,19 +81,19 @@ Unknown fields and non-finite numbers are rejected before pipe commands.
 | `audacity_import` | Import audio or video sound as a named track at `start`, suppressing automatic music-loop prompts and tempo changes. |
 | `audacity_export` | Export the rendered mix or time range to WAV/FLAC/MP3/OGG, with explicit selection and mono/stereo `channels`. |
 | `audacity_project` | `open` an existing `.aup3` into an empty project, or `save` to a new path; existing save destinations are refused. |
-| `audacity_track_set` | Name, `gainDb`, pan, mute or solo; track gain is the editable slider. |
+| `audacity_track_set` | Name, `gainDb`, normalized `pan` (-1 left, 0 center, 1 right), mute or solo; track gain is the editable slider. |
 | `audacity_track_edit` | Add mono/stereo/label tracks, remove, mix/render, or align explicit tracks/extents. |
-| `audacity_clip_move` | Move the clip covering `at` to a new `start`. |
+| `audacity_clip_move` | Move the clip covering `at` to a new `start`; a shared boundary identifies the clip starting there and leaves its neighbor unchanged. |
 | `audacity_clip_set` | Rename/color at a time strictly inside one clip, or apply relative `gainDb` destructively to that clip's samples. |
 | `audacity_edit` | Split, split-new, trim, duplicate, delete, cut/copy/paste, silence, join/disjoin. Trim removes all exterior audio on selected tracks without shifting time; `split_delete` retains timing. |
 | `audacity_fade` | Sample fade in/out over an explicit track/range. |
 | `audacity_envelope_set` | Editable linear gain points; `replace:true` clears previous points. |
 | `audacity_generate` | Tone, noise, silence, chirp, DTMF or rhythm; create a mono/stereo track or replace a range. |
 | `audacity_effect` | Select a track/range and apply one installed effect with exact catalogue parameters. |
-| `audacity_noise_profile` | Capture one pure room-tone interval in a known fresh Audacity process; reuse an identical interval. NoiseReduction takes `params:{}` and saved UI settings, on that same audio track alone. |
+| `audacity_noise_profile` | Capture pure room tone wholly inside one clip, with at least 4096 rendered and source frames, in a known fresh process; reuse an identical interval. NoiseReduction takes `params:{}` and saved UI settings, on that same audio track alone. |
 | `audacity_pipeline` | Reviewed cleanup/voice/podcast/interview/audiobook/vocal/live/music/lofi chains; `dryRun:true` lists steps. |
 | `audacity_auto_duck` | Duck a bed under the next audio track below it, used as unselected voice control; topology-checked with dry-run. |
-| `audacity_transport` | Play a region, pause/resume, stop, record or status. Position is a server clock estimate; recording needs a configured input. |
+| `audacity_transport` | Play a region, pause/resume, stop, record or status. Position is a server clock estimate. Recording needs a configured input; `newTrack:false` requires one explicit audio track matching its recording channels. |
 | `audacity_history` | Undo/redo existing native menu/import history states for explicit `steps`. Individual scripted effects do not create their own undo entries. |
 | `audacity_preferences` | List/read preferences; set only default project sample rate or recording channels, returning original value/readback. |
 | `audacity_macros` | List/replay saved local macros after step preflight; dry-run, explicit export paths, no Macro Manager dialog. |
@@ -106,9 +113,18 @@ Unknown fields and non-finite numbers are rejected before pipe commands.
 
 The catalogue in `catalogue/` comes from installed English Audacity (`GetInfo`
 Commands/Menus); refresh with `npm run catalogue` after preserving the active
-project. Unlisted parameters are narrowly added in `src/catalogue.ts`, with
-live 3.7.8 evidence in comments. Historical upstream names are not automatically
-accepted. Use `audacity_describe` before calling an unfamiliar effect.
+project. Historical upstream names and unsupported parameters are rejected.
+Use `audacity_describe` before calling an unfamiliar effect.
+
+Native `SetTrack`, `SetTrackStatus`, `SetTrackAudio`, `SetTrackVisuals`, `SetClip`
+and `SetEnvelope` act on the current track selection. Audacity accepts but
+ignores unlisted `Track`, `TrackCount`, `Channel` and `ChannelCount` keys on
+these setters; this server rejects them. Use `audacity_select` before a generic
+setter. The task tools select their requested target explicitly.
+
+`audacity_track_set` accepts normalized pan from -1 to 1 and converts it to
+Audacity's percentage. Generic native `SetTrack`/`SetTrackAudio` calls use
+`Pan` from -100 to 100; reported track pan is normalized.
 
 Audacity 3.7.8 can schedule a Music Import dialog or adjust loop timing after
 `Import2` has already returned OK. Every import path temporarily sets
@@ -158,12 +174,17 @@ Start a fresh process through `audacity_fresh` before capturing room tone with
 `params:{}`. Repeating the same track and interval reuses the known profile;
 choosing another requires `audacity_fresh` and a new production backup path.
 Attaching a new server to an existing Audacity leaves profile state unknown
-until that restart. The capture interval must contain at least 4096 rendered
-samples; select a longer interval of pure room tone if it is refused.
+until that restart. The capture interval must lie wholly inside one audio clip
+and contain at least 4096 rendered frames and 4096 source frames; select a
+longer interval of pure room tone if it is refused. An 8 kHz source rendered
+at 48 kHz can meet the rendered minimum while containing too few source frames.
+`GetInfo` does not report source-track rates, so capture checks the native rate
+through a silent one-sample `SampleDataExport` header in a temporary text file.
+That query restores selection and track focus and removes its scratch file.
 Reduction selects only the captured audio track, with its original index/name.
 Track-structure/history changes invalidate known profile state. Cross-track
-reduction is refused because the pipe cannot establish source-track sample rates
-and native rate mismatches open modal errors.
+reduction remains conservatively refused: processing is limited to that same
+track with unchanged identity, since native rate mismatches open modal errors.
 
 Batch pipelines exclude `noiseProfile`: consecutive temporary tracks cannot
 share a verified source-track profile or capture a new one in the same process.
@@ -182,8 +203,11 @@ error dialog when it finds no removable clicks. Generic effect calls and macros
 refuse `ClickRemoval`; pipeline `removeClicks:true` is rejected during preflight.
 Measurement discontinuity counts are advisory and do not replace a de-clicking
 processor.
-Native Repair is also unavailable: selections above 128 samples open a modal
-error, and this server does not expose a bounded repair wrapper.
+Native Repair is also unavailable: it opens modal errors for selections above
+128 samples, missing surrounding context, or clips with pitch/speed changes.
+`GetInfo` omits that clip state, so bounding selection length cannot guarantee
+dialog-free repair. See the official
+[Repair implementation](https://github.com/audacity/audacity/blob/Audacity-3.7.8/libraries/lib-builtin-effects/Repair.cpp).
 
 For a video bed, place Music above Voice, then preview
 `audacity_auto_duck {"bed":"Music","voice":"Voice","dryRun":true}`.
@@ -229,7 +253,8 @@ make replay reviewable. Preference writes allow only
   RegularIntervalLabels requires `VERBOSE=None`, and NoiseGate analysis mode
   is refused. Opus export opens blocking dialogs here and is refused; native
   AIFF export fails on the pinned installation.
-- SetTrack volume input is dB; Tracks reports a linear factor. Effects default
+- SetTrack volume input is dB; Tracks reports a linear factor. Public track pan
+  is [-1,1]; native SetTrack/SetTrackAudio Pan is a percentage. Effects default
   to track extent because selection beyond a clip can create silence clips.
   Export explicitly selects time/tracks: AddLabel leaves text-edit focus, so
   SelectAll could select label text and produce an empty export.

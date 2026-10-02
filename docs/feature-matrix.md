@@ -8,11 +8,11 @@ extra capabilities. A project-backed equivalent means importing a file, editing
 it in Audacity, and exporting the result; it is not a second standalone DSP
 engine.
 
-The target is the pinned English Audacity 3.7.8 installation. Claims made by
+The verification target is English Audacity 3.7.8. Claims made by
 another server are research evidence, not live verification of this server.
 In particular, upstream headline tool counts include modal actions, optional
 Python/ML tools, and Audacity 4 fork APIs. The live test suite and comments beside
-unlisted parameters record verification for this implementation.
+catalogue boundaries record verification for this implementation.
 
 ## Source snapshots
 
@@ -43,20 +43,21 @@ coverage.
 | Safe pipe sequencing | All | Serialized commands and operations; fresh pipe handles, opening retry, response terminator parsing, and bounded waits. |
 | Recovery and project preservation | FF, MAX; integration requirement | Dialog inspection/WM_CLOSE, orderly save-before-quit, backup-before-fresh, overwrite refusal, crash-recovery inspection, and hidden tests. No process killing or input simulation. |
 | Import timing and asynchronous prompt safety | integration requirement; native 3.7.8 behavior | All Import2 paths temporarily disable Music Import prompts/tempo alignment using verified No/DoNothing preferences, then restore prior supported choices or native defaults. Unknown pipe outcomes defer preference restoration until explicit recovery has verified a response. |
-| Track, clip, envelope and label inspection | All | `audacity_status`, `audacity_info`, and task tools. Track gain input is dB; reported volume is linear. |
+| Track, clip, envelope and label inspection | All | `audacity_status`, `audacity_info`, and task tools. Track gain input is dB; reported volume is linear. Public audacity_track_set pan and reported pan are normalized [-1,1]; generic native SetTrack/SetTrackAudio Pan uses percentage [-100,100]. |
+| Native setter targeting | Local catalogue; integration requirement | SetTrack/SetTrackStatus/SetTrackAudio/SetTrackVisuals/SetClip/SetEnvelope visit selected tracks. Unlisted Track/TrackCount/Channel/ChannelCount keys are accepted but ignored by Audacity and rejected here. Task tools select targets explicitly; generic setters require audacity_select. |
 | Peak, RMS, DC, crest, clipping and silence measurement | X3, FF, MAX, DPF, BUCK | Selection/track export measured in Node; native WAV support, optional ffmpeg loudness/true peak, explicit unavailable metrics. Estimates and discontinuity counts are labelled as such. |
 | Foreground/background contrast | X3, FF, MAX | Numeric RMS difference via export. `ContrastAnalyser` is modal and is never offered. |
 | Native RMS analyzer | Local catalogue | `MeasureRms` opens blocking result dialogs on this 3.7.8 installation; excluded. Use `audacity_measure`. |
 | Native Click Removal | X3, X4, MAX, FF, AN3, PIMP | Skipped: even valid no-click audio opens a blocking error dialog on live 3.7.8. Generic effect/menu calls, macros and pipeline `removeClicks:true` refuse it before editing. |
-| Native Repair | X3, X4, MAX, FF, AN3, PIMP | Skipped: selections over 128 samples open a native modal error, and no bounded repair wrapper is implemented. Advisory discontinuity measurement remains available without editing audio. |
+| Native Repair | X3, X4, MAX, FF, AN3, PIMP | Skipped: native modals occur for selections over 128 samples, missing surrounding context, or pitch/speed clips. GetInfo omits clip pitch/speed state, so bounding length alone cannot guarantee dialog-free repair. Advisory discontinuity measurement remains available. |
 | Loudness reports and targets | MAX, DPF, BUCK | File/selection measurement, before/after comparisons and numeric target evaluation. No unsupported compliance or true-peak claim. |
 | Cleanup and mastering | X3, FF, MAX, DPF, X4 | Reviewed, parameterized dry-run chains for cleanup, speech, podcast, interview, audiobook, vocals, live recordings, music and lo-fi. Noise capture requires explicit room tone in a known fresh process; reduction uses saved Audacity settings. |
-| Native Noise Reduction controls | X3, X4, MAX, FF, AN3, PIMP, TACH | Partial: profile capture and reduction are supported, but 3.7.8 ignores Reduction/Sensitivity/Smoothing wire keys. NoiseReduction accepts only empty params and saved UI settings. One profile is captured per known fresh process; the identical track/interval can reuse it. Capture needs at least 4096 rendered samples. Reduction must select the same captured audio track alone; cross-track source rates cannot be verified, and a different profile requires orderly restart. |
+| Native Noise Reduction controls | X3, X4, MAX, FF, AN3, PIMP, TACH | Partial: profile capture and reduction are supported, but 3.7.8 ignores Reduction/Sensitivity/Smoothing wire keys. NoiseReduction accepts only empty params and saved UI settings. One profile is captured per known fresh process; the identical track/interval can reuse it. Capture must fit wholly inside one audio clip and contain at least 4096 rendered and source frames. A silent one-sample SampleDataExport header supplies source rate; GetInfo does not report it. Reduction remains conservatively limited to the same captured audio track with unchanged identity; a different profile requires orderly restart. |
 | Duck music under speech | X3, FF, MAX, X4 | Native AutoDuck with control-track topology checks; dry-run describes the edit. |
 | Clip and track editing | All | Split, trim, duplicate, cut/copy/paste/delete, silence, join/disjoin, alignment, naming/color, track gain and clip sample gain, fades and mix/render. Trim removes all audio outside the kept range on selected tracks, including separate clips, without shifting time. Clip metadata uses a time strictly inside one clip. |
 | Tone, noise, silence, chirp, DTMF, rhythm, pluck and drum generation | AN3, PIMP, X3, FF, MAX, X4 | Task generation plus catalogue generators. Time selection controls duration; unsupported Duration aliases are not guessed. |
 | Labels, chapters and segmented audio | X3, FF, X4, TACH | Point/region label writing, querying, editing, files and region operations. Explicit time/track selection avoids label-text focus corrupting export. |
-| Playback and recording | All | Play, region playback, pause, stop, cursor/position and recording control. Recording needs a working input device. Timer Record is modal and skipped. |
+| Playback and recording | All | Play, region playback, pause, stop, cursor/position and recording control. Append requires one explicit audio track matching configured input channels. Recording uses cursor selection and respects the new-track preference; raw recording menus can open mismatch dialogs and are reserved. Timer Record is modal and skipped. |
 | Saved macros | AN3, PIMP, FF, TACH | List and replay existing local macros only after every step passes catalogue and modal checks; no Macro Manager/Palette dialog. |
 | Undo/redo and backups | All; BUCK checkpoints | Undo/redo of existing native menu/import history entries plus `.aup3` backups. Individual scripted effect/command calls use kSkipState and add no per-call undo entry. Approximate counted-undo checkpoints and per-pipeline rollback promises are skipped. |
 | Preferences | AN3, PIMP, FF | Read preferences and set a small safe allowlist; no module, language, crash-recovery, device or pipe settings through unrestricted setters. |
@@ -69,7 +70,7 @@ coverage.
 | BPM/spectral centroid/flatness | DPF | Partial: BeatFinder and spectral effects are available, but no claimed tempo/centroid/flatness meter. Upstream uses librosa/NumPy; adding an unverified approximate music analyzer is not needed by the integration. |
 | Raw modal menus, printing, help browser, configuration reset and UI drags | AN3, PIMP, FF | Skipped: blocking dialogs, actions outside audio editing, or explicitly forbidden mouse/keyboard simulation. Safe menu actions remain catalogue-bound. |
 | Export codec coverage | X3, MAX, FF, DPF, PIMP, TACH | WAV/FLAC/MP3/OGG verified live on 3.7.8. AIFF returned Audacity's own `Could not export to AIFF format!`; Opus opened blocking result/error dialogs. AIFF/Opus are not offered, despite upstream extension lists. |
-| Result-producing Nyquist modes | FF, PIMP, X3, MAX | SampleDataExport requires explicit FILENAME and MESSAGES=None; RegularIntervalLabels requires VERBOSE=None; NoiseGate MODE=Analyze is refused because result dialogs block the pipe. Task regular labels and exported measurement avoid those modes. |
+| Result-producing Nyquist modes | FF, PIMP, X3, MAX | SampleDataExport requires explicit FILENAME and MESSAGES=None; its silent one-sample Standard header supplies the native source rate for profile preflight, with selection restored and scratch removed. RegularIntervalLabels requires VERBOSE=None; NoiseGate MODE=Analyze is refused because result dialogs block the pipe. Task regular labels and exported measurement avoid those modes. |
 
 Noise Reduction parameter/profile limitations were measured on live Audacity
 3.7.8 and checked against its official
@@ -77,6 +78,14 @@ Noise Reduction parameter/profile limitations were measured on live Audacity
 It initializes profiling state in the process, loads saved effect preferences,
 and switches to reduction after profiling. Successful acceptance of an
 unlisted wire key is insufficient evidence that the key changes processing.
+
+Source-frame profile preflight was verified with 8 kHz and 48 kHz tracks in a
+48 kHz project. The silent header from
+[Sample Data Export](https://github.com/audacity/audacity/blob/Audacity-3.7.8/plug-ins/sample-data-export.ny)
+reports the selected track's source rate, passed to Nyquist by
+[NyquistBase](https://github.com/audacity/audacity/blob/Audacity-3.7.8/libraries/lib-nyquist-effects/NyquistBase.cpp).
+A higher-rate render can contain enough output frames while native profiling
+still has too few source frames; both minima are checked before capture.
 
 Individual scripting effect/command calls use `kSkipState` in the official
 [3.7.8 batch command path](https://github.com/audacity/audacity/blob/Audacity-3.7.8/src/BatchCommands.cpp).
@@ -136,9 +145,9 @@ The totals count each distinct upstream ID once, including wrapper aliases:
 | `auda_compressor` | DPF | Equivalent | Native Compressor through audacity_effect; no pedalboard dependency. |
 | `auda_concat` | DPF | Equivalent | Import files, audacity_track_edit align_end_to_end or explicit clip positions, then export mix. |
 | `auda_convert` | DPF | Equivalent | Import + SetProject Rate + export channels/container performs Audacity-rendered conversion; codec bitrate and arbitrary ffmpeg transcode switches are not exposed. |
-| `auda_declick` | DPF | Partial | Advisory discontinuity analysis only. ClickRemoval opens a blocking no-change error on valid audio; unbounded Repair can also open modal errors. Neither processing command is offered, and upstream Python median-filter DSP is not copied. |
+| `auda_declick` | DPF | Partial | Advisory discontinuity analysis only. ClickRemoval opens a blocking no-change error on valid audio; Repair can also open modal errors for hidden clip pitch/speed state. Neither processing command is offered, and upstream Python median-filter DSP is not copied. |
 | `auda_declip` | DPF | Equivalent | Native ClipFix through audacity_effect; reconstructed peaks cannot restore lost source information. |
-| `auda_decrackle` | DPF | Partial | Advisory discontinuity analysis only. ClickRemoval and unbounded Repair can open modal errors and are refused; the separate Python median-blend crackle DSP engine is not taken. |
+| `auda_decrackle` | DPF | Partial | Advisory discontinuity analysis only. ClickRemoval and Repair can open modal errors and are refused; the separate Python median-blend crackle DSP engine is not taken. |
 | `auda_deecho` | DPF | Skipped | Optional Python RoFormer models/runtime not taken. |
 | `auda_dereverb` | DPF | Skipped | Optional Python RoFormer models/runtime not taken; not a clean Node-only Audacity capability. |
 | `auda_eq` | DPF | Equivalent | FilterCurve/GraphicEq/High-passFilter/Low-passFilter/ShelfFilter/NotchFilter through the installed catalogue. |
@@ -237,7 +246,7 @@ The totals count each distinct upstream ID once, including wrapper aliases:
 | `effect_paulstretch` | X3, X4, MAX, FF | Covered | audacity_effect / audacity_command: `Paulstretch`. Parameters come from the installed catalogue, not historical upstream aliases. |
 | `effect_phaser` | X3, MAX, FF | Covered | audacity_effect / audacity_command: `Phaser`. Parameters come from the installed catalogue, not historical upstream aliases. |
 | `effect_remove_dc_offset` | X4 | Covered | audacity_effect Normalize with RemoveDcOffset=true and ApplyVolume=false removes DC without peak normalization. |
-| `effect_repair` | X3, X4, MAX, FF | Skipped | Native Repair opens a modal error for selections over 128 samples. No safe bounded repair wrapper is implemented; advisory discontinuity measurement does not repair samples. |
+| `effect_repair` | X3, X4, MAX, FF | Skipped | Native Repair opens modal errors for length, context and pitch/speed clip state. GetInfo omits the latter, preventing reliable dialog-free preflight; advisory discontinuity measurement does not repair samples. |
 | `effect_repeat` | X3, MAX, FF | Covered | audacity_effect / audacity_command: `Repeat`. Parameters come from the installed catalogue, not historical upstream aliases. |
 | `effect_reverb` | X3, X4, MAX, FF | Covered | audacity_effect / audacity_command: `Reverb`. Parameters come from the installed catalogue, not historical upstream aliases. |
 | `effect_reverse` | X3, X4, MAX, FF | Covered | audacity_effect / audacity_command: `Reverse`. Parameters come from the installed catalogue, not historical upstream aliases. |
@@ -392,7 +401,7 @@ The server never executes an upstream identifier merely because it appears here.
 | `cmd_Chirp` (AN3, PIMP) | `Chirp` | Covered | `audacity_command` / `audacity_effect`: `Chirp`; strict live catalogue parameters. |
 | `cmd_ClickRemoval` (AN3, PIMP) | `ClickRemoval` | Skipped | Native ClickRemoval can open a blocking no-change error even with valid parameters and audio; refused after live 3.7.8 verification and official source inspection. |
 | `cmd_Close` (AN3, PIMP) | `Close` | Equivalent | `audacity_quit` closes the single process after saving; fresh can restart. |
-| `cmd_CompareAudio` (AN3, PIMP); `raw_compare_audio` (FF) | `CompareAudio` | Covered | `audacity_command` / `audacity_effect`: `CompareAudio`; strict live catalogue parameters. |
+| `cmd_CompareAudio` (AN3, PIMP); `raw_compare_audio` (FF) | `CompareAudio` | Covered | `audacity_command`: `CompareAudio`; strict live catalogue parameters. |
 | `cmd_Compressor` (AN3, PIMP) | `Compressor` | Covered | `audacity_command` / `audacity_effect`: `Compressor`; strict live catalogue parameters. |
 | `cmd_ContrastAnalyser` (AN3, PIMP) | `ContrastAnalyser` | Skipped | Opens UI/dialogs, external help, or administrative views; not offered through the pipe. Typed alternatives are listed in the decisions table where applicable. |
 | `cmd_Copy` (AN3, PIMP) | `Copy` | Covered | `audacity_menu`: `Copy`; no-argument safe menu. |
@@ -415,14 +424,14 @@ The server never executes an upstream identifier merely because it appears here.
 | `cmd_EditLabels` (AN3, PIMP); `raw_edit_labels` (FF) | `EditLabels` | Skipped | Opens UI/dialogs, external help, or administrative views; not offered through the pipe. Typed alternatives are listed in the decisions table where applicable. |
 | `cmd_EditMetaData` (AN3, PIMP) | `EditMetaData` | Skipped | Opens UI/dialogs, external help, or administrative views; not offered through the pipe. Typed alternatives are listed in the decisions table where applicable. |
 | `cmd_Exit` (AN3, PIMP); `raw_exit` (FF) | `Exit` | Equivalent | `audacity_quit` avoids prompts and stale recovery entries. |
-| `cmd_Export2` (AN3, PIMP) | `Export2` | Covered | `audacity_command` / `audacity_effect`: `Export2`; strict live catalogue parameters. |
+| `cmd_Export2` (AN3, PIMP) | `Export2` | Covered | `audacity_command`: `Export2`; strict live catalogue parameters. |
 | `cmd_ExportAudio` (AN3, PIMP); `raw_export_audio` (FF) | `ExportAudio` | Equivalent | `audacity_export` with an explicit destination. |
 | `cmd_FadeIn` (AN3, PIMP) | `FadeIn` | Covered | `audacity_command` / `audacity_effect`: `FadeIn`; strict live catalogue parameters. |
 | `cmd_FadeOut` (AN3, PIMP) | `FadeOut` | Covered | `audacity_command` / `audacity_effect`: `FadeOut`; strict live catalogue parameters. |
 | `cmd_FilterCurve` (AN3, PIMP) | `FilterCurve` | Covered | `audacity_command` / `audacity_effect`: `FilterCurve`; strict live catalogue parameters. |
 | `cmd_FirstTrack` (AN3, PIMP); `raw_first_track` (FF) | `FirstTrack` | Equivalent | Use explicit track/time selection through audacity_select and SelectTime/SelectTracks; focus/window navigation has no headless audio benefit. |
-| `cmd_GetInfo` (AN3, PIMP) | `GetInfo` | Covered | `audacity_command` / `audacity_effect`: `GetInfo`; strict live catalogue parameters. |
-| `cmd_GetPreference` (AN3, PIMP); `raw_get_preference` (FF) | `GetPreference` | Covered | `audacity_command` / `audacity_effect`: `GetPreference`; strict live catalogue parameters. |
+| `cmd_GetInfo` (AN3, PIMP) | `GetInfo` | Covered | `audacity_command`: `GetInfo`; strict live catalogue parameters. |
+| `cmd_GetPreference` (AN3, PIMP); `raw_get_preference` (FF) | `GetPreference` | Covered | `audacity_command`: `GetPreference`; strict live catalogue parameters. |
 | `cmd_GraphicEq` (AN3, PIMP); `raw_graphic_eq` (FF) | `GraphicEq` | Covered | `audacity_command` / `audacity_effect`: `GraphicEq`; strict live catalogue parameters. |
 | `cmd_Help` (AN3, PIMP); `raw_help` (FF) | `Help` | Skipped | Opens UI/dialogs, external help, or administrative views; not offered through the pipe. Typed alternatives are listed in the decisions table where applicable. |
 | `cmd_HighPassFilter` (PIMP) | `HighPassFilter` | Covered | `audacity_command` / `audacity_effect`: `High-passFilter`; strict live catalogue parameters. |
@@ -476,10 +485,10 @@ The server never executes an upstream identifier merely because it appears here.
 | `cmd_Print` (AN3, PIMP); `raw_print` (FF) | `Print` | Skipped | Opens UI/dialogs, external help, or administrative views; not offered through the pipe. Typed alternatives are listed in the decisions table where applicable. |
 | `cmd_PunchAndRoll` (AN3, PIMP); `raw_punch_and_roll` (FF) | `PunchAndRoll` | Skipped | Interactive transport mode excluded; use explicit time selection and play/record/stop. |
 | `cmd_QuickHelp` (AN3, PIMP); `raw_quick_help` (FF) | `QuickHelp` | Skipped | Opens UI/dialogs, external help, or administrative views; not offered through the pipe. Typed alternatives are listed in the decisions table where applicable. |
-| `cmd_Record1stChoice` (AN3, PIMP) | `Record1stChoice` | Covered | `audacity_menu`: `Record1stChoice`; no-argument safe menu. |
-| `cmd_Record2ndChoice` (AN3, PIMP); `raw_record2nd_choice` (FF) | `Record2ndChoice` | Covered | `audacity_menu`: `Record2ndChoice`; no-argument safe menu. |
+| `cmd_Record1stChoice` (AN3, PIMP) | `Record1stChoice` | Covered | `audacity_transport` record: guarded new/append mode, explicit channel-matched append target and cursor selection. Native choice follows the recording preference; raw menu calls are reserved to prevent mismatch dialogs. |
+| `cmd_Record2ndChoice` (AN3, PIMP); `raw_record2nd_choice` (FF) | `Record2ndChoice` | Covered | `audacity_transport` record: guarded new/append mode, explicit channel-matched append target and cursor selection. Native choice follows the recording preference; raw menu calls are reserved to prevent mismatch dialogs. |
 | `cmd_Redo` (AN3, PIMP); `raw_redo` (FF) | `Redo` | Covered | `audacity_menu`: `Redo`; no-argument safe menu. |
-| `cmd_Repair` (AN3, PIMP) | `Repair` | Skipped | Native Repair can open a blocking selection-length error; refused because no bounded repair wrapper is implemented. |
+| `cmd_Repair` (AN3, PIMP) | `Repair` | Skipped | Native Repair opens modal errors for length, context and pitch/speed clip state; GetInfo omits the latter, preventing reliable dialog-free preflight. |
 | `cmd_Repeat` (AN3, PIMP) | `Repeat` | Covered | `audacity_command` / `audacity_effect`: `Repeat`; strict live catalogue parameters. |
 | `cmd_Reverb` (AN3, PIMP) | `Reverb` | Covered | `audacity_command` / `audacity_effect`: `Reverb`; strict live catalogue parameters. |
 | `cmd_Reverse` (AN3, PIMP) | `Reverse` | Covered | `audacity_command` / `audacity_effect`: `Reverse`; strict live catalogue parameters. |
@@ -496,18 +505,18 @@ The server never executes an upstream identifier merely because it appears here.
 | `cmd_SelCursorStoredCursor` (AN3, PIMP); `raw_sel_cursor_stored_cursor` (FF) | `SelCursorStoredCursor` | Covered | `audacity_menu`: `SelCursorStoredCursor`; no-argument safe menu. |
 | `cmd_SelEnd` (AN3, PIMP); `raw_sel_end` (FF) | `SelEnd` | Covered | `audacity_menu`: `SelCursorToTrackEnd`; no-argument safe menu. |
 | `cmd_SelStart` (AN3, PIMP); `raw_sel_start` (FF) | `SelStart` | Covered | `audacity_menu`: `SelTrackStartToCursor`; no-argument safe menu. |
-| `cmd_Select` (AN3, PIMP); `raw_select` (FF) | `Select` | Covered | `audacity_command` / `audacity_effect`: `Select`; strict live catalogue parameters. |
+| `cmd_Select` (AN3, PIMP); `raw_select` (FF) | `Select` | Covered | `audacity_command`: `Select`; strict live catalogue parameters. |
 | `cmd_SelectAll` (AN3, PIMP) | `SelectAll` | Covered | `audacity_menu`: `SelectAll`; no-argument safe menu. |
 | `cmd_SelectNone` (AN3, PIMP) | `SelectNone` | Covered | `audacity_menu`: `SelectNone`; no-argument safe menu. |
-| `cmd_SelectTime` (PIMP) | `SelectTime` | Covered | `audacity_command` / `audacity_effect`: `SelectTime`; strict live catalogue parameters. |
-| `cmd_SelectTracks` (PIMP) | `SelectTracks` | Covered | `audacity_command` / `audacity_effect`: `SelectTracks`; strict live catalogue parameters. |
-| `cmd_SetClip` (AN3, PIMP); `raw_set_clip` (FF) | `SetClip` | Covered | `audacity_command` / `audacity_effect`: `SetClip`; strict live catalogue parameters. |
-| `cmd_SetEnvelope` (AN3, PIMP); `raw_set_envelope` (FF) | `SetEnvelope` | Covered | `audacity_command` / `audacity_effect`: `SetEnvelope`; strict live catalogue parameters. |
-| `cmd_SetLabel` (AN3, PIMP) | `SetLabel` | Covered | `audacity_command` / `audacity_effect`: `SetLabel`; strict live catalogue parameters. |
+| `cmd_SelectTime` (PIMP) | `SelectTime` | Covered | `audacity_command`: `SelectTime`; strict live catalogue parameters. |
+| `cmd_SelectTracks` (PIMP) | `SelectTracks` | Covered | `audacity_command`: `SelectTracks`; strict live catalogue parameters. |
+| `cmd_SetClip` (AN3, PIMP); `raw_set_clip` (FF) | `SetClip` | Covered | `audacity_command`: `SetClip`; strict live catalogue parameters. |
+| `cmd_SetEnvelope` (AN3, PIMP); `raw_set_envelope` (FF) | `SetEnvelope` | Covered | `audacity_command`: `SetEnvelope`; strict live catalogue parameters. |
+| `cmd_SetLabel` (AN3, PIMP) | `SetLabel` | Covered | `audacity_command`: `SetLabel`; strict live catalogue parameters. |
 | `cmd_SetPreference` (AN3, PIMP); `raw_set_preference` (FF) | `SetPreference` | Equivalent | `audacity_preferences` set: default sample rate or recording channels only. |
-| `cmd_SetProject` (AN3, PIMP); `raw_set_project` (FF) | `SetProject` | Covered | `audacity_command` / `audacity_effect`: `SetProject`; strict live catalogue parameters. |
-| `cmd_SetTrackAudio` (AN3, PIMP); `raw_set_track_audio` (FF) | `SetTrackAudio` | Covered | `audacity_command` / `audacity_effect`: `SetTrackAudio`; strict live catalogue parameters. |
-| `cmd_SetTrackStatus` (AN3, PIMP) | `SetTrackStatus` | Covered | `audacity_command` / `audacity_effect`: `SetTrackStatus`; strict live catalogue parameters. |
+| `cmd_SetProject` (AN3, PIMP); `raw_set_project` (FF) | `SetProject` | Covered | `audacity_command`: `SetProject`; strict live catalogue parameters. |
+| `cmd_SetTrackAudio` (AN3, PIMP); `raw_set_track_audio` (FF) | `SetTrackAudio` | Covered | `audacity_command`: `SetTrackAudio`; strict live catalogue parameters. |
+| `cmd_SetTrackStatus` (AN3, PIMP) | `SetTrackStatus` | Covered | `audacity_command`: `SetTrackStatus`; strict live catalogue parameters. |
 | `cmd_ShiftDown` (AN3, PIMP); `raw_shift_down` (FF) | `ShiftDown` | Equivalent | Use explicit track/time selection through audacity_select and SelectTime/SelectTracks; focus/window navigation has no headless audio benefit. |
 | `cmd_ShiftUp` (AN3, PIMP); `raw_shift_up` (FF) | `ShiftUp` | Equivalent | Use explicit track/time selection through audacity_select and SelectTime/SelectTracks; focus/window navigation has no headless audio benefit. |
 | `cmd_ShowClipping` (AN3, PIMP); `raw_show_clipping` (FF) | `ShowClipping` | Covered | `audacity_menu`: `ShowClipping`; no-argument safe menu. |

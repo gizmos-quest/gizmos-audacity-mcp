@@ -90,24 +90,29 @@ public static class GizmosWin {
   public delegate bool EnumProc(IntPtr h, IntPtr l);
   [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc f, IntPtr l);
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
-  [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
-  [DllImport("user32.dll")] public static extern int GetWindowTextLength(IntPtr h);
-  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
-  [DllImport("user32.dll")] public static extern IntPtr GetWindow(IntPtr h, uint cmd);
+  [DllImport("user32.dll")] public static extern bool SetWindowPos(IntPtr h, IntPtr after, int x, int y, int width, int height, uint flags);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetClassName(IntPtr h, StringBuilder s, int n);
-  [DllImport("user32.dll")] public static extern int GetWindowLong(IntPtr h, int index);
 }
 "@
 $ids = @(Get-Process Audacity -ErrorAction SilentlyContinue | ForEach-Object { [uint32]$_.Id })
-$count = 0
+$script:frames = New-Object System.Collections.ArrayList
 [GizmosWin]::EnumWindows({ param($h, $l)
   $p = [uint32]0; [void][GizmosWin]::GetWindowThreadProcessId($h, [ref]$p)
   $c = New-Object System.Text.StringBuilder 256; [void][GizmosWin]::GetClassName($h, $c, 256)
-  # wxWidgets' hidden parent panel must also be shown for its project frame to become visible.
-  if ($ids -contains $p -and [GizmosWin]::GetWindowTextLength($h) -gt 0 -and $c.ToString().StartsWith('wxWindow')) {
-    [void][GizmosWin]::ShowWindow($h, ${show ? 5 : 0}); ${show ? '[void][GizmosWin]::SetForegroundWindow($h);' : ''} $script:count++ }
+  $t = New-Object System.Text.StringBuilder 512; [void][GizmosWin]::GetWindowText($h, $t, 512)
+  if ($ids -contains $p -and $t.Length -gt 0 -and $c.ToString().StartsWith('wxWindow')) {
+    [void]$script:frames.Add([pscustomobject]@{ handle = $h; title = $t.ToString() }) }
   return $true }, [IntPtr]::Zero) | Out-Null
-$count`;
+# Live 3.7.8: ShowWindow from a hidden helper left the project frame hidden.
+# SetWindowPos forces visibility without moving, sizing, ordering or activation.
+# Settle the wxWidgets parent before showing the actual project frame.
+${show ? `
+foreach ($frame in $script:frames) { if ($frame.title -eq 'panel') { [void][GizmosWin]::SetWindowPos($frame.handle, [IntPtr]::Zero, 0, 0, 0, 0, 0x57) } }
+Start-Sleep -Milliseconds 150
+foreach ($frame in $script:frames) { if ($frame.title -ne 'panel') { [void][GizmosWin]::SetWindowPos($frame.handle, [IntPtr]::Zero, 0, 0, 0, 0, 0x57) } }
+` : `foreach ($frame in $script:frames) { [void][GizmosWin]::SetWindowPos($frame.handle, [IntPtr]::Zero, 0, 0, 0, 0, 0x97) }`}
+$script:frames.Count`;
 
 const DIALOG_SCRIPT = (close: boolean) => `
 Add-Type @"

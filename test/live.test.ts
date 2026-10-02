@@ -10,7 +10,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { AudacityPipe, AudacityNeedsRecovery, AudacityTimeout } from '../src/pipe.js';
-import { isRunning, recoveryEntries } from '../src/app.js';
+import { configPath, isRunning, recoveryEntries } from '../src/app.js';
 import { selectionTimes } from '../src/analysis.js';
 
 const live = process.env.AUDACITY_LIVE === '1';
@@ -18,11 +18,12 @@ const root = fileURLToPath(new URL('..', import.meta.url));
 const testTimeout = 120_000;
 type Track = { name: string; kind: string; start: number; end: number; volume: number; pan: number; mute: number; solo: number; selected: number };
 type Label = { index: number; track: number; trackName: string; start: number; end: number; text: string };
+type Clip = { track: number; start: number; end: number; name: string };
+type Envelope = { track: number; points: { t: number; y: number }[] };
 type Measurement = { duration: number; sampleRate: number; rms: number; rmsDbfs: number | null; peakDbfs: number | null; integratedLufs: number | null; truePeakDbtp: number | null };
 type Windows = { windows: { title: string; visible: boolean; dialog: boolean; closed: boolean }[] };
 
-function tone(path: string, seconds: number, amplitude = 12_000, quietStart = 0): void {
-  const rate = 48_000;
+function tone(path: string, seconds: number, amplitude = 12_000, quietStart = 0, rate = 48_000): void {
   const samples = Math.round(seconds * rate);
   const data = Buffer.alloc(samples * 2);
   for (let i = 0; i < samples; i++) {
@@ -79,7 +80,12 @@ describe.skipIf(!live)('live Audacity through stdio MCP', () => {
     const backups = join(root, '.work', 'live-backups');
     mkdirSync(backups, { recursive: true });
     client = new Client({ name: 'live-test', version: '1' });
-    await client.connect(new StdioClientTransport({ command: process.execPath, args: [join(root, 'dist', 'main.js')] }));
+    // SDK stdio intentionally inherits a narrow environment. Forward only our
+    // explicit executable/config/ffmpeg overrides so version-isolated live
+    // verification actually launches the requested Audacity, not the default.
+    const env = Object.fromEntries(['AUDACITY_EXE', 'AUDACITY_CONFIG', 'AUDACITY_FFMPEG', 'AUDACITY_FFPROBE']
+      .flatMap((key) => process.env[key] === undefined ? [] : [[key, process.env[key]!]]));
+    await client.connect(new StdioClientTransport({ command: process.execPath, args: [join(root, 'dist', 'main.js')], env }));
     registered = (await client.listTools()).tools.map((tool) => tool.name).sort();
     await call('audacity_fresh', { visible: false, backupTo: join(backups, `before-live-${Date.now()}.aup3`) });
     await call('audacity_launch', { visible: false });
@@ -128,6 +134,8 @@ describe.skipIf(!live)('live Audacity through stdio MCP', () => {
     await expect(call('audacity_status', { unexpected: true })).rejects.toThrow();
     await expect(call('audacity_menu', { command: 'New' })).rejects.toThrow();
     await expect(call('audacity_menu', { command: 'Preferences' })).rejects.toThrow();
+    await expect(call('audacity_menu', { command: 'Record1stChoice' })).rejects.toThrow();
+    await expect(call('audacity_menu', { command: 'Record2ndChoice' })).rejects.toThrow();
     await expect(call('audacity_command', { command: 'Amplify', params: { Bogus: 1 } })).rejects.toThrow();
     await expect(call('audacity_effect', { effect: 'ClickRemoval' })).rejects.toThrow();
     expect((await call<Windows>('audacity_dialogs')).windows.some((window) => window.dialog)).toBe(false);
@@ -135,9 +143,9 @@ describe.skipIf(!live)('live Audacity through stdio MCP', () => {
 
   it('launches, hides/shows windows and reads catalogue and project state', async () => {
     await call('audacity_window', { show: true });
-    expect((await call<Windows>('audacity_dialogs')).windows.some((window) => window.visible && !window.dialog)).toBe(true);
+    expect((await call<Windows>('audacity_dialogs')).windows.find((window) => window.title === 'Audacity')?.visible).toBe(true);
     await call('audacity_window', { show: false });
-    expect((await call<Windows>('audacity_dialogs')).windows.some((window) => window.visible && !window.dialog)).toBe(false);
+    expect((await call<Windows>('audacity_dialogs')).windows.find((window) => window.title === 'Audacity')?.visible).toBe(false);
     for (const type of ['Tracks', 'Clips', 'Envelopes', 'Labels', 'Boxes', 'Commands', 'Menus', 'Selection', 'Preferences']) {
       expect(await call('audacity_info', { type })).toBeDefined();
     }
@@ -167,6 +175,95 @@ describe.skipIf(!live)('live Audacity through stdio MCP', () => {
     expect(await call<Measurement>('audacity_measure_file', { file: audio, backend: 'wav' })).toMatchObject({ sampleRate: 48000 });
     expect((await call<Measurement>('audacity_measure_file', { file: audio, backend: 'wav' })).rms).toBeGreaterThan(0);
     expect((await tracks())[0]?.end).toBeCloseTo(3, 4);
+  }, testTimeout);
+
+  it('rejects ignored Set* scope arguments and edits only the explicitly requested track', async () => {
+    await importVoice('Target'); await importVoice('Distractor');
+    await call('audacity_select', { track: 'Distractor' });
+    const initialSelection = await call('audacity_info', { type: 'Selection' });
+    for (const command of ['SetTrack', 'SetTrackStatus', 'SetTrackAudio', 'SetTrackVisuals', 'SetClip', 'SetEnvelope']) {
+      for (const key of ['Track', 'TrackCount', 'Channel', 'ChannelCount']) {
+        await expect(call('audacity_command', { command, params: { [key]: 0 } })).rejects.toThrow();
+      }
+    }
+    expect(await call('audacity_info', { type: 'Selection' })).toEqual(initialSelection);
+    expect((await tracks()).map((track) => track.selected)).toEqual([0, 1]);
+    const unchangedControls = (track: Track) => ({ name: track.name, volume: track.volume, pan: track.pan, mute: track.mute, solo: track.solo });
+    const originalDistractor = unchangedControls((await tracks())[1]!);
+    await call('audacity_track_set', { track: 'Target', name: 'Edited target', gainDb: -6, pan: -0.4, mute: true, solo: false });
+    const properties = await tracks();
+    expect(properties[0]).toMatchObject({ name: 'Edited target', pan: -0.4, mute: 1 });
+    expect(properties[0]!.volume).toBeCloseTo(10 ** (-6 / 20), 4);
+    expect(unchangedControls(properties[1]!)).toEqual(originalDistractor);
+    await call('audacity_track_set', { track: 'Edited target', gainDb: 0, pan: 0, mute: false });
+
+    const distractorClips = (await call<Clip[]>('audacity_info', { type: 'Clips' })).filter((clip) => clip.track === 1);
+    await call('audacity_select', { track: 'Distractor' });
+    await call('audacity_clip_move', { track: 'Edited target', at: 1, start: 1 });
+    const moved = await call<Clip[]>('audacity_info', { type: 'Clips' });
+    expect(moved.find((clip) => clip.track === 0)).toMatchObject({ start: 1, end: 3 });
+    expect(moved.filter((clip) => clip.track === 1)).toEqual(distractorClips);
+
+    await call('audacity_envelope_set', { track: 'Distractor', points: [{ time: 0.25, value: 0.7 }, { time: 1.75, value: 0.7 }] });
+    const distractorEnvelope = (await call<Envelope[]>('audacity_info', { type: 'Envelopes' })).filter((entry) => entry.track === 1);
+    expect(distractorEnvelope.flatMap((entry) => entry.points).length).toBeGreaterThan(0);
+    await call('audacity_select', { track: 'Distractor' });
+    await call('audacity_envelope_set', { track: 'Edited target', points: [{ time: 1.25, value: 1 }, { time: 1.75, value: 0.25 }] });
+    const envelopes = await call<Envelope[]>('audacity_info', { type: 'Envelopes' });
+    expect(envelopes.filter((entry) => entry.track === 1)).toEqual(distractorEnvelope);
+    expect(envelopes.filter((entry) => entry.track === 0).flatMap((entry) => entry.points).map((point) => point.y)).toEqual([1, 0.25]);
+
+    const distractorAudio = await call<Measurement>('audacity_measure', { track: 'Distractor', backend: 'wav' });
+    await call('audacity_select', { track: 'Distractor' });
+    await call('audacity_clip_set', { track: 'Edited target', at: 1.5, name: 'Target clip', color: 'Color2', gainDb: -6 });
+    const editedClips = await call<Clip[]>('audacity_info', { type: 'Clips' });
+    expect(editedClips.find((clip) => clip.track === 0)?.name).toBe('Target clip');
+    expect(editedClips.filter((clip) => clip.track === 1)).toEqual(distractorClips);
+    expect((await call<Measurement>('audacity_measure', { track: 'Distractor', backend: 'wav' })).rms).toBeCloseTo(distractorAudio.rms, 5);
+    expect(unchangedControls((await tracks())[1]!)).toEqual(originalDistractor);
+    // Native SetClip treats a shared boundary as belonging to both neighbors.
+    // The task must identify the second clip and move it using an interior time.
+    await call('audacity_edit', { action: 'split', track: 'Edited target', start: 2, end: 2 });
+    await call('audacity_select', { track: 'Distractor' });
+    await call('audacity_clip_move', { track: 'Edited target', at: 2, start: 4 });
+    const boundaryMove = await call<Clip[]>('audacity_info', { type: 'Clips' });
+    expect(boundaryMove.filter((clip) => clip.track === 0).map(({ start, end }) => ({ start, end }))).toEqual([{ start: 1, end: 2 }, { start: 4, end: 5 }]);
+    expect(boundaryMove.filter((clip) => clip.track === 1)).toEqual(distractorClips);
+  }, testTimeout);
+
+  it('names imported/generated/label tracks without renaming previously selected tracks', async () => {
+    await importVoice('Existing');
+    const existing = (await tracks())[0]!;
+    const preserveExisting = async () => {
+      const current = (await tracks())[0]!;
+      expect(current.name).toBe(existing.name); expect(current.kind).toBe(existing.kind);
+      expect(current.start).toBe(existing.start); expect(current.end).toBe(existing.end);
+      expect(current.volume).toBe(existing.volume); expect(current.pan).toBe(existing.pan);
+      expect(current.mute).toBe(existing.mute); expect(current.solo).toBe(existing.solo);
+    };
+    await call('audacity_select', { track: 'Existing' });
+    await call('audacity_import', { file: fixture, name: 'New import', start: 4 });
+    expect((await tracks())[1]).toMatchObject({ name: 'New import', start: 4, end: 6 });
+    await preserveExisting();
+    await call('audacity_select', { track: 'Existing' });
+    await call('audacity_generate', { kind: 'tone', name: 'Generated', duration: 0.25, amplitude: 0.1 });
+    expect((await tracks())[2]?.name).toBe('Generated'); await preserveExisting();
+    await call('audacity_select', { track: 'Existing' });
+    await call('audacity_track_edit', { action: 'add_mono', name: 'Added mono' });
+    expect((await tracks())[3]?.name).toBe('Added mono'); await preserveExisting();
+    await call('audacity_select', { track: 'Existing' });
+    await call('audacity_labels_set', { trackName: 'Story', labels: [{ start: 0, text: 'Delete this' }, { start: 1, text: 'Keep this' }] });
+    expect((await tracks())[4]).toMatchObject({ name: 'Story', kind: 'label' }); await preserveExisting();
+    const importedLabels = output('isolation-labels', 'tsv'); writeFileSync(importedLabels, '0.25\t0.75\tImported label\n');
+    await call('audacity_select', { track: 'Existing' });
+    await call('audacity_labels_file', { action: 'import', file: importedLabels, trackName: 'Imported labels' });
+    expect((await tracks())[5]).toMatchObject({ name: 'Imported labels', kind: 'label' }); await preserveExisting();
+    const deleted = (await call<Label[]>('audacity_labels', { action: 'find', query: 'Delete this' }))[0]!;
+    await call('audacity_select', { track: 'Existing' });
+    await call('audacity_labels', { action: 'delete', index: deleted.index });
+    await preserveExisting();
+    expect((await tracks()).map((track) => track.name)).toEqual(['Existing', 'New import', 'Generated', 'Added mono', 'Imported labels', 'Story']);
+    expect((await call<Label[]>('audacity_labels', { action: 'list' })).map((label) => label.text).sort()).toEqual(['Imported label', 'Keep this']);
   }, testTimeout);
 
   it.each([
@@ -346,6 +443,36 @@ describe.skipIf(!live)('live Audacity through stdio MCP', () => {
     expect((await call<Measurement>('audacity_measure', { track: 'Voice', backend: 'wav' })).peakDbfs).toBeCloseTo(-3, 1);
   }, testTimeout);
 
+  it('validates noise-profile clip continuity and source frames independently of project rate', async () => {
+    await call('audacity_fresh', { visible: false });
+    await call('audacity_command', { command: 'SetProject', params: { Rate: 48000 } });
+    const lowRate = output('source-rate-8000'); tone(lowRate, 1, 12000, 0, 8000);
+    await importVoice('Low 8k', lowRate); await importVoice('Distractor 48k');
+    await call('audacity_edit', { action: 'split_delete', track: 'Distractor 48k', start: 0.5, end: 1.5 });
+    await call('audacity_select', { track: 'Distractor 48k', start: 0.75, end: 1.25 });
+    const originalTracks = await tracks();
+    const originalSelection = await call('audacity_info', { type: 'Selection' });
+    const originalClips = await call('audacity_info', { type: 'Clips' });
+    const originalAudio = await call<Measurement>('audacity_measure', { track: 'Low 8k', backend: 'wav' });
+    await expect(call('audacity_noise_profile', { track: 'Distractor 48k', start: 0.25, end: 1.75 })).rejects.toThrow(/one audio clip/);
+    expect(await tracks()).toEqual(originalTracks);
+    expect(await call('audacity_info', { type: 'Selection' })).toEqual(originalSelection);
+    expect(await call('audacity_info', { type: 'Clips' })).toEqual(originalClips);
+    // The project render has 4800 frames in 0.1 seconds. Its 8 kHz source has
+    // only 800, which would make native profiling open a blocking error dialog.
+    expect(await call('audacity_measure', { track: 'Low 8k', start: 0, end: 0.1, backend: 'wav' })).toMatchObject({ sampleRate: 48000, frames: 4800 });
+    await expect(call('audacity_noise_profile', { track: 'Low 8k', start: 0, end: 0.1 })).rejects.toThrow(/4096 source samples/);
+    expect(await tracks()).toEqual(originalTracks);
+    expect(await call('audacity_info', { type: 'Selection' })).toEqual(originalSelection);
+    expect(await call('audacity_info', { type: 'Clips' })).toEqual(originalClips);
+    expect((await call<Measurement>('audacity_measure', { track: 'Low 8k', backend: 'wav' })).rms).toBeCloseTo(originalAudio.rms, 5);
+    expect((await call<Windows>('audacity_dialogs')).windows.filter((window) => window.dialog)).toEqual([]);
+    await call('audacity_noise_profile', { track: 'Low 8k', start: 0, end: 0.6 });
+    await call('audacity_effect', { effect: 'NoiseReduction', track: 'Low 8k', params: {} });
+    expect((await tracks()).find((track) => track.name === 'Low 8k')).toMatchObject({ start: 0, end: 1 });
+    expect((await call<Windows>('audacity_dialogs')).windows.filter((window) => window.dialog)).toEqual([]);
+  }, testTimeout);
+
   it('finds/edits/deletes overlapping labels and preserves other label tracks', async () => {
     await importVoice();
     await call('audacity_labels_set', { trackName: 'Chapters', labels: [{ start: 0, end: 1.5, text: 'Outer' }, { start: 0.5, end: 1, text: 'Inner' }, { start: 1.25, text: 'Point' }, { start: 0.123456789, text: 'Precision' }] });
@@ -458,6 +585,23 @@ describe.skipIf(!live)('live Audacity through stdio MCP', () => {
     expect(await call('audacity_transport', { action: 'record', duration: 0.15, newTrack: true })).toMatchObject({ state: 'stopped' });
     const recording = (await tracks()).find((track) => track.kind === 'wave')!;
     expect(recording).toBeDefined(); expect(recording.end).toBeGreaterThan(recording.start);
+    const channels = Number((await call<{ value: string }>('audacity_preferences', { action: 'get', name: '/AudioIO/RecordChannels' })).value);
+    expect([1, 2]).toContain(channels);
+    await call('audacity_generate', { kind: 'tone', name: 'Append target', channels, duration: 0.25, amplitude: 0.1 });
+    await call('audacity_select', { track: recording.name });
+    const beforeAppend = await tracks();
+    expect(await call('audacity_transport', { action: 'record', track: 'Append target', duration: 0.15, newTrack: false })).toMatchObject({ state: 'stopped' });
+    const afterAppend = await tracks();
+    expect(afterAppend.length).toBe(beforeAppend.length);
+    expect(afterAppend.find((track) => track.name === 'Append target')!.end).toBeGreaterThan(0.25);
+    expect(afterAppend.find((track) => track.name === recording.name)!.end).toBe(recording.end);
+    await call('audacity_generate', { kind: 'tone', name: 'Wrong channels', channels: channels === 1 ? 2 : 1, duration: 0.25, amplitude: 0.1 });
+    const beforeRefusal = await tracks();
+    const selection = await call('audacity_info', { type: 'Selection' });
+    await expect(call('audacity_transport', { action: 'record', track: 'Wrong channels', duration: 0.15, newTrack: false })).rejects.toThrow(/channels/i);
+    await expect(call('audacity_transport', { action: 'record', duration: 0.15, newTrack: false })).rejects.toThrow(/track/i);
+    expect(await tracks()).toEqual(beforeRefusal);
+    expect(await call('audacity_info', { type: 'Selection' })).toEqual(selection);
     expect((await call<Windows>('audacity_dialogs')).windows.filter((window) => window.dialog)).toEqual([]);
   }, testTimeout);
 
@@ -540,10 +684,46 @@ describe.skipIf(!live)('live Audacity through stdio MCP', () => {
     await call('audacity_launch', { visible: false });
     await call('audacity_project', { action: 'open', file: project });
     expect((await tracks())[0]?.name).toBe('Voice');
-    const backup = output('fresh-backup', 'aup3');
+    const backup = join(root, '.work', 'live-backups', `fresh-backup-${Date.now()}.aup3`);
     expect(await call('audacity_fresh', { visible: false, backupTo: backup })).toMatchObject({ backedUpTo: backup });
     expect(existsSync(backup)).toBe(true); expect(await tracks()).toEqual([]);
     expect((await call<Windows>('audacity_dialogs')).windows.some((window) => window.dialog)).toBe(false);
+    await call('audacity_quit');
+    expect(await isRunning()).toBe(false); expect(recoveryEntries()).toEqual([]);
+    const configFile = configPath();
+    const originalConfig = readFileSync(configFile, 'utf8');
+    const originalProject = readFileSync(backup);
+    const stalePath = backup.replace(/\\/g, '/');
+    const newline = originalConfig.includes('\r\n') ? '\r\n' : '\n';
+    const recoverySection = `[ActiveProjects]${newline}1=${stalePath}${newline}`;
+    const section = /^\[ActiveProjects\](?:\r?\n|$)[\s\S]*?(?=^\[|$(?![\s\S]))/m;
+    const injectedConfig = section.test(originalConfig) ? originalConfig.replace(section, recoverySection) : `${originalConfig}${newline}${recoverySection}`;
+    // Retain an exact original config backup as well as the backup produced by
+    // audacity_recover. Only the stopped test process's config is changed.
+    writeFileSync(`${configFile}.before-live-recovery-${Date.now()}.bak`, originalConfig);
+    try {
+      writeFileSync(configFile, injectedConfig);
+      expect(recoveryEntries()).toEqual([stalePath]);
+      await expect(call('audacity_launch', { visible: false })).rejects.toThrow(/crash-recovery entries/);
+      expect(await isRunning()).toBe(false);
+      expect((await call<Windows>('audacity_dialogs')).windows.filter((window) => window.dialog)).toEqual([]);
+      const recovered = await call<{ discarded: { backup: string; projects: string[] } | null }>('audacity_recover', { discardRecovery: true, reconnect: false });
+      expect(recovered.discarded?.projects).toEqual([stalePath]);
+      expect(recovered.discarded?.backup).toBeDefined();
+      expect(readFileSync(recovered.discarded!.backup, 'utf8').includes(`1=${stalePath}`)).toBe(true);
+      expect(recoveryEntries()).toEqual([]);
+      expect(readFileSync(backup).equals(originalProject)).toBe(true);
+    } finally {
+      if (await isRunning()) {
+        await call('audacity_dialogs', { close: true });
+        await call('audacity_recover', { closeDialogs: true });
+        await call('audacity_quit');
+      }
+      if (await isRunning()) throw new Error('cannot restore the test config while Audacity is running');
+      writeFileSync(configFile, originalConfig);
+      expect(recoveryEntries()).toEqual([]);
+      await call('audacity_launch', { visible: false });
+    }
   }, 180_000);
 
   it('successfully exercises every registered MCP tool', () => {
