@@ -177,6 +177,30 @@ describe.skipIf(!live)('live Audacity through stdio MCP', () => {
     expect(await call('audacity_project_info')).toMatchObject({ rate: null, lengthSeconds: 0 });
   }, testTimeout);
 
+  it('refuses a different executable override before lifecycle calls touch the live project', async () => {
+    await importVoice('Preserved voice');
+    await call('audacity_select', { track: 'Preserved voice', start: 0.25, end: 0.75 });
+    const before = await tracks();
+    const selection = await call('audacity_info', { type: 'Selection' });
+    const other = new Client({ name: 'wrong-installation-test', version: '1' });
+    const env = Object.fromEntries(['AUDACITY_CONFIG', 'AUDACITY_FFMPEG', 'AUDACITY_FFPROBE']
+      .flatMap((key) => process.env[key] === undefined ? [] : [[key, process.env[key]!]]));
+    // This existing fixture is deliberately a different path; preflight must
+    // refuse it before attempting either pipe access or executable launch.
+    env.AUDACITY_EXE = fixture;
+    try {
+      await other.connect(new StdioClientTransport({ command: process.execPath, args: [join(root, 'dist', 'main.js')], env }));
+      for (const name of ['audacity_launch', 'audacity_fresh', 'audacity_quit', 'audacity_recover']) {
+        const result = await other.callTool({ name, arguments: {} });
+        expect(result.isError).toBe(true);
+        expect(result.content.filter((item) => item.type === 'text').map((item) => item.text).join('\n')).toMatch(/Preserve and quit that installation/);
+      }
+    } finally { await other.close(); }
+    expect(await tracks()).toEqual(before);
+    expect(await call('audacity_info', { type: 'Selection' })).toEqual(selection);
+    expect((await call<Windows>('audacity_dialogs')).windows.filter((window) => window.dialog)).toEqual([]);
+  }, testTimeout);
+
   it('rejects incomplete properties and invalid later measurement ranges without changing the project', async () => {
     await importVoice('Voice');
     await call('audacity_select', { track: 'Voice', start: 0.25, end: 0.75 });

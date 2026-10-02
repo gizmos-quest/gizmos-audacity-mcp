@@ -63,6 +63,20 @@ ConvertTo-Json -Compress -InputObject @($found)`);
   return out ? JSON.parse(out) as AudacityProcess[] : [];
 }
 
+/** Windows has one shared script pipe: a requested portable binary must not attach to another installation. */
+export function assertExecutableMatches(executable: string, processes: readonly AudacityProcess[], platform = process.platform): void {
+  const normalize = (file: string) => platform === 'win32' ? resolve(file).toLowerCase() : resolve(file);
+  const other = processes.find((process) => !process.executable || normalize(process.executable) !== normalize(executable));
+  if (other) throw new Error(`AUDACITY_EXE requests ${executable}, but Audacity PID ${other.pid} is running from ${other.executable ?? 'an unknown executable'}. Preserve and quit that installation before using this override.`);
+}
+
+/** Check explicit overrides before any lifecycle pipe I/O, including an existing reachable session. */
+export async function preflightExecutableOverride(): Promise<void> {
+  if (process.env.AUDACITY_EXE === undefined) return;
+  const executable = audacityExe();
+  if (process.platform === 'win32') assertExecutableMatches(executable, await audacityProcesses());
+}
+
 export async function isRunning(): Promise<boolean> {
   if (process.platform !== 'win32') return pipeExists();
   const out = await powershell('(Get-Process Audacity -ErrorAction SilentlyContinue | Measure-Object).Count');
@@ -80,6 +94,7 @@ export function pipeExists(): boolean {
 
 export async function launch(visible: boolean, waitMs = 60_000): Promise<{ started: boolean; visible: boolean; processes: AudacityProcess[] }> {
   if (!Number.isFinite(waitMs) || waitMs <= 0 || waitMs > 2_147_483_647) throw new Error('waitMs must be positive, finite and at most 2147483647');
+  await preflightExecutableOverride();
   if (pipeExists()) {
     const reply = await new AudacityPipe().send('GetInfo: Type=Tracks Format=JSON', 20_000);
     if (!reply.ok) throw new Error(reply.body || reply.status);
@@ -203,6 +218,7 @@ export async function setWindowVisible(show: boolean): Promise<number> {
  * keepProject to save to a real path instead.
  */
 export async function quit(pipe: AudacityPipe, keepProject?: string): Promise<{ savedTo?: string }> {
+  await preflightExecutableOverride();
   const scratch = keepProject === undefined ? await mkdtemp(join(tmpdir(), 'gizmos-audacity-quit-')) : undefined;
   const target = keepProject ?? join(scratch!, 'project.aup3');
   validateProjectFile(target, true);

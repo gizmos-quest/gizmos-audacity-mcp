@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { z } from 'zod';
 import { COMMAND_IDS, MENU_IDS, SafeString, describeCommand } from './catalogue.js';
 import type { ParamValue } from './format.js';
-import { configPath, discardStaleRecovery, isRunning, launch, listWindows, recoveryEntries } from './app.js';
+import { configPath, discardStaleRecovery, isRunning, launch, listWindows, recoveryEntries, preflightExecutableOverride } from './app.js';
 import { measureScope, selectionTimes } from './analysis.js';
 import type { Ops } from './ops.js';
 import { CommandFailed, errorWithContext, preflightCommand } from './ops.js';
@@ -230,6 +230,7 @@ export function registerControlTools(tool: ToolRegistrar, ops: Ops): void {
   tool('audacity_recover', 'Inspect process, pipe and crash-recovery entries; optionally close blocking dialogs and reconnect after a timeout. Never kills Audacity or replays edits. discardRecovery clears stale config entries only while Audacity is stopped, saving the config first and retaining all project files.',
     { closeDialogs: z.boolean().default(false), reconnect: z.boolean().default(true), discardRecovery: z.boolean().default(false),
       visible: z.boolean().default(false) }, async ({ closeDialogs, reconnect, discardRecovery, visible }) => {
+      await preflightExecutableOverride();
       const running = await isRunning(); const entries = recoveryEntries();
       const windows = process.platform === 'win32' ? await listWindows(closeDialogs) : [];
       if (discardRecovery && running) throw new Error('stop Audacity cleanly before discarding stale recovery entries');

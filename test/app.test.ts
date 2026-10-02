@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fileURLToPath } from 'node:url';
 import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
-import { audacityExe, launch } from '../src/app.js';
+import { assertExecutableMatches, audacityExe, launch, preflightExecutableOverride } from '../src/app.js';
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -15,6 +15,32 @@ describe('native application preflight', () => {
   it.each(['', join(tmpdir(), 'gizmos-audacity-nonexistent-executable-review.exe'), tmpdir()])('rejects an invalid explicit executable override %j', (file) => {
     vi.stubEnv('AUDACITY_EXE', file);
     expect(() => audacityExe()).toThrow('AUDACITY_EXE is not an existing executable file');
+  });
+  it.each(['', join(tmpdir(), 'gizmos-audacity-nonexistent-executable-review.exe'), tmpdir()])('rejects invalid override %j before attaching to a reachable pipe', async (file) => {
+    vi.stubEnv('AUDACITY_EXE', file);
+    await expect(launch(false)).rejects.toThrow('AUDACITY_EXE is not an existing executable file');
+  });
+  it('keeps automatic discovery free of explicit-override process inspection', async () => {
+    vi.stubEnv('AUDACITY_EXE', undefined);
+    await expect(preflightExecutableOverride()).resolves.toBeUndefined();
+  });
+  it('accepts the same Windows installation with case differences', () => {
+    const executable = resolve('portable', 'Audacity.exe');
+    expect(() => assertExecutableMatches(executable, [
+      { pid: 123, executable: executable.toUpperCase(), fileVersion: '3.7.8.0', productVersion: '3.7.8' },
+    ], 'win32')).not.toThrow();
+    expect(() => assertExecutableMatches(executable, [], 'win32')).not.toThrow();
+  });
+  it.each([null, resolve('installed', 'Audacity.exe')])('refuses a different or unidentified running executable %j', (executable) => {
+    expect(() => assertExecutableMatches(resolve('portable', 'Audacity.exe'), [
+      { pid: 123, executable, fileVersion: '3.7.9.0', productVersion: '3.7.9' },
+    ], 'win32')).toThrow(/Preserve and quit that installation/);
+  });
+  it('does not ignore case differences on a case-sensitive host', () => {
+    const executable = resolve('portable', 'Audacity');
+    expect(() => assertExecutableMatches(executable, [
+      { pid: 123, executable: executable.toUpperCase(), fileVersion: null, productVersion: null },
+    ], 'linux')).toThrow(/running from/);
   });
   it.each([0, -1, Infinity, NaN, 2_147_483_648])('rejects invalid launch wait %s before inspecting or starting Audacity', async (wait) => {
     await expect(launch(false, wait)).rejects.toThrow('waitMs must be positive');

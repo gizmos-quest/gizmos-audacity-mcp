@@ -8,6 +8,7 @@ import type { ToolRegistrar } from '../src/tools.js';
 const fixtures = vi.hoisted(() => ({ readFile: vi.fn(), readdir: vi.fn(), isRunning: vi.fn(), launch: vi.fn(), listWindows: vi.fn() }));
 vi.mock('node:fs/promises', async (original) => ({ ...await original<typeof import('node:fs/promises')>(), readFile: fixtures.readFile, readdir: fixtures.readdir }));
 vi.mock('../src/app.js', () => ({
+  preflightExecutableOverride: vi.fn(),
   configPath: () => '/fixtures/audacity.cfg', recoveryEntries: () => [], discardStaleRecovery: vi.fn(),
   isRunning: fixtures.isRunning, launch: fixtures.launch, listWindows: fixtures.listWindows,
 }));

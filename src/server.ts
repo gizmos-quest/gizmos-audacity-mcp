@@ -6,7 +6,7 @@ import { z } from 'zod';
 import { COMMAND_IDS, EFFECT_IDS, MENU_IDS, SafeString, describeCommand } from './catalogue.js';
 import { AudacityPipe, AudacityNeedsRecovery, AudacityTimeout, AudacityUnavailable } from './pipe.js';
 import { Ops, trackPanPercent, validateProjectFile } from './ops.js';
-import { launch, listWindows, quit, setWindowVisible, pipeExists } from './app.js';
+import { launch, listWindows, quit, setWindowVisible, pipeExists, preflightExecutableOverride } from './app.js';
 import { SerialQueue } from './queue.js';
 import { registerAnalysisTools } from './analysis.js';
 import { registerControlTools } from './controls.js';
@@ -92,7 +92,7 @@ export function buildServer(pipe = new AudacityPipe()): McpServer {
     'audacity_quit',
     'Quit Audacity without a save prompt. Without saveTo the project is discarded (saved to a temporary file that is then deleted).',
     { saveTo: SafeString.optional().describe('keep the project at this .aup3 path') },
-    async ({ saveTo }) => { await ops.restoreImportPreferences(); return quit(pipe, saveTo); },
+    async ({ saveTo }) => { await preflightExecutableOverride(); await ops.restoreImportPreferences(); return quit(pipe, saveTo); },
   );
 
   tool(
@@ -255,6 +255,7 @@ export function buildServer(pipe = new AudacityPipe()): McpServer {
     'Get an empty project in a single window. If the open project has tracks it is saved to backupTo (required then), Audacity quits without a prompt and starts again. Never use the New menu: a second project window has crashed Audacity 3.7 under scripting.',
     { visible: z.boolean().default(true), backupTo: SafeString.optional().describe('.aup3 path for the current project') },
     async ({ visible, backupTo }) => {
+      await preflightExecutableOverride();
       if (!pipeExists()) { const result = await launch(visible); if (result.started) ops.freshApplication(); return { ...result, backedUpTo: null }; }
       const tracks = await ops.tracks();
       if (tracks.length === 0) {

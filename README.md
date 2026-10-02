@@ -49,8 +49,12 @@ verification uses the official portable archive with isolated Portable Settings,
 without replacing the user's installed application. The live client forwards
 explicit `AUDACITY_*` executable/config/ffmpeg overrides to its stdio server.
 Launch reports each Windows process's actual executable and file/product
-version. Invalid explicit executable overrides fail instead of falling back
-to the installed application. The live suite checks the executable and exact
+version. Explicit executable overrides are validated before lifecycle pipe
+access, including when Audacity is already running. On Windows, launch,
+fresh, quit and recovery refuse a process from a different installation;
+preserve and quit that process before selecting the portable override.
+Invalid overrides fail instead of falling back to the installed application.
+The live suite checks the executable and exact
 3.7.8 file version before changing any project, and refuses an already-running
 application from a different installation.
 Keep `mod-cloud-audiocom` and `mod-musehub-ui` disabled on the pinned host:
@@ -140,9 +144,11 @@ the exchange; missing keys are restored to native defaults `Ask` and
 `MatchIfBeatsAndMeasures`. This internal guard also covers generic commands,
 macros and batch imports. Public preference writes retain their two-key allowlist.
 
-## Headless production and processing
+## Hidden-window production and processing
 
-Hidden Audacity still runs its application, audio engine and scripting module.
+Audacity 3.7.8 has no native headless mode. Hidden Audacity still runs its
+application, audio engine and scripting module; Blender's `--headless`
+production command instead uses its native background mode.
 Start with `audacity_launch {"visible":false}`; inspect the same session with
 `audacity_window {"show":true}`. Use `audacity_fresh` with a unique `backupTo`
 if the current session has tracks. Never create a second project with New.

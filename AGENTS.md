@@ -19,6 +19,8 @@
   Verify the running executable path and actual file version first; a 3.7.*
   gating pin is not an exact 3.7.8 pin. Forward explicit AUDACITY_* overrides
   through the SDK's restricted stdio environment for isolated-version tests.
+  Validate an explicit AUDACITY_EXE before lifecycle pipe I/O; the shared
+  Windows pipe must not attach to or restart a different running installation.
 - Native SetTrack/SetTrackStatus/SetTrackAudio/SetTrackVisuals/SetClip/SetEnvelope
   ignore unlisted Track/TrackCount/Channel/ChannelCount keys. Reject those keys
   and select targets explicitly with Select/SelectTracks before setters.
