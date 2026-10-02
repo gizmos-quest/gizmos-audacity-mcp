@@ -1,0 +1,2407 @@
+[
+ {
+  "depth": 0,
+  "flags": 0,
+  "label": "File",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "New",
+  "accel": "Ctrl+N",
+  "id": "New"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Open...",
+  "accel": "Ctrl+O",
+  "id": "Open"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Recent Files",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Clear",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Open From Cloud",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Open Cloud Project...",
+  "accel": "",
+  "id": "OpenProjectFromCloud"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Open Cloud Audio File...",
+  "accel": "",
+  "id": "OpenAudioFromCloud"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Save Project",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Save Project",
+  "accel": "Ctrl+S",
+  "id": "Save"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Save Project As...",
+  "accel": "",
+  "id": "SaveAs"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Backup Project...",
+  "accel": "",
+  "id": "SaveCopy"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Save To Cloud...",
+  "accel": "",
+  "id": "SaveToCloud"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Update Cloud Audio Preview",
+  "accel": "",
+  "id": "UpdateMixdown"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Export Audio...",
+  "accel": "Ctrl+Shift+E",
+  "id": "Export"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Export Other",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Export Labels...",
+  "accel": "",
+  "id": "ExportLabels"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Export MIDI...",
+  "accel": "",
+  "id": "ExportMIDI"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Import",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Audio...",
+  "accel": "Ctrl+Shift+I",
+  "id": "ImportAudio"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "MIDI...",
+  "accel": "",
+  "id": "ImportMIDI"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Labels...",
+  "accel": "",
+  "id": "ImportLabels"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Raw Data...",
+  "accel": "",
+  "id": "ImportRaw"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Share Audio...",
+  "accel": "",
+  "id": "ShareAudio"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Close Project",
+  "accel": "Ctrl+W",
+  "id": "Close"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Quit Audacity",
+  "accel": "Ctrl+Q",
+  "id": "Exit"
+ },
+ {
+  "depth": 0,
+  "flags": 0,
+  "label": "Edit",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Undo",
+  "accel": "Ctrl+Z",
+  "id": "Undo"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Redo",
+  "accel": "Ctrl+Y",
+  "id": "Redo"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Cut",
+  "accel": "Ctrl+X",
+  "id": "Cut"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Delete",
+  "accel": "Ctrl+K",
+  "id": "Delete"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Copy",
+  "accel": "Ctrl+C",
+  "id": "Copy"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Paste",
+  "accel": "Ctrl+V",
+  "id": "Paste"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Duplicate",
+  "accel": "Ctrl+D",
+  "id": "Duplicate"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Remove Special",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Cut and leave gap",
+  "accel": "Ctrl+Alt+X",
+  "id": "SplitCut"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Delete and leave gap",
+  "accel": "Ctrl+Alt+K",
+  "id": "SplitDelete"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Silence Audio",
+  "accel": "Ctrl+L",
+  "id": "Silence"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Trim Audio",
+  "accel": "Ctrl+T",
+  "id": "Trim"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Audio Clips",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Split",
+  "accel": "Ctrl+I",
+  "id": "Split"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Split New",
+  "accel": "",
+  "id": "SplitNew"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Join",
+  "accel": "Ctrl+J",
+  "id": "Join"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Detach at Silences",
+  "accel": "",
+  "id": "Disjoin"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Pitch and Speed...",
+  "accel": "Ctrl+Shift+P",
+  "id": "ChangePitchAndSpeed"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Pitch Down",
+  "accel": "Alt+Down",
+  "id": "PitchDown"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Pitch Up",
+  "accel": "Alt+Up",
+  "id": "PitchUp"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Rename Clip...",
+  "accel": "Ctrl+F2",
+  "id": "RenameClip"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Render Pitch and Speed",
+  "accel": "",
+  "id": "RenderPitchAndSpeed"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Labels",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Label Editor",
+  "accel": "",
+  "id": "EditLabels"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Add Label at Selection",
+  "accel": "Ctrl+B",
+  "id": "AddLabel"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Add Label at Playback Position",
+  "accel": "Ctrl+M",
+  "id": "AddLabelPlaying"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Paste Text to New Label",
+  "accel": "",
+  "id": "PasteNewLabel"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Typing Creates New Labels",
+  "accel": "",
+  "id": "TypeToCreateLabel"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Labeled Audio",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Cut",
+  "accel": "",
+  "id": "CutLabels"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Delete",
+  "accel": "",
+  "id": "DeleteLabels"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Cut and leave gap",
+  "accel": "Alt+Shift+X",
+  "id": "SplitCutLabels"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Delete and leave gap",
+  "accel": "Alt+Shift+K",
+  "id": "SplitDeleteLabels"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Silence Audio",
+  "accel": "",
+  "id": "SilenceLabels"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Copy",
+  "accel": "Alt+Shift+C",
+  "id": "CopyLabels"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Split",
+  "accel": "",
+  "id": "SplitLabels"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Join",
+  "accel": "",
+  "id": "JoinLabels"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Detach at Silences",
+  "accel": "Alt+Shift+J",
+  "id": "DisjoinLabels"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Metadata Editor",
+  "accel": "",
+  "id": "EditMetaData"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Preferences",
+  "accel": "Ctrl+P",
+  "id": "Preferences"
+ },
+ {
+  "depth": 0,
+  "flags": 0,
+  "label": "Select",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "All",
+  "accel": "Ctrl+A",
+  "id": "SelectAll"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "None",
+  "accel": "",
+  "id": "SelectNone"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Tracks",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "In All Tracks",
+  "accel": "Ctrl+Shift+K",
+  "id": "SelAllTracks"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "In All Sync-Locked Tracks",
+  "accel": "Ctrl+Shift+Y",
+  "id": "SelSyncLockTracks"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Region",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Left at Playback Position",
+  "accel": " [",
+  "id": "SetLeftSelection"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Right at Playback Position",
+  "accel": " ]",
+  "id": "SetRightSelection"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Track Start to Cursor",
+  "accel": "Shift+J",
+  "id": "SelTrackStartToCursor"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Cursor to Track End",
+  "accel": "Shift+K",
+  "id": "SelCursorToTrackEnd"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Track Start to End",
+  "accel": "",
+  "id": "SelTrackStartToEnd"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Store Selection",
+  "accel": "",
+  "id": "SelSave"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Retrieve Selection",
+  "accel": "",
+  "id": "SelRestore"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Spectral",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Toggle Spectral Selection",
+  "accel": "Q",
+  "id": "ToggleSpectralSelection"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Next Higher Peak Frequency",
+  "accel": "",
+  "id": "NextHigherPeakFrequency"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Next Lower Peak Frequency",
+  "accel": "",
+  "id": "NextLowerPeakFrequency"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Audio Clips",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Previous Clip Boundary to Cursor",
+  "accel": "",
+  "id": "SelPrevClipBoundaryToCursor"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Cursor to Next Clip Boundary",
+  "accel": "",
+  "id": "SelCursorToNextClipBoundary"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Previous Clip",
+  "accel": "Alt+,",
+  "id": "SelPrevClip"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Next Clip",
+  "accel": "Alt+.",
+  "id": "SelNextClip"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Cursor to Stored Cursor Position",
+  "accel": "",
+  "id": "SelCursorStoredCursor"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Store Cursor Position",
+  "accel": "",
+  "id": "StoreCursorPosition"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "At Zero Crossings",
+  "accel": "Z",
+  "id": "ZeroCross"
+ },
+ {
+  "depth": 0,
+  "flags": 0,
+  "label": "View",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Zoom",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Zoom In",
+  "accel": "Ctrl+1",
+  "id": "ZoomIn"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Zoom Normal",
+  "accel": "Ctrl+2",
+  "id": "ZoomNormal"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Zoom Out",
+  "accel": "Ctrl+3",
+  "id": "ZoomOut"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Zoom to Selection",
+  "accel": "Ctrl+E",
+  "id": "ZoomSel"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Zoom Toggle",
+  "accel": "Shift+Z",
+  "id": "ZoomToggle"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Track Size",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Fit to Width",
+  "accel": "Ctrl+F",
+  "id": "FitInWindow"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Fit to Height",
+  "accel": "Ctrl+Shift+F",
+  "id": "FitV"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Collapse All Tracks",
+  "accel": "Ctrl+Shift+C",
+  "id": "CollapseAllTracks"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Expand Collapsed Tracks",
+  "accel": "Ctrl+Shift+X",
+  "id": "ExpandAllTracks"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Skip to",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Selection Start",
+  "accel": "",
+  "id": "SkipSelStart"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Selection End",
+  "accel": "",
+  "id": "SkipSelEnd"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "History",
+  "accel": "",
+  "id": "UndoHistory"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Mixer",
+  "accel": "",
+  "id": "MixerBoard"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Toolbars",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Reset Toolbars",
+  "accel": "",
+  "id": "ResetToolbars"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 2,
+  "label": "Transport Toolbar",
+  "accel": "",
+  "id": "ShowTransportTB"
+ },
+ {
+  "depth": 2,
+  "flags": 2,
+  "label": "Tools Toolbar",
+  "accel": "",
+  "id": "ShowToolsTB"
+ },
+ {
+  "depth": 2,
+  "flags": 2,
+  "label": "Recording Meter Toolbar",
+  "accel": "",
+  "id": "ShowRecordMeterTB"
+ },
+ {
+  "depth": 2,
+  "flags": 2,
+  "label": "Playback Meter Toolbar",
+  "accel": "",
+  "id": "ShowPlayMeterTB"
+ },
+ {
+  "depth": 2,
+  "flags": 2,
+  "label": "Edit Toolbar",
+  "accel": "",
+  "id": "ShowEditTB"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Cut/Copy/Paste Toolbar",
+  "accel": "",
+  "id": "ShowCutCopyPasteTB"
+ },
+ {
+  "depth": 2,
+  "flags": 2,
+  "label": "Play-at-Speed Toolbar",
+  "accel": "",
+  "id": "ShowTranscriptionTB"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Device Toolbar",
+  "accel": "",
+  "id": "ShowDeviceTB"
+ },
+ {
+  "depth": 2,
+  "flags": 2,
+  "label": "Selection Toolbar",
+  "accel": "",
+  "id": "ShowSelectionTB"
+ },
+ {
+  "depth": 2,
+  "flags": 2,
+  "label": "Time Toolbar",
+  "accel": "",
+  "id": "ShowTimeTB"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Spectral Selection Toolbar",
+  "accel": "",
+  "id": "ShowSpectralSelectionTB"
+ },
+ {
+  "depth": 2,
+  "flags": 2,
+  "label": "Share Audio Toolbar",
+  "accel": "",
+  "id": "ShareAudioTB"
+ },
+ {
+  "depth": 2,
+  "flags": 2,
+  "label": "Audio Setup Toolbar",
+  "accel": "",
+  "id": "ShowAudioSetupTB"
+ },
+ {
+  "depth": 2,
+  "flags": 2,
+  "label": "Snapping Toolbar",
+  "accel": "",
+  "id": "ShowSnappingTB"
+ },
+ {
+  "depth": 2,
+  "flags": 2,
+  "label": "Time Signature Toolbar",
+  "accel": "",
+  "id": "ShowTimeSignatureTB"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Timeline",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 2,
+  "label": "Minutes and Seconds",
+  "accel": "",
+  "id": "MinutesAndSeconds"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Beats and Measures",
+  "accel": "",
+  "id": "BeatsAndMeasures"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Extra Menus",
+  "accel": "",
+  "id": "ShowExtraMenus"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Show Clipping in Waveform",
+  "accel": "",
+  "id": "ShowClipping"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Show RMS in Waveform",
+  "accel": "",
+  "id": "ShowRMS"
+ },
+ {
+  "depth": 0,
+  "flags": 0,
+  "label": "Transport",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Playing",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Play/Stop",
+  "accel": "Space",
+  "id": "DefaultPlayStop"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Play/Stop and Set Cursor",
+  "accel": "X",
+  "id": "PlayStopSelect"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Play Once/Stop",
+  "accel": "Shift+Space",
+  "id": "OncePlayStop"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Pause",
+  "accel": "P",
+  "id": "Pause"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Recording",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Record",
+  "accel": "R",
+  "id": "Record1stChoice"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Record New Track",
+  "accel": "Shift+R",
+  "id": "Record2ndChoice"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Timer Record...",
+  "accel": "Shift+T",
+  "id": "TimerRecord"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Punch and Roll Record",
+  "accel": "Shift+D",
+  "id": "PunchAndRoll"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Pause",
+  "accel": "P",
+  "id": "Pause"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Scrubbing",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Scrub",
+  "accel": "",
+  "id": "Scrub"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Seek",
+  "accel": "",
+  "id": "Seek"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Scrub Ruler",
+  "accel": "",
+  "id": "ToggleScrubRuler"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Cursor to",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Selection Start",
+  "accel": "",
+  "id": "CursSelStart"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Selection End",
+  "accel": "",
+  "id": "CursSelEnd"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Track Start",
+  "accel": "J",
+  "id": "CursTrackStart"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Track End",
+  "accel": "K",
+  "id": "CursTrackEnd"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Previous Clip Boundary",
+  "accel": "",
+  "id": "CursPrevClipBoundary"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Next Clip Boundary",
+  "accel": "",
+  "id": "CursNextClipBoundary"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Project Start",
+  "accel": "Home",
+  "id": "CursProjectStart"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Project End",
+  "accel": "End",
+  "id": "CursProjectEnd"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Looping",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Enable Looping",
+  "accel": "L",
+  "id": "TogglePlayRegion"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Clear Loop",
+  "accel": "Shift+Alt+L",
+  "id": "ClearPlayRegion"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Set Loop to Selection",
+  "accel": "Shift+L",
+  "id": "SetPlayRegionToSelection"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Set Loop In",
+  "accel": "",
+  "id": "SetPlayRegionIn"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Set Loop Out",
+  "accel": "",
+  "id": "SetPlayRegionOut"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Rescan Audio Devices",
+  "accel": "",
+  "id": "RescanDevices"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Transport Options",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Set sound activation level...",
+  "accel": "",
+  "id": "SoundActivationLevel"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Enable sound activated recording",
+  "accel": "",
+  "id": "SoundActivation"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Continuous scrolling",
+  "accel": "",
+  "id": "PinnedHead"
+ },
+ {
+  "depth": 2,
+  "flags": 2,
+  "label": "Hear other tracks during recording",
+  "accel": "",
+  "id": "Overdub"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Enable audible input monitoring",
+  "accel": "",
+  "id": "SWPlaythrough"
+ },
+ {
+  "depth": 0,
+  "flags": 0,
+  "label": "Tracks",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Add New",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Mono Track",
+  "accel": "",
+  "id": "NewMonoTrack"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Stereo Track",
+  "accel": "",
+  "id": "NewStereoTrack"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Label Track",
+  "accel": "",
+  "id": "NewLabelTrack"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Time Track",
+  "accel": "",
+  "id": "NewTimeTrack"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Mix",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Mix Stereo Down to Mono",
+  "accel": "",
+  "id": "Stereo to Mono"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Mix and Render",
+  "accel": "",
+  "id": "MixAndRender"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Mix and Render to New Track",
+  "accel": "",
+  "id": "MixAndRenderToNewTrack"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Resample...",
+  "accel": "",
+  "id": "Resample"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Remove Tracks",
+  "accel": "",
+  "id": "RemoveTracks"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Mute/Unmute",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Mute All Tracks",
+  "accel": "Ctrl+U",
+  "id": "MuteAllTracks"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Unmute All Tracks",
+  "accel": "Ctrl+Shift+U",
+  "id": "UnmuteAllTracks"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Mute Tracks",
+  "accel": "Ctrl+Alt+U",
+  "id": "MuteTracks"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Unmute Tracks",
+  "accel": "Ctrl+Alt+Shift+U",
+  "id": "UnmuteTracks"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Pan",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Left",
+  "accel": "",
+  "id": "PanLeft"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Right",
+  "accel": "",
+  "id": "PanRight"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Center",
+  "accel": "",
+  "id": "PanCenter"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Align Tracks",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Align End to End",
+  "accel": "",
+  "id": "Align_EndToEnd"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Align Together",
+  "accel": "",
+  "id": "Align_Together"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Start to Zero",
+  "accel": "",
+  "id": "Align_StartToZero"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Start to Cursor/Selection Start",
+  "accel": "",
+  "id": "Align_StartToSelStart"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Start to Selection End",
+  "accel": "",
+  "id": "Align_StartToSelEnd"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "End to Cursor/Selection Start",
+  "accel": "",
+  "id": "Align_EndToSelStart"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "End to Selection End",
+  "accel": "",
+  "id": "Align_EndToSelEnd"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Move Selection with Tracks",
+  "accel": "",
+  "id": "MoveSelectionWithTracks"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Sort Tracks",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "By Start Time",
+  "accel": "",
+  "id": "SortByTime"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "By Name",
+  "accel": "",
+  "id": "SortByName"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Keep tracks synchronized (Sync-Lock)",
+  "accel": "",
+  "id": "SyncLock"
+ },
+ {
+  "depth": 0,
+  "flags": 0,
+  "label": "Generate",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Plugin Manager",
+  "accel": "",
+  "id": "ManageGenerators"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Chirp...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Chirp_Built-in Effect: Chirp"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "DTMF Tones...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_DTMF Tones_Built-in Effect: DTMF Tones"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Noise...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Noise_Built-in Effect: Noise"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Rhythmusspur...",
+  "accel": "",
+  "id": "Effect_Nyquist_Dominic Mazzoni, David R. Sky und Steve Daulton_Rhythmusspur_C:\\Program Files\\Audacity\\plug-ins\rhythmtrack.ny"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Risset-Trommel...",
+  "accel": "",
+  "id": "Effect_Nyquist_Steven Jones_Risset-Trommel_C:\\Program Files\\Audacity\\plug-ins\rissetdrum.ny"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Silence...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Silence_Built-in Effect: Silence"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Tone...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Tone_Built-in Effect: Tone"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Zupfen...",
+  "accel": "",
+  "id": "Effect_Nyquist_David R.Sky_Zupfen_C:\\Program Files\\Audacity\\plug-ins\\pluck.ny"
+ },
+ {
+  "depth": 0,
+  "flags": 0,
+  "label": "Effect",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Plugin Manager",
+  "accel": "",
+  "id": "ManageEffects"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Add Realtime Effects",
+  "accel": "E",
+  "id": "AddRealtimeEffects"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Get more effects...",
+  "accel": "",
+  "id": "GetMoreEffects"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Repeat Last Effect",
+  "accel": "Ctrl+R",
+  "id": "RepeatLastEffect"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Volume and Compression",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Amplify...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Amplify_Built-in Effect: Amplify"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Auto Duck...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Auto Duck_Built-in Effect: Auto Duck"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Compressor...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Compressor_Built-in Effect: Compressor"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Limiter...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Limiter_Built-in Effect: Limiter"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Loudness Normalization...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Loudness Normalization_Built-in Effect: Loudness Normalization"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Normalize...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Normalize_Built-in Effect: Normalize"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Fading",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Fade In",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Fade In_Built-in Effect: Fade In"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Fade Out",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Fade Out_Built-in Effect: Fade Out"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Pitch and Tempo",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Change Pitch...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Change Pitch_Built-in Effect: Change Pitch"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Change Speed and Pitch...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Change Speed and Pitch_Built-in Effect: Change Speed and Pitch"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Change Tempo...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Change Tempo_Built-in Effect: Change Tempo"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Paulstretch...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Paulstretch_Built-in Effect: Paulstretch"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Sliding Stretch...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Sliding Stretch_Built-in Effect: Sliding Stretch"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "EQ and Filters",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Bass and Treble...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Bass and Treble_Built-in Effect: Bass and Treble"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Filter Curve EQ...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Filter Curve_Built-in Effect: Filter Curve"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Graphic EQ...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Graphic EQ_Built-in Effect: Graphic EQ"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Noise Removal and Repair",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Click Removal...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Click Removal_Built-in Effect: Click Removal"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Noise Reduction...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Noise Reduction_Built-in Effect: Noise Reduction"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Repair",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Repair_Built-in Effect: Repair"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Delay and Reverb",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Echo...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Echo_Built-in Effect: Echo"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Reverb...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Reverb_Built-in Effect: Reverb"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Distortion and Modulation",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Distortion...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Distortion_Built-in Effect: Distortion"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Phaser...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Phaser_Built-in Effect: Phaser"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Tremolo...",
+  "accel": "",
+  "id": "Effect_Nyquist_Steve Daulton_Tremolo_C:\\Program Files\\Audacity\\plug-ins\tremolo.ny"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Vocoder...",
+  "accel": "",
+  "id": "Effect_Nyquist_Edgar-RFT und Steve Daulton_Vocoder_C:\\Program Files\\Audacity\\plug-ins\\vocoder.ny"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Wahwah...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Wahwah_Built-in Effect: Wahwah"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Special",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Invert",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Invert_Built-in Effect: Invert"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Repeat...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Repeat_Built-in Effect: Repeat"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Reverse",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Reverse_Built-in Effect: Reverse"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Truncate Silence...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Truncate Silence_Built-in Effect: Truncate Silence"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Legacy",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Classic Filters...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Classic Filters_Built-in Effect: Classic Filters"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Legacy Compressor...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Legacy Compressor_Built-in Effect: Legacy Compressor"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Legacy Limiter...",
+  "accel": "",
+  "id": "Effect_Nyquist_Steve Daulton_Legacy Limiter_C:\\Program Files\\Audacity\\plug-ins\\legacy-limiter.ny"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "\u00dcbersteuerungen beheben",
+  "accel": "",
+  "id": "Effect_Nyquist_Benjamin Schwartz und Steve Daulton_\u00dcbersteuerungen beheben_C:\\Program Files\\Audacity\\plug-ins\\clipfix.ny"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Dominic Mazzoni",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Hochpassfilter",
+  "accel": "",
+  "id": "Effect_Nyquist_Dominic Mazzoni_Hochpassfilter_C:\\Program Files\\Audacity\\plug-ins\\highpass.ny"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Tiefpassfilter",
+  "accel": "",
+  "id": "Effect_Nyquist_Dominic Mazzoni_Tiefpassfilter_C:\\Program Files\\Audacity\\plug-ins\\lowpass.ny"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Paul Licameli",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Spektralbearbeitung - Mehrfachwerkzeug",
+  "accel": "",
+  "id": "Effect_Nyquist_Paul Licameli_Spektralbearbeitung - Mehrfachwerkzeug_C:\\Program Files\\Audacity\\plug-ins\\SpectralEditMulti.ny"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Spektralbearbeitung - Parametrischer EQ",
+  "accel": "",
+  "id": "Effect_Nyquist_Paul Licameli_Spektralbearbeitung - Parametrischer EQ_C:\\Program Files\\Audacity\\plug-ins\\SpectralEditParametricEQ.ny"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Spektralbearbeitung - Platte\n\u00a0",
+  "accel": "",
+  "id": "Effect_Nyquist_Paul Licameli_Spektralbearbeitung - Platte\n\u00a0_C:\\Program Files\\Audacity\\plug-ins\\SpectralEditShelves.ny"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Steve Daulton",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Anpassbare Blende",
+  "accel": "",
+  "id": "Effect_Nyquist_Steve Daulton_Anpassbare Blende_C:\\Program Files\\Audacity\\plug-ins\\adjustable-fade.ny"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Clips \u00fcberblenden",
+  "accel": "",
+  "id": "Effect_Nyquist_Steve Daulton_Clips \u00fcberblenden_C:\\Program Files\\Audacity\\plug-ins\\crossfadeclips.ny"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Noise-Gate",
+  "accel": "",
+  "id": "Effect_Nyquist_Steve Daulton_Noise-Gate_C:\\Program Files\\Audacity\\plug-ins\noisegate.ny"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Regalfilter",
+  "accel": "",
+  "id": "Effect_Nyquist_Steve Daulton_Regalfilter_C:\\Program Files\\Audacity\\plug-ins\\ShelfFilter.ny"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Spektral l\u00f6schen",
+  "accel": "",
+  "id": "Effect_Nyquist_Steve Daulton_Spektral l\u00f6schen_C:\\Program Files\\Audacity\\plug-ins\\spectral-delete.ny"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Spuren \u00fcberblenden",
+  "accel": "",
+  "id": "Effect_Nyquist_Steve Daulton_Spuren \u00fcberblenden_C:\\Program Files\\Audacity\\plug-ins\\crossfadetracks.ny"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Studio-Ausblendung",
+  "accel": "",
+  "id": "Effect_Nyquist_Steve Daulton_Studio-Ausblendung_C:\\Program Files\\Audacity\\plug-ins\\StudioFadeOut.ny"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Kerbfilter",
+  "accel": "",
+  "id": "Effect_Nyquist_Steve Daulton und Bill Wharrie_Kerbfilter_C:\\Program Files\\Audacity\\plug-ins\notch.ny"
+ },
+ {
+  "depth": 0,
+  "flags": 0,
+  "label": "Analyze",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Plugin Manager",
+  "accel": "",
+  "id": "ManageAnalyzers"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Contrast...",
+  "accel": "",
+  "id": "ContrastAnalyser"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Plot Spectrum...",
+  "accel": "",
+  "id": "PlotSpectrum"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Beat-Finder...",
+  "accel": "",
+  "id": "Effect_Nyquist_Audacity_Beat-Finder_C:\\Program Files\\Audacity\\plug-ins\beat.ny"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Find Clipping...",
+  "accel": "",
+  "id": "Effect_Audacity_Audacity_Find Clipping_Built-in Effect: Find Clipping"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Ger\u00e4usche beschriften...",
+  "accel": "",
+  "id": "Effect_Nyquist_Steve Daulton_Ger\u00e4usche beschriften_C:\\Program Files\\Audacity\\plug-ins\\label-sounds.ny"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Measure RMS",
+  "accel": "",
+  "id": "Effect_Nyquist_Steve Daulton_Measure RMS_C:\\Program Files\\Audacity\\plug-ins\rms.ny"
+ },
+ {
+  "depth": 0,
+  "flags": 0,
+  "label": "Tools",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Plugin Manager",
+  "accel": "",
+  "id": "ManageTools"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Macro Manager",
+  "accel": "",
+  "id": "ManageMacros"
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Apply Macro",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Palette...",
+  "accel": "",
+  "id": "ApplyMacrosPalette"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Enden ausblenden",
+  "accel": "",
+  "id": "Macro_Endenausblenden"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "MP3-Umwandlung",
+  "accel": "",
+  "id": "Macro_MP3-Umwandlung"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Reset Configuration",
+  "accel": "",
+  "id": "ConfigReset"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Run Benchmark...",
+  "accel": "",
+  "id": "Benchmark"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Nyquist Prompt...",
+  "accel": "",
+  "id": "Effect_Nyquist_Audacity_Nyquist Prompt_Nyquist Prompt"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Nyquist-Erweiterung-Installer...",
+  "accel": "",
+  "id": "Effect_Nyquist_Steve Daulton_Nyquist-Erweiterung-Installer_C:\\Program Files\\Audacity\\plug-ins\nyquist-plug-in-installer.ny"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Sample-Datenexport...",
+  "accel": "",
+  "id": "Effect_Nyquist_Steve Daulton_Sample-Datenexport_C:\\Program Files\\Audacity\\plug-ins\\sample-data-export.ny"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Sample-Datenimport...",
+  "accel": "",
+  "id": "Effect_Nyquist_Steve Daulton_Sample-Datenimport_C:\\Program Files\\Audacity\\plug-ins\\sample-data-import.ny"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Textmarken in regelm\u00e4\u00dfigen Intervallen...",
+  "accel": "",
+  "id": "Effect_Nyquist_Steve Daulton_Textmarken in regelm\u00e4\u00dfigen Intervallen_C:\\Program Files\\Audacity\\plug-ins\\equalabel.ny"
+ },
+ {
+  "depth": 0,
+  "flags": 0,
+  "label": "Help",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Quick Help",
+  "accel": "",
+  "id": "QuickHelp"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Manual",
+  "accel": "",
+  "id": "Manual"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Audacity Support",
+  "accel": "",
+  "id": "AudacitySupport"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 1,
+  "label": "Diagnostics",
+  "accel": ""
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Audio Device Info...",
+  "accel": "",
+  "id": "DeviceInfo"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "MIDI Device Info...",
+  "accel": "",
+  "id": "MidiDeviceInfo"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Show Log...",
+  "accel": "",
+  "id": "Log"
+ },
+ {
+  "depth": 2,
+  "flags": 0,
+  "label": "Generate Support Data...",
+  "accel": "",
+  "id": "CrashReport"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "----",
+  "accel": ""
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Link audio.com account...",
+  "accel": "",
+  "id": "LinkAccount"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "Check for Updates...",
+  "accel": "",
+  "id": "Updates"
+ },
+ {
+  "depth": 1,
+  "flags": 0,
+  "label": "About Audacity",
+  "accel": "",
+  "id": "About"
+ }
+]

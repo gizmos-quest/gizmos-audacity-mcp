@@ -1,0 +1,33 @@
+{
+  "name": "@gizmos-quest/gizmos-audacity-mcp",
+  "version": "0.1.0",
+  "description": "MCP server that drives a running Audacity 3.x live through mod-script-pipe",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "gizmos-audacity-mcp": "dist/main.js"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "test:live": "AUDACITY_LIVE=1 vitest run test/live.test.ts",
+    "catalogue": "tsx scripts/refresh-catalogue.ts",
+    "start": "node dist/main.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "^2.2.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/client": "^2.2.0",
+    "@types/node": "^26.6.4",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  }
+}

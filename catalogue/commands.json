@@ -1,0 +1,2745 @@
+[
+ {
+  "id": "Amplify",
+  "name": "Amplify",
+  "params": [
+   {
+    "key": "Ratio",
+    "type": "double",
+    "default": 0.9
+   },
+   {
+    "key": "AllowClipping",
+    "type": "bool",
+    "default": "False"
+   }
+  ],
+  "url": "Amplify",
+  "tip": "Increases or decreases the volume of the audio you have selected"
+ },
+ {
+  "id": "AutoDuck",
+  "name": "Auto Duck",
+  "params": [
+   {
+    "key": "DuckAmountDb",
+    "type": "double",
+    "default": -12
+   },
+   {
+    "key": "InnerFadeDownLen",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "InnerFadeUpLen",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "OuterFadeDownLen",
+    "type": "double",
+    "default": 0.5
+   },
+   {
+    "key": "OuterFadeUpLen",
+    "type": "double",
+    "default": 0.5
+   },
+   {
+    "key": "ThresholdDb",
+    "type": "double",
+    "default": -30
+   },
+   {
+    "key": "MaximumPause",
+    "type": "double",
+    "default": 1
+   }
+  ],
+  "url": "Auto_Duck",
+  "tip": "Reduces (ducks) the volume of one or more tracks whenever the volume of a specified \"control\" track reaches a particular level"
+ },
+ {
+  "id": "BassAndTreble",
+  "name": "Bass and Treble",
+  "params": [
+   {
+    "key": "Bass",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "Treble",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "Gain",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "Link Sliders",
+    "type": "bool",
+    "default": "False"
+   }
+  ],
+  "url": "Bass_and_Treble",
+  "tip": "Simple tone control effect"
+ },
+ {
+  "id": "ChangePitch",
+  "name": "Change Pitch",
+  "params": [
+   {
+    "key": "Percentage",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "SBSMS",
+    "type": "bool",
+    "default": "False"
+   }
+  ],
+  "url": "Change_Pitch",
+  "tip": "Changes the pitch of a track without changing its tempo"
+ },
+ {
+  "id": "ChangeSpeedAndPitch",
+  "name": "Change Speed and Pitch",
+  "params": [
+   {
+    "key": "Percentage",
+    "type": "double",
+    "default": 0
+   }
+  ],
+  "url": "Change_Speed",
+  "tip": "Changes the speed of a track, also changing its pitch"
+ },
+ {
+  "id": "ChangeTempo",
+  "name": "Change Tempo",
+  "params": [
+   {
+    "key": "Percentage",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "SBSMS",
+    "type": "bool",
+    "default": "False"
+   }
+  ],
+  "url": "Change_Tempo",
+  "tip": "Changes the tempo of a selection without changing its pitch"
+ },
+ {
+  "id": "Chirp",
+  "name": "Chirp",
+  "params": [
+   {
+    "key": "StartFreq",
+    "type": "double",
+    "default": 440
+   },
+   {
+    "key": "EndFreq",
+    "type": "double",
+    "default": 1320
+   },
+   {
+    "key": "StartAmp",
+    "type": "double",
+    "default": 0.8
+   },
+   {
+    "key": "EndAmp",
+    "type": "double",
+    "default": 0.1
+   },
+   {
+    "key": "Waveform",
+    "type": "enum",
+    "default": "Sine",
+    "enum": [
+     "Sine",
+     "Square",
+     "Sawtooth",
+     "Square, no alias",
+     "Triangle"
+    ]
+   },
+   {
+    "key": "Interpolation",
+    "type": "enum",
+    "default": "Linear",
+    "enum": [
+     "Linear",
+     "Logarithmic"
+    ]
+   }
+  ],
+  "url": "Chirp",
+  "tip": "Generates an ascending or descending tone of one of four types"
+ },
+ {
+  "id": "ClassicFilters",
+  "name": "Classic Filters",
+  "params": [
+   {
+    "key": "FilterType",
+    "type": "enum",
+    "default": "Butterworth",
+    "enum": [
+     "Butterworth",
+     "Chebyshev Type I",
+     "Chebyshev Type II"
+    ]
+   },
+   {
+    "key": "FilterSubtype",
+    "type": "enum",
+    "default": "Lowpass",
+    "enum": [
+     "Lowpass",
+     "Highpass"
+    ]
+   },
+   {
+    "key": "Order",
+    "type": "int",
+    "default": 1
+   },
+   {
+    "key": "Cutoff",
+    "type": "float",
+    "default": 1000
+   },
+   {
+    "key": "PassbandRipple",
+    "type": "float",
+    "default": 1
+   },
+   {
+    "key": "StopbandRipple",
+    "type": "float",
+    "default": 30
+   }
+  ],
+  "url": "Classic_Filters",
+  "tip": "Performs IIR filtering that emulates analog filters"
+ },
+ {
+  "id": "ClickRemoval",
+  "name": "Click Removal",
+  "params": [
+   {
+    "key": "Threshold",
+    "type": "int",
+    "default": 200
+   },
+   {
+    "key": "Width",
+    "type": "int",
+    "default": 20
+   }
+  ],
+  "url": "Click_Removal",
+  "tip": "Click Removal is designed to remove clicks on audio tracks"
+ },
+ {
+  "id": "Compressor",
+  "name": "Compressor",
+  "params": [
+   {
+    "key": "thresholdDb",
+    "type": "double",
+    "default": -10
+   },
+   {
+    "key": "makeupGainDb",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "kneeWidthDb",
+    "type": "double",
+    "default": 5
+   },
+   {
+    "key": "compressionRatio",
+    "type": "double",
+    "default": 10
+   },
+   {
+    "key": "lookaheadMs",
+    "type": "double",
+    "default": 1
+   },
+   {
+    "key": "attackMs",
+    "type": "double",
+    "default": 30
+   },
+   {
+    "key": "releaseMs",
+    "type": "double",
+    "default": 150
+   },
+   {
+    "key": "showInput",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "showOutput",
+    "type": "double",
+    "default": 1
+   },
+   {
+    "key": "showActual",
+    "type": "double",
+    "default": 1
+   },
+   {
+    "key": "showTarget",
+    "type": "double",
+    "default": 0
+   }
+  ],
+  "url": "",
+  "tip": "Reduces \"dynamic range\", or differences between loud and quiet parts."
+ },
+ {
+  "id": "DtmfTones",
+  "name": "DTMF Tones",
+  "params": [
+   {
+    "key": "Sequence",
+    "type": "string",
+    "default": "audacity"
+   },
+   {
+    "key": "Duty Cycle",
+    "type": "double",
+    "default": 55
+   },
+   {
+    "key": "Amplitude",
+    "type": "double",
+    "default": 0.8
+   }
+  ],
+  "url": "DTMF_Tones",
+  "tip": "Generates dual-tone multi-frequency (DTMF) tones like those produced by the keypad on telephones"
+ },
+ {
+  "id": "Distortion",
+  "name": "Distortion",
+  "params": [
+   {
+    "key": "Type",
+    "type": "enum",
+    "default": "Hard Clipping",
+    "enum": [
+     "Hard Clipping",
+     "Soft Clipping",
+     "Soft Overdrive",
+     "Medium Overdrive",
+     "Hard Overdrive",
+     "Cubic Curve (odd harmonics)",
+     "Even Harmonics",
+     "Expand and Compress",
+     "Leveller",
+     "Rectifier Distortion",
+     "Hard Limiter 1413"
+    ]
+   },
+   {
+    "key": "DC Block",
+    "type": "bool",
+    "default": "False"
+   },
+   {
+    "key": "Threshold dB",
+    "type": "double",
+    "default": -6
+   },
+   {
+    "key": "Noise Floor",
+    "type": "double",
+    "default": -70
+   },
+   {
+    "key": "Parameter 1",
+    "type": "double",
+    "default": 50
+   },
+   {
+    "key": "Parameter 2",
+    "type": "double",
+    "default": 50
+   },
+   {
+    "key": "Repeats",
+    "type": "int",
+    "default": 1
+   }
+  ],
+  "url": "Distortion",
+  "tip": "Waveshaping distortion effect"
+ },
+ {
+  "id": "Echo",
+  "name": "Echo",
+  "params": [
+   {
+    "key": "Delay",
+    "type": "double",
+    "default": 1
+   },
+   {
+    "key": "Decay",
+    "type": "double",
+    "default": 0.5
+   }
+  ],
+  "url": "Echo",
+  "tip": "Repeats the selected audio again and again"
+ },
+ {
+  "id": "FadeIn",
+  "name": "Fade In",
+  "params": [],
+  "url": "",
+  "tip": "Applies a linear fade-in to the selected audio"
+ },
+ {
+  "id": "FadeOut",
+  "name": "Fade Out",
+  "params": [],
+  "url": "",
+  "tip": "Applies a linear fade-out to the selected audio"
+ },
+ {
+  "id": "FilterCurve",
+  "name": "Filter Curve EQ",
+  "params": [
+   {
+    "key": "FilterLength",
+    "type": "size_t",
+    "default": 8191
+   },
+   {
+    "key": "InterpolateLin",
+    "type": "bool",
+    "default": "False"
+   },
+   {
+    "key": "InterpolationMethod",
+    "type": "enum",
+    "default": "B-spline",
+    "enum": [
+     "B-spline",
+     "Cosine",
+     "Cubic"
+    ]
+   }
+  ],
+  "url": "Filter_Curve_EQ",
+  "tip": "Adjusts the volume levels of particular frequencies"
+ },
+ {
+  "id": "FindClipping",
+  "name": "Find Clipping",
+  "params": [
+   {
+    "key": "Duty Cycle Start",
+    "type": "int",
+    "default": 3
+   },
+   {
+    "key": "Duty Cycle End",
+    "type": "int",
+    "default": 3
+   }
+  ],
+  "url": "Find_Clipping",
+  "tip": "Creates labels where clipping is detected"
+ },
+ {
+  "id": "GraphicEq",
+  "name": "Graphic EQ",
+  "params": [
+   {
+    "key": "FilterLength",
+    "type": "size_t",
+    "default": 8191
+   },
+   {
+    "key": "InterpolateLin",
+    "type": "bool",
+    "default": "False"
+   },
+   {
+    "key": "InterpolationMethod",
+    "type": "enum",
+    "default": "B-spline",
+    "enum": [
+     "B-spline",
+     "Cosine",
+     "Cubic"
+    ]
+   }
+  ],
+  "url": "Graphic_EQ",
+  "tip": "Adjusts the volume levels of particular frequencies"
+ },
+ {
+  "id": "Invert",
+  "name": "Invert",
+  "params": [],
+  "url": "",
+  "tip": "Flips the audio samples upside-down, reversing their polarity"
+ },
+ {
+  "id": "LegacyCompressor",
+  "name": "Legacy Compressor",
+  "params": [
+   {
+    "key": "Threshold",
+    "type": "double",
+    "default": -12
+   },
+   {
+    "key": "NoiseFloor",
+    "type": "double",
+    "default": -40
+   },
+   {
+    "key": "Ratio",
+    "type": "double",
+    "default": 2
+   },
+   {
+    "key": "AttackTime",
+    "type": "double",
+    "default": 0.2
+   },
+   {
+    "key": "ReleaseTime",
+    "type": "double",
+    "default": 1
+   },
+   {
+    "key": "Normalize",
+    "type": "bool",
+    "default": "True"
+   },
+   {
+    "key": "UsePeak",
+    "type": "bool",
+    "default": "False"
+   }
+  ],
+  "url": "Compressor",
+  "tip": "Compresses the dynamic range of audio"
+ },
+ {
+  "id": "Limiter",
+  "name": "Limiter",
+  "params": [
+   {
+    "key": "thresholdDb",
+    "type": "double",
+    "default": -5
+   },
+   {
+    "key": "makeupTargetDb",
+    "type": "double",
+    "default": -1
+   },
+   {
+    "key": "kneeWidthDb",
+    "type": "double",
+    "default": 2
+   },
+   {
+    "key": "lookaheadMs",
+    "type": "double",
+    "default": 1
+   },
+   {
+    "key": "releaseMs",
+    "type": "double",
+    "default": 20
+   },
+   {
+    "key": "showInput",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "showOutput",
+    "type": "double",
+    "default": 1
+   },
+   {
+    "key": "showActual",
+    "type": "double",
+    "default": 1
+   },
+   {
+    "key": "showTarget",
+    "type": "double",
+    "default": 0
+   }
+  ],
+  "url": "",
+  "tip": "Augments loudness while minimizing distortion."
+ },
+ {
+  "id": "LoudnessNormalization",
+  "name": "Loudness Normalization",
+  "params": [
+   {
+    "key": "StereoIndependent",
+    "type": "bool",
+    "default": "False"
+   },
+   {
+    "key": "LUFSLevel",
+    "type": "double",
+    "default": -23
+   },
+   {
+    "key": "RMSLevel",
+    "type": "double",
+    "default": -20
+   },
+   {
+    "key": "DualMono",
+    "type": "bool",
+    "default": "True"
+   },
+   {
+    "key": "NormalizeTo",
+    "type": "int",
+    "default": 0
+   }
+  ],
+  "url": "Loudness_Normalization",
+  "tip": "Sets the loudness of one or more tracks"
+ },
+ {
+  "id": "NoiseReduction",
+  "name": "Noise Reduction",
+  "params": [],
+  "url": "",
+  "tip": "Removes background noise such as fans, tape noise, or hums"
+ },
+ {
+  "id": "Noise",
+  "name": "Noise",
+  "params": [
+   {
+    "key": "Type",
+    "type": "enum",
+    "default": "White",
+    "enum": [
+     "White",
+     "Pink",
+     "Brownian"
+    ]
+   },
+   {
+    "key": "Amplitude",
+    "type": "double",
+    "default": 0.8
+   }
+  ],
+  "url": "Noise",
+  "tip": "Generates one of three different types of noise"
+ },
+ {
+  "id": "Normalize",
+  "name": "Normalize",
+  "params": [
+   {
+    "key": "PeakLevel",
+    "type": "double",
+    "default": -1
+   },
+   {
+    "key": "ApplyVolume",
+    "type": "bool",
+    "default": "True"
+   },
+   {
+    "key": "RemoveDcOffset",
+    "type": "bool",
+    "default": "True"
+   },
+   {
+    "key": "StereoIndependent",
+    "type": "bool",
+    "default": "False"
+   }
+  ],
+  "url": "Normalize",
+  "tip": "Sets the peak amplitude of one or more tracks"
+ },
+ {
+  "id": "Paulstretch",
+  "name": "Paulstretch",
+  "params": [
+   {
+    "key": "Stretch Factor",
+    "type": "float",
+    "default": 10
+   },
+   {
+    "key": "Time Resolution",
+    "type": "float",
+    "default": 0.25
+   }
+  ],
+  "url": "Paulstretch",
+  "tip": "Paulstretch is only for an extreme time-stretch or \"stasis\" effect"
+ },
+ {
+  "id": "Phaser",
+  "name": "Phaser",
+  "params": [
+   {
+    "key": "Stages",
+    "type": "int",
+    "default": 2
+   },
+   {
+    "key": "DryWet",
+    "type": "int",
+    "default": 128
+   },
+   {
+    "key": "Freq",
+    "type": "double",
+    "default": 0.4
+   },
+   {
+    "key": "Phase",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "Depth",
+    "type": "int",
+    "default": 100
+   },
+   {
+    "key": "Feedback",
+    "type": "int",
+    "default": 0
+   },
+   {
+    "key": "Gain",
+    "type": "double",
+    "default": -6
+   }
+  ],
+  "url": "Phaser",
+  "tip": "Combines phase-shifted signals with the original signal"
+ },
+ {
+  "id": "Repair",
+  "name": "Repair",
+  "params": [],
+  "url": "",
+  "tip": "Sets the peak amplitude of a one or more tracks"
+ },
+ {
+  "id": "Repeat",
+  "name": "Repeat",
+  "params": [
+   {
+    "key": "Count",
+    "type": "int",
+    "default": 1
+   }
+  ],
+  "url": "Repeat",
+  "tip": "Repeats the selection the specified number of times"
+ },
+ {
+  "id": "Reverb",
+  "name": "Reverb",
+  "params": [
+   {
+    "key": "RoomSize",
+    "type": "double",
+    "default": 75
+   },
+   {
+    "key": "Delay",
+    "type": "double",
+    "default": 10
+   },
+   {
+    "key": "Reverberance",
+    "type": "double",
+    "default": 50
+   },
+   {
+    "key": "HfDamping",
+    "type": "double",
+    "default": 50
+   },
+   {
+    "key": "ToneLow",
+    "type": "double",
+    "default": 100
+   },
+   {
+    "key": "ToneHigh",
+    "type": "double",
+    "default": 100
+   },
+   {
+    "key": "WetGain",
+    "type": "double",
+    "default": -1
+   },
+   {
+    "key": "DryGain",
+    "type": "double",
+    "default": -1
+   },
+   {
+    "key": "StereoWidth",
+    "type": "double",
+    "default": 100
+   },
+   {
+    "key": "WetOnly",
+    "type": "bool",
+    "default": "False"
+   }
+  ],
+  "url": "Reverb",
+  "tip": "Adds ambience or a \"hall effect\""
+ },
+ {
+  "id": "Reverse",
+  "name": "Reverse",
+  "params": [],
+  "url": "",
+  "tip": "Reverses the selected audio"
+ },
+ {
+  "id": "Silence",
+  "name": "Silence",
+  "params": [],
+  "url": "Silence",
+  "tip": "Creates audio of zero amplitude"
+ },
+ {
+  "id": "SlidingStretch",
+  "name": "Sliding Stretch",
+  "params": [
+   {
+    "key": "RatePercentChangeStart",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "RatePercentChangeEnd",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "PitchHalfStepsStart",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "PitchHalfStepsEnd",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "PitchPercentChangeStart",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "PitchPercentChangeEnd",
+    "type": "double",
+    "default": 0
+   }
+  ],
+  "url": "Sliding_Stretch",
+  "tip": "Allows continuous changes to the tempo and/or pitch"
+ },
+ {
+  "id": "StereoToMono",
+  "name": "Stereo To Mono",
+  "params": [],
+  "url": "",
+  "tip": "Converts stereo tracks to mono"
+ },
+ {
+  "id": "Tone",
+  "name": "Tone",
+  "params": [
+   {
+    "key": "Frequency",
+    "type": "double",
+    "default": 440
+   },
+   {
+    "key": "Amplitude",
+    "type": "double",
+    "default": 0.8
+   },
+   {
+    "key": "Waveform",
+    "type": "enum",
+    "default": "Sine",
+    "enum": [
+     "Sine",
+     "Square",
+     "Sawtooth",
+     "Square, no alias",
+     "Triangle"
+    ]
+   },
+   {
+    "key": "Interpolation",
+    "type": "enum",
+    "default": "Linear",
+    "enum": [
+     "Linear",
+     "Logarithmic"
+    ]
+   }
+  ],
+  "url": "Tone",
+  "tip": "Generates a constant frequency tone of one of four types"
+ },
+ {
+  "id": "TruncateSilence",
+  "name": "Truncate Silence",
+  "params": [
+   {
+    "key": "Threshold",
+    "type": "double",
+    "default": -20
+   },
+   {
+    "key": "Action",
+    "type": "enum",
+    "default": "Truncate Detected Silence",
+    "enum": [
+     "Truncate Detected Silence",
+     "Compress Excess Silence"
+    ]
+   },
+   {
+    "key": "Minimum",
+    "type": "double",
+    "default": 0.5
+   },
+   {
+    "key": "Truncate",
+    "type": "double",
+    "default": 0.5
+   },
+   {
+    "key": "Compress",
+    "type": "double",
+    "default": 50
+   },
+   {
+    "key": "Independent",
+    "type": "bool",
+    "default": "False"
+   },
+   {
+    "key": "TruncateStart",
+    "type": "bool",
+    "default": "True"
+   },
+   {
+    "key": "TruncateMiddle",
+    "type": "bool",
+    "default": "True"
+   },
+   {
+    "key": "TruncateEnd",
+    "type": "bool",
+    "default": "True"
+   }
+  ],
+  "url": "Truncate_Silence",
+  "tip": "Automatically reduces the length of passages where the volume is below a specified level"
+ },
+ {
+  "id": "Wahwah",
+  "name": "Wahwah",
+  "params": [
+   {
+    "key": "Freq",
+    "type": "double",
+    "default": 1.5
+   },
+   {
+    "key": "Phase",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "Depth",
+    "type": "int",
+    "default": 70
+   },
+   {
+    "key": "Resonance",
+    "type": "double",
+    "default": 2.5
+   },
+   {
+    "key": "Offset",
+    "type": "int",
+    "default": 30
+   },
+   {
+    "key": "Gain",
+    "type": "double",
+    "default": -6
+   }
+  ],
+  "url": "Wahwah",
+  "tip": "Rapid tone quality variations, like that guitar sound so popular in the 1970's"
+ },
+ {
+  "id": "BeatFinder",
+  "name": "Beat Finder",
+  "params": [
+   {
+    "key": "THRESVAL",
+    "type": "int",
+    "default": 0
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0"
+ },
+ {
+  "id": "NyquistPrompt",
+  "name": "Nyquist Prompt",
+  "params": [],
+  "url": "Nyquist_Prompt",
+  "tip": "n/a"
+ },
+ {
+  "id": "ClipFix",
+  "name": "Clip Fix",
+  "params": [
+   {
+    "key": "THRESHOLD",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "GAIN",
+    "type": "double",
+    "default": 0
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0"
+ },
+ {
+  "id": "Pluck",
+  "name": "Pluck",
+  "params": [
+   {
+    "key": "PITCH",
+    "type": "int",
+    "default": 0
+   },
+   {
+    "key": "FADE",
+    "type": "enum",
+    "default": "Abrupt",
+    "enum": [
+     "Abrupt",
+     "Gradual"
+    ]
+   },
+   {
+    "key": "DUR",
+    "type": "double",
+    "default": 0
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0"
+ },
+ {
+  "id": "RhythmTrack",
+  "name": "Rhythm Track",
+  "params": [
+   {
+    "key": "TEMPO",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "TIMESIG",
+    "type": "int",
+    "default": 0
+   },
+   {
+    "key": "SWING",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "BARS",
+    "type": "int",
+    "default": 0
+   },
+   {
+    "key": "CLICK-TRACK-DUR",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "OFFSET",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "CLICK-TYPE",
+    "type": "enum",
+    "default": "Metronome",
+    "enum": [
+     "Metronome",
+     "Ping (short)",
+     "Ping (long)",
+     "Cowbell",
+     "ResonantNoise",
+     "NoiseClick",
+     "Drip (short)",
+     "Drip (long)"
+    ]
+   },
+   {
+    "key": "HIGH",
+    "type": "int",
+    "default": 0
+   },
+   {
+    "key": "LOW",
+    "type": "int",
+    "default": 0
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0"
+ },
+ {
+  "id": "High-passFilter",
+  "name": "High-Pass Filter",
+  "params": [
+   {
+    "key": "FREQUENCY",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "ROLLOFF",
+    "type": "enum",
+    "default": "dB6",
+    "enum": [
+     "dB6",
+     "dB12",
+     "dB24",
+     "dB36",
+     "dB48"
+    ]
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0"
+ },
+ {
+  "id": "Low-passFilter",
+  "name": "Low-Pass Filter",
+  "params": [
+   {
+    "key": "FREQUENCY",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "ROLLOFF",
+    "type": "enum",
+    "default": "dB6",
+    "enum": [
+     "dB6",
+     "dB12",
+     "dB24",
+     "dB36",
+     "dB48"
+    ]
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0"
+ },
+ {
+  "id": "Vocoder",
+  "name": "Vocoder",
+  "params": [
+   {
+    "key": "DST",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "MST",
+    "type": "enum",
+    "default": "BothChannels",
+    "enum": [
+     "BothChannels",
+     "RightOnly"
+    ]
+   },
+   {
+    "key": "BANDS",
+    "type": "int",
+    "default": 0
+   },
+   {
+    "key": "TRACK-VL",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "NOISE-VL",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "RADAR-VL",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "RADAR-F",
+    "type": "double",
+    "default": 0
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0"
+ },
+ {
+  "id": "SpectralEditMultiTool",
+  "name": "Spectral Edit Multi Tool",
+  "params": [],
+  "url": "",
+  "tip": "GNU General Public License v2.0"
+ },
+ {
+  "id": "SpectralEditParametricEq",
+  "name": "Spectral Edit Parametric EQ",
+  "params": [
+   {
+    "key": "CONTROL-GAIN",
+    "type": "double",
+    "default": 0
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0"
+ },
+ {
+  "id": "SpectralEditShelves",
+  "name": "Spectral Edit Shelves",
+  "params": [
+   {
+    "key": "CONTROL-GAIN",
+    "type": "double",
+    "default": 0
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0 or later"
+ },
+ {
+  "id": "NotchFilter",
+  "name": "Notch Filter",
+  "params": [
+   {
+    "key": "FREQUENCY",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "Q",
+    "type": "double",
+    "default": 0
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0 or later"
+ },
+ {
+  "id": "AdjustableFade",
+  "name": "Adjustable Fade",
+  "params": [
+   {
+    "key": "TYPE",
+    "type": "enum",
+    "default": "Up",
+    "enum": [
+     "Up",
+     "Down",
+     "SCurveUp",
+     "SCurveDown"
+    ]
+   },
+   {
+    "key": "CURVE",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "UNITS",
+    "type": "enum",
+    "default": "Percent",
+    "enum": [
+     "Percent",
+     "dB"
+    ]
+   },
+   {
+    "key": "GAIN0",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "GAIN1",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "PRESET",
+    "type": "enum",
+    "default": "None",
+    "enum": [
+     "None",
+     "LinearIn",
+     "LinearOut",
+     "ExponentialIn",
+     "ExponentialOut",
+     "LogarithmicIn",
+     "LogarithmicOut",
+     "RoundedIn",
+     "RoundedOut",
+     "CosineIn",
+     "CosineOut",
+     "SCurveIn",
+     "SCurveOut"
+    ]
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0 or later"
+ },
+ {
+  "id": "CrossfadeClips",
+  "name": "Crossfade Clips",
+  "params": [],
+  "url": "",
+  "tip": "GNU General Public License v2.0 or later"
+ },
+ {
+  "id": "CrossfadeTracks",
+  "name": "Crossfade Tracks",
+  "params": [
+   {
+    "key": "TYPE",
+    "type": "enum",
+    "default": "ConstantGain",
+    "enum": [
+     "ConstantGain",
+     "ConstantPower1",
+     "ConstantPower2",
+     "CustomCurve"
+    ]
+   },
+   {
+    "key": "CURVE",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "DIRECTION",
+    "type": "enum",
+    "default": "Automatic",
+    "enum": [
+     "Automatic",
+     "OutIn",
+     "InOut"
+    ]
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0 or later"
+ },
+ {
+  "id": "Delay",
+  "name": "Delay",
+  "params": [
+   {
+    "key": "DELAY-TYPE",
+    "type": "enum",
+    "default": "Regular",
+    "enum": [
+     "Regular",
+     "BouncingBall",
+     "ReverseBouncingBall"
+    ]
+   },
+   {
+    "key": "DGAIN",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "DELAY",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "PITCH-TYPE",
+    "type": "enum",
+    "default": "PitchTempo",
+    "enum": [
+     "PitchTempo",
+     "LQPitchShift",
+     "HQPitchShift"
+    ]
+   },
+   {
+    "key": "SHIFT",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "NUMBER",
+    "type": "int",
+    "default": 0
+   },
+   {
+    "key": "CONSTRAIN",
+    "type": "enum",
+    "default": "Yes",
+    "enum": [
+     "Yes",
+     "No"
+    ]
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0"
+ },
+ {
+  "id": "LabelSounds",
+  "name": "Label Sounds",
+  "params": [
+   {
+    "key": "THRESHOLD",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "MEASUREMENT",
+    "type": "enum",
+    "default": "peak",
+    "enum": [
+     "peak",
+     "avg",
+     "rms"
+    ]
+   },
+   {
+    "key": "SIL-DUR",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "SND-DUR",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "TYPE",
+    "type": "enum",
+    "default": "before",
+    "enum": [
+     "before",
+     "after",
+     "around",
+     "between"
+    ]
+   },
+   {
+    "key": "PRE-OFFSET",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "POST-OFFSET",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "TEXT",
+    "type": "string",
+    "default": ""
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0 or later"
+ },
+ {
+  "id": "LegacyLimiter",
+  "name": "Legacy Limiter",
+  "params": [
+   {
+    "key": "TYPE",
+    "type": "enum",
+    "default": "SoftLimit",
+    "enum": [
+     "SoftLimit",
+     "HardLimit",
+     "SoftClip",
+     "HardClip"
+    ]
+   },
+   {
+    "key": "GAIN-L",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "GAIN-R",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "THRESH",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "HOLD",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "MAKEUP",
+    "type": "enum",
+    "default": "No",
+    "enum": [
+     "No",
+     "Yes"
+    ]
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0 or later"
+ },
+ {
+  "id": "MeasureRms",
+  "name": "Measure RMS",
+  "params": [],
+  "url": "",
+  "tip": "GNU General Public License v2.0 or later"
+ },
+ {
+  "id": "NoiseGate",
+  "name": "Noise Gate",
+  "params": [
+   {
+    "key": "MODE",
+    "type": "enum",
+    "default": "Gate",
+    "enum": [
+     "Gate",
+     "Analyze"
+    ]
+   },
+   {
+    "key": "STEREO-LINK",
+    "type": "enum",
+    "default": "LinkStereo",
+    "enum": [
+     "LinkStereo",
+     "DoNotLink"
+    ]
+   },
+   {
+    "key": "THRESHOLD",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "GATE-FREQ",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "LEVEL-REDUCTION",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "ATTACK",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "HOLD",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "DECAY",
+    "type": "double",
+    "default": 0
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0 or later"
+ },
+ {
+  "id": "NyquistPluginInstaller",
+  "name": "Nyquist Plugin Installer",
+  "params": [
+   {
+    "key": "FILES",
+    "type": "string",
+    "default": ""
+   },
+   {
+    "key": "OVERWRITE",
+    "type": "enum",
+    "default": "Disallow",
+    "enum": [
+     "Disallow",
+     "Allow"
+    ]
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0 or later"
+ },
+ {
+  "id": "RegularIntervalLabels",
+  "name": "Regular Interval Labels",
+  "params": [
+   {
+    "key": "MODE",
+    "type": "enum",
+    "default": "Both",
+    "enum": [
+     "Both",
+     "Number",
+     "Interval"
+    ]
+   },
+   {
+    "key": "TOTALNUM",
+    "type": "int",
+    "default": 0
+   },
+   {
+    "key": "INTERVAL",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "REGION",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "ADJUST",
+    "type": "enum",
+    "default": "No",
+    "enum": [
+     "No",
+     "Yes"
+    ]
+   },
+   {
+    "key": "LABELTEXT",
+    "type": "string",
+    "default": ""
+   },
+   {
+    "key": "ZEROS",
+    "type": "enum",
+    "default": "TextOnly",
+    "enum": [
+     "TextOnly",
+     "OneBefore",
+     "TwoBefore",
+     "ThreeBefore",
+     "OneAfter",
+     "TwoAfter",
+     "ThreeAfter"
+    ]
+   },
+   {
+    "key": "FIRSTNUM",
+    "type": "int",
+    "default": 0
+   },
+   {
+    "key": "VERBOSE",
+    "type": "enum",
+    "default": "Details",
+    "enum": [
+     "Details",
+     "Warnings",
+     "None"
+    ]
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0 or later"
+ },
+ {
+  "id": "SampleDataExport",
+  "name": "Sample Data Export",
+  "params": [
+   {
+    "key": "NUMBER",
+    "type": "int",
+    "default": 0
+   },
+   {
+    "key": "UNITS",
+    "type": "enum",
+    "default": "dB",
+    "enum": [
+     "dB",
+     "Linear"
+    ]
+   },
+   {
+    "key": "FILENAME",
+    "type": "string",
+    "default": ""
+   },
+   {
+    "key": "FILEFORMAT",
+    "type": "enum",
+    "default": "None",
+    "enum": [
+     "None",
+     "Count",
+     "Time"
+    ]
+   },
+   {
+    "key": "HEADER",
+    "type": "enum",
+    "default": "None",
+    "enum": [
+     "None",
+     "Minimal",
+     "Standard",
+     "All"
+    ]
+   },
+   {
+    "key": "OPTEXT",
+    "type": "string",
+    "default": ""
+   },
+   {
+    "key": "CHANNEL-LAYOUT",
+    "type": "enum",
+    "default": "SameLine",
+    "enum": [
+     "SameLine",
+     "Alternate",
+     "LFirst"
+    ]
+   },
+   {
+    "key": "MESSAGES",
+    "type": "enum",
+    "default": "Yes",
+    "enum": [
+     "Yes",
+     "Errors",
+     "None"
+    ]
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0 or later"
+ },
+ {
+  "id": "SampleDataImport",
+  "name": "Sample Data Import",
+  "params": [
+   {
+    "key": "FILENAME",
+    "type": "string",
+    "default": ""
+   },
+   {
+    "key": "BAD-DATA",
+    "type": "enum",
+    "default": "ThrowError",
+    "enum": [
+     "ThrowError",
+     "ReadAsZero"
+    ]
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0 or later"
+ },
+ {
+  "id": "ShelfFilter",
+  "name": "Shelf Filter",
+  "params": [
+   {
+    "key": "TYPE",
+    "type": "enum",
+    "default": "Low",
+    "enum": [
+     "Low",
+     "High"
+    ]
+   },
+   {
+    "key": "HZ",
+    "type": "int",
+    "default": 0
+   },
+   {
+    "key": "GAIN",
+    "type": "int",
+    "default": 0
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0"
+ },
+ {
+  "id": "SpectralDelete",
+  "name": "Spectral Delete",
+  "params": [],
+  "url": "",
+  "tip": "GNU General Public License v2.0 or later"
+ },
+ {
+  "id": "StudioFadeOut",
+  "name": "Studio Fade Out",
+  "params": [],
+  "url": "",
+  "tip": "GNU General Public License v2.0 or later"
+ },
+ {
+  "id": "Tremolo",
+  "name": "Tremolo",
+  "params": [
+   {
+    "key": "WAVE",
+    "type": "enum",
+    "default": "Sine",
+    "enum": [
+     "Sine",
+     "Triangle",
+     "Sawtooth",
+     "InverseSawtooth",
+     "Square"
+    ]
+   },
+   {
+    "key": "PHASE",
+    "type": "int",
+    "default": 0
+   },
+   {
+    "key": "WET",
+    "type": "int",
+    "default": 0
+   },
+   {
+    "key": "LFO",
+    "type": "double",
+    "default": 0
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0 or later"
+ },
+ {
+  "id": "RissetDrum",
+  "name": "Risset Drum",
+  "params": [
+   {
+    "key": "FREQ",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "DECAY",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "CF",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "BW",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "NOISE",
+    "type": "double",
+    "default": 0
+   },
+   {
+    "key": "GAIN",
+    "type": "double",
+    "default": 0
+   }
+  ],
+  "url": "",
+  "tip": "GNU General Public License v2.0 or later"
+ },
+ {
+  "id": "ClearLog",
+  "name": "Clear Log",
+  "params": [],
+  "url": "Extra_Menu:_Scriptables_II#Clear_log",
+  "tip": "Clears the log contents."
+ },
+ {
+  "id": "Comment",
+  "name": "Comment",
+  "params": [
+   {
+    "key": "_",
+    "type": "string",
+    "default": ""
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_II#comment",
+  "tip": "For comments in a macro."
+ },
+ {
+  "id": "CompareAudio",
+  "name": "Compare Audio",
+  "params": [
+   {
+    "key": "Threshold",
+    "type": "float",
+    "default": 0
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_II#compare_Audio",
+  "tip": "Compares a range on two tracks."
+ },
+ {
+  "id": "Drag",
+  "name": "Drag",
+  "params": [
+   {
+    "key": "Id",
+    "type": "int",
+    "default": "unchanged"
+   },
+   {
+    "key": "Window",
+    "type": "string",
+    "default": "unchanged"
+   },
+   {
+    "key": "FromX",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "FromY",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "ToX",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "ToY",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "RelativeTo",
+    "type": "enum",
+    "default": "unchanged",
+    "enum": [
+     "Panel",
+     "App",
+     "Track0",
+     "Track1"
+    ]
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_II#move_mouse",
+  "tip": "Drags mouse from one place to another."
+ },
+ {
+  "id": "Export2",
+  "name": "Export2",
+  "params": [
+   {
+    "key": "Filename",
+    "type": "string",
+    "default": "exported.wav"
+   },
+   {
+    "key": "NumChannels",
+    "type": "int",
+    "default": 1
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_II#export",
+  "tip": "Exports to a file."
+ },
+ {
+  "id": "GetInfo",
+  "name": "Get Info",
+  "params": [
+   {
+    "key": "Type",
+    "type": "enum",
+    "default": "Commands",
+    "enum": [
+     "Commands",
+     "Menus",
+     "Preferences",
+     "Tracks",
+     "Clips",
+     "Envelopes",
+     "Labels",
+     "Boxes",
+     "Selection"
+    ]
+   },
+   {
+    "key": "Format",
+    "type": "enum",
+    "default": "JSON",
+    "enum": [
+     "JSON",
+     "LISP",
+     "Brief"
+    ]
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_II#get_info",
+  "tip": "Gets information in JSON format."
+ },
+ {
+  "id": "GetPreference",
+  "name": "Get Preference",
+  "params": [
+   {
+    "key": "Name",
+    "type": "string",
+    "default": ""
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_I#get_preference",
+  "tip": "Gets the value of a single preference."
+ },
+ {
+  "id": "Help",
+  "name": "Help",
+  "params": [
+   {
+    "key": "Command",
+    "type": "string",
+    "default": "Help"
+   },
+   {
+    "key": "Format",
+    "type": "enum",
+    "default": "JSON",
+    "enum": [
+     "JSON",
+     "LISP",
+     "Brief"
+    ]
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_II#help",
+  "tip": "Gives help on a command."
+ },
+ {
+  "id": "Import2",
+  "name": "Import2",
+  "params": [
+   {
+    "key": "Filename",
+    "type": "string",
+    "default": ""
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_II#import",
+  "tip": "Imports from a file."
+ },
+ {
+  "id": "Message",
+  "name": "Message",
+  "params": [
+   {
+    "key": "Text",
+    "type": "string",
+    "default": "Some message"
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_II#message",
+  "tip": "Echos a message."
+ },
+ {
+  "id": "OpenProject2",
+  "name": "Open Project2",
+  "params": [
+   {
+    "key": "Filename",
+    "type": "string",
+    "default": "test.aup3"
+   },
+   {
+    "key": "AddToHistory",
+    "type": "bool",
+    "default": "unchanged"
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_II#open_project",
+  "tip": "Opens a project."
+ },
+ {
+  "id": "SaveCopy",
+  "name": "Save Copy",
+  "params": [
+   {
+    "key": "Filename",
+    "type": "string",
+    "default": "name.aup3"
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_II#save_copy",
+  "tip": "Saves a copy of current project."
+ },
+ {
+  "id": "SaveLog",
+  "name": "Save Log",
+  "params": [
+   {
+    "key": "Filename",
+    "type": "string",
+    "default": "log.txt"
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_II#save_log",
+  "tip": "Saves the log contents."
+ },
+ {
+  "id": "SaveProject2",
+  "name": "Save Project2",
+  "params": [
+   {
+    "key": "Filename",
+    "type": "string",
+    "default": "name.aup3"
+   },
+   {
+    "key": "AddToHistory",
+    "type": "bool",
+    "default": "False"
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_II#save_project",
+  "tip": "Saves a project."
+ },
+ {
+  "id": "SelectFrequencies",
+  "name": "Select Frequencies",
+  "params": [
+   {
+    "key": "High",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "Low",
+    "type": "double",
+    "default": "unchanged"
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_I#select_frequencies",
+  "tip": "Selects a frequency range."
+ },
+ {
+  "id": "SelectTime",
+  "name": "Select Time",
+  "params": [
+   {
+    "key": "Start",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "End",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "RelativeTo",
+    "type": "enum",
+    "default": "unchanged",
+    "enum": [
+     "ProjectStart",
+     "Project",
+     "ProjectEnd",
+     "SelectionStart",
+     "Selection",
+     "SelectionEnd"
+    ]
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_I#select_time",
+  "tip": "Selects a time range."
+ },
+ {
+  "id": "SelectTracks",
+  "name": "Select Tracks",
+  "params": [
+   {
+    "key": "Track",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "TrackCount",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "Mode",
+    "type": "enum",
+    "default": "unchanged",
+    "enum": [
+     "Set",
+     "Add",
+     "Remove"
+    ]
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_I#select_tracks",
+  "tip": "Selects a range of tracks."
+ },
+ {
+  "id": "Select",
+  "name": "Select",
+  "params": [
+   {
+    "key": "Start",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "End",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "RelativeTo",
+    "type": "enum",
+    "default": "unchanged",
+    "enum": [
+     "ProjectStart",
+     "Project",
+     "ProjectEnd",
+     "SelectionStart",
+     "Selection",
+     "SelectionEnd"
+    ]
+   },
+   {
+    "key": "High",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "Low",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "Track",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "TrackCount",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "Mode",
+    "type": "enum",
+    "default": "unchanged",
+    "enum": [
+     "Set",
+     "Add",
+     "Remove"
+    ]
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_II#select",
+  "tip": "Selects Audio."
+ },
+ {
+  "id": "SetClip",
+  "name": "Set Clip",
+  "params": [
+   {
+    "key": "At",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "Color",
+    "type": "enum",
+    "default": "unchanged",
+    "enum": [
+     "Color0",
+     "Color1",
+     "Color2",
+     "Color3"
+    ]
+   },
+   {
+    "key": "Start",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "Name",
+    "type": "string",
+    "default": "unchanged"
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_I#set_clip",
+  "tip": "Sets various values for a clip."
+ },
+ {
+  "id": "SetEnvelope",
+  "name": "Set Envelope",
+  "params": [
+   {
+    "key": "Time",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "Value",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "Delete",
+    "type": "bool",
+    "default": "unchanged"
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_I#set_envelope",
+  "tip": "Sets an envelope point position."
+ },
+ {
+  "id": "SetLabel",
+  "name": "Set Label",
+  "params": [
+   {
+    "key": "Label",
+    "type": "int",
+    "default": 0
+   },
+   {
+    "key": "Text",
+    "type": "string",
+    "default": "unchanged"
+   },
+   {
+    "key": "Start",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "End",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "Selected",
+    "type": "bool",
+    "default": "unchanged"
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_I#set_label",
+  "tip": "Sets various values for a label."
+ },
+ {
+  "id": "SetPreference",
+  "name": "Set Preference",
+  "params": [
+   {
+    "key": "Name",
+    "type": "string",
+    "default": ""
+   },
+   {
+    "key": "Value",
+    "type": "string",
+    "default": ""
+   },
+   {
+    "key": "Reload",
+    "type": "bool",
+    "default": "False"
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_I#set_preference",
+  "tip": "Sets the value of a single preference."
+ },
+ {
+  "id": "SetProject",
+  "name": "Set Project",
+  "params": [
+   {
+    "key": "Name",
+    "type": "string",
+    "default": "unchanged"
+   },
+   {
+    "key": "Rate",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "X",
+    "type": "int",
+    "default": "unchanged"
+   },
+   {
+    "key": "Y",
+    "type": "int",
+    "default": "unchanged"
+   },
+   {
+    "key": "Width",
+    "type": "int",
+    "default": "unchanged"
+   },
+   {
+    "key": "Height",
+    "type": "int",
+    "default": "unchanged"
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_I#set_project",
+  "tip": "Sets various values for a project."
+ },
+ {
+  "id": "SetTrackAudio",
+  "name": "Set Track Audio",
+  "params": [
+   {
+    "key": "Mute",
+    "type": "bool",
+    "default": "unchanged"
+   },
+   {
+    "key": "Solo",
+    "type": "bool",
+    "default": "unchanged"
+   },
+   {
+    "key": "Volume",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "Pan",
+    "type": "double",
+    "default": "unchanged"
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_I#set_track_audio",
+  "tip": "Sets various values for a track."
+ },
+ {
+  "id": "SetTrackStatus",
+  "name": "Set Track Status",
+  "params": [
+   {
+    "key": "Name",
+    "type": "string",
+    "default": "unchanged"
+   },
+   {
+    "key": "Selected",
+    "type": "bool",
+    "default": "unchanged"
+   },
+   {
+    "key": "Focused",
+    "type": "bool",
+    "default": "unchanged"
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_I#set_track_status",
+  "tip": "Sets various values for a track."
+ },
+ {
+  "id": "SetTrackVisuals",
+  "name": "Set Track Visuals",
+  "params": [
+   {
+    "key": "Height",
+    "type": "int",
+    "default": "unchanged"
+   },
+   {
+    "key": "Display",
+    "type": "enum",
+    "default": "unchanged",
+    "enum": [
+     "Waveform",
+     "Spectrogram",
+     "Multiview"
+    ]
+   },
+   {
+    "key": "Scale",
+    "type": "enum",
+    "default": "unchanged",
+    "enum": [
+     "Linear",
+     "dB",
+     "LinearDB"
+    ]
+   },
+   {
+    "key": "Color",
+    "type": "enum",
+    "default": "unchanged",
+    "enum": [
+     "Color0",
+     "Color1",
+     "Color2",
+     "Color3"
+    ]
+   },
+   {
+    "key": "VZoom",
+    "type": "enum",
+    "default": "unchanged",
+    "enum": [
+     "Reset",
+     "Times2",
+     "HalfWave"
+    ]
+   },
+   {
+    "key": "VZoomHigh",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "VZoomLow",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "SpecPrefs",
+    "type": "bool",
+    "default": "unchanged"
+   },
+   {
+    "key": "SpectralSel",
+    "type": "bool",
+    "default": "unchanged"
+   },
+   {
+    "key": "SpecColor",
+    "type": "enum",
+    "default": "unchanged",
+    "enum": [
+     "SpecColorNew",
+     "SpecColorTheme",
+     "SpecGrayscale",
+     "SpecInvGrayscale"
+    ]
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_I#set_track_visuals",
+  "tip": "Sets various values for a track."
+ },
+ {
+  "id": "SetTrack",
+  "name": "Set Track",
+  "params": [
+   {
+    "key": "Name",
+    "type": "string",
+    "default": "unchanged"
+   },
+   {
+    "key": "Selected",
+    "type": "bool",
+    "default": "unchanged"
+   },
+   {
+    "key": "Focused",
+    "type": "bool",
+    "default": "unchanged"
+   },
+   {
+    "key": "Mute",
+    "type": "bool",
+    "default": "unchanged"
+   },
+   {
+    "key": "Solo",
+    "type": "bool",
+    "default": "unchanged"
+   },
+   {
+    "key": "Volume",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "Pan",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "Height",
+    "type": "int",
+    "default": "unchanged"
+   },
+   {
+    "key": "Display",
+    "type": "enum",
+    "default": "unchanged",
+    "enum": [
+     "Waveform",
+     "Spectrogram",
+     "Multiview"
+    ]
+   },
+   {
+    "key": "Scale",
+    "type": "enum",
+    "default": "unchanged",
+    "enum": [
+     "Linear",
+     "dB",
+     "LinearDB"
+    ]
+   },
+   {
+    "key": "Color",
+    "type": "enum",
+    "default": "unchanged",
+    "enum": [
+     "Color0",
+     "Color1",
+     "Color2",
+     "Color3"
+    ]
+   },
+   {
+    "key": "VZoom",
+    "type": "enum",
+    "default": "unchanged",
+    "enum": [
+     "Reset",
+     "Times2",
+     "HalfWave"
+    ]
+   },
+   {
+    "key": "VZoomHigh",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "VZoomLow",
+    "type": "double",
+    "default": "unchanged"
+   },
+   {
+    "key": "SpecPrefs",
+    "type": "bool",
+    "default": "unchanged"
+   },
+   {
+    "key": "SpectralSel",
+    "type": "bool",
+    "default": "unchanged"
+   },
+   {
+    "key": "SpecColor",
+    "type": "enum",
+    "default": "unchanged",
+    "enum": [
+     "SpecColorNew",
+     "SpecColorTheme",
+     "SpecGrayscale",
+     "SpecInvGrayscale"
+    ]
+   }
+  ],
+  "url": "Extra_Menu:_Scriptables_II#set_track",
+  "tip": "Sets various values for a track."
+ }
+]
