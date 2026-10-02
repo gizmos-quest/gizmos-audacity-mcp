@@ -2,11 +2,11 @@ import { readFile, readdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { z } from 'zod';
 import { COMMAND_IDS, MENU_IDS, SafeString, describeCommand } from './catalogue.js';
-import { type ParamValue } from './format.js';
+import type { ParamValue } from './format.js';
 import { configPath, discardStaleRecovery, isRunning, launch, listWindows, recoveryEntries } from './app.js';
 import { measureScope, selectionTimes } from './analysis.js';
 import type { Ops } from './ops.js';
-import { preflightCommand } from './ops.js';
+import { CommandFailed, preflightCommand } from './ops.js';
 import type { ToolRegistrar } from './tools.js';
 
 export interface MacroStep { command: string; params: Record<string, ParamValue> }
@@ -49,7 +49,7 @@ export function parseMacro(source: string, outputTo?: string): MacroStep[] {
       if (type === 'bool') {
         if (!['0', '1'].includes(value)) throw new Error(`macro boolean ${key} must be 1/0`);
         params[key] = value === '1';
-      } else if (type && ['double', 'float', 'int', 'size_t'].includes(type) || ['Track', 'TrackCount', 'Channel', 'ChannelCount'].includes(key)) {
+      } else if (type && ['double', 'float', 'int', 'size_t'].includes(type)) {
         params[key] = Number(value);
       } else params[key] = value;
     }
@@ -81,7 +81,7 @@ export function registerControlTools(tool: ToolRegistrar, ops: Ops): void {
   const position = () => playback.mode === 'playing' || playback.mode === 'recording' ?
     Math.min(playback.end, playback.at + (performance.now() - playback.epoch) / 1000) : playback.at;
   tool('audacity_transport',
-    'Play a selected region, pause/resume, stop, or record using Audacity’s configured input. status reports selection and a monotonic estimated playback position (the pipe has no audio-clock query); manual transport changes are not tracked. record returns immediately unless duration is supplied.',
+    'Play a selected region, pause/resume, stop, or record using Audacity’s configured input. Appending requires an explicit audio track matching the configured recording channels (1 or 2). Record mode respects Audacity’s new-track preference, and recording always starts from a cursor point to avoid batch progress waits. status reports selection and a monotonic estimated position; manual transport changes are not tracked. record returns immediately unless duration is supplied.',
     { action: z.enum(['play', 'pause', 'resume', 'stop', 'record', 'status']), start: z.number().finite().min(0).max(86400).optional(),
       end: z.number().finite().min(0).max(86400).optional(), track: z.union([z.number().int().nonnegative(), SafeString.min(1)]).optional(),
       duration: z.number().finite().positive().max(60).optional(), newTrack: z.boolean().default(true) },
@@ -95,11 +95,50 @@ export function registerControlTools(tool: ToolRegistrar, ops: Ops): void {
         const selection = selectionTimes(await ops.info('Selection'));
         await ops.run('Play'); playback = { mode: 'playing', start: selection.start, end: selection.end, at: selection.start, epoch: performance.now() };
       } else if (action === 'record') {
+        // Official 3.7.8 ProjectAudioManager::OnRecord shows modal errors for
+        // mismatched selected-track rates or too few compatible channels.
+        // A single channel-matched audio track is safe for append recording;
+        // native recording adopts that track's rate even when project rate differs.
+        // Live pinned 3.7.8 (2026-10-02): selected 48 kHz stereo append under
+        // a 44.1 kHz default extended only that target, with no modal dialog.
+        if (!newTrack && track === undefined) throw new Error('append recording requires an explicit audio track');
+        let recordTrack: number | undefined;
+        let targetEnd = 0;
+        if (track !== undefined) {
+          recordTrack = await ops.trackIndex(track);
+          const target = (await ops.tracks())[recordTrack]!;
+          if (target.kind !== 'wave') throw new Error('recording track must be an audio track');
+          targetEnd = target.end;
+          if (!newTrack) {
+            const channels = await ops.command('GetPreference', { Name: '/AudioIO/RecordChannels' });
+            if (!['1', '2'].includes(channels)) throw new Error('append recording supports configured input channels 1 or 2 only');
+            if (target.channels !== Number(channels)) throw new Error('append recording track channels must match the configured input channels');
+          }
+        }
+        let preferNew: string;
+        try { preferNew = await ops.command('GetPreference', { Name: '/GUI/PreferNewTrackRecord' }); }
+        catch (error) {
+          // The native 3.7.8 default is false; only an absent preference (empty
+          // Failed reply) gets that fallback. Keep other Audacity errors intact.
+          if (error instanceof CommandFailed && !error.reply.body) preferNew = '0';
+          else throw error;
+        }
+        if (!['0', '1'].includes(preferNew)) throw new Error('unsupported new-track recording preference; expected 0 or 1');
+        const recordCommand = newTrack === (preferNew === '1') ? 'Record1stChoice' : 'Record2ndChoice';
+        const cursor = start ?? selectionTimes(await ops.info('Selection')).start;
         await ops.run('Stop');
-        if (track !== undefined || start !== undefined) await ops.select({ track, start: start ?? 0, end: start ?? 0 });
+        if (recordTrack !== undefined) await ops.select({ track: recordTrack, start: cursor, end: cursor });
+        else {
+          await ops.run('SelectNone');
+          await ops.command('SelectTime', { Start: cursor, End: cursor, RelativeTo: 'ProjectStart' });
+        }
         const selection = selectionTimes(await ops.info('Selection'));
-        await ops.run(newTrack ? 'Record2ndChoice' : 'Record1stChoice');
-        playback = { mode: 'recording', start: selection.start, end: 86400, at: selection.start, epoch: performance.now() };
+        // TransportUtilities::RecordAndWait waits when the time range is
+        // non-empty; the explicit cursor above keeps this operation asynchronous.
+        // Raw recording commands are reserved from generic menus/macros.
+        await ops.record(recordCommand);
+        const recordingStart = newTrack ? selection.start : Math.max(selection.start, targetEnd);
+        playback = { mode: 'recording', start: recordingStart, end: 86400, at: recordingStart, epoch: performance.now() };
         if (duration !== undefined) {
           await new Promise((resolve) => setTimeout(resolve, duration * 1000));
           const at = position(); await ops.run('Stop'); playback = { ...playback, mode: 'stopped', at };
@@ -118,7 +157,7 @@ export function registerControlTools(tool: ToolRegistrar, ops: Ops): void {
       return { state: playback.mode === 'playing' && at >= playback.end ? 'stopped' : playback.mode,
         positionSeconds: at, positionSource: 'estimated monotonic clock; manual changes are unknown', selection: await ops.info('Selection') };
     });
-  tool('audacity_history', 'Undo or redo one or more audio edits. Stops at Audacity’s own first error; does not claim checkpoint rollback across manual edits or saves.',
+  tool('audacity_history', 'Undo or redo existing native menu/import history entries. Individual scripted effects and pipelines add no undo entry; save a project backup before destructive processing. Stops at Audacity’s own first error and does not claim checkpoint rollback.',
     { action: z.enum(['undo', 'redo']), steps: z.number().int().min(1).max(100).default(1) }, async ({ action, steps }) => {
       let completed = 0;
       for (; completed < steps; completed++) await ops.run(action === 'undo' ? 'Undo' : 'Redo');

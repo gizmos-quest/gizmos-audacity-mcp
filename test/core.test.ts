@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { AudacityPipe } from '../src/pipe.js';
-import { Ops, validateExportFile } from '../src/ops.js';
+import { CommandFailed, Ops, validateExportFile } from '../src/ops.js';
 import { parseActiveProjects } from '../src/app.js';
 import { parseMacro, safePreference, registerControlTools } from '../src/controls.js';
 import { formatLabels, parseLabelsFile, timestamp } from '../src/labels.js';
@@ -15,17 +15,27 @@ describe('catalogue boundaries', () => {
     expect(catalogueCommand('NoiseGate', { 'STEREO-LINK': 'LinkStereo', 'GATE-FREQ': 0 })).toContain('STEREO-LINK=LinkStereo');
     expect(catalogueCommand('FindClipping', { 'Duty Cycle Start': 3 })).toBe('FindClipping: "Duty Cycle Start"=3');
   });
-  it.each(['New', 'Save', 'ManageMacros', 'About', 'TrackGain', 'Resample', 'RepeatLastEffect'])('excludes unsafe menu %s', (command) => {
+  it.each(['New', 'Save', 'ManageMacros', 'About', 'TrackGain', 'Resample', 'RepeatLastEffect', 'ShareAudioTB', 'Record1stChoice', 'Record2ndChoice'])('excludes unsafe menu %s', (command) => {
     expect(MENU_IDS).not.toContain(command);
   });
   it.each(['MeasureRms', 'ClickRemoval', 'Repair', 'Drag', 'OpenProject2', 'SaveProject2', 'SaveCopy', 'NyquistPrompt', 'SetPreference'])('excludes generic unsafe command %s', (command) => {
     expect(COMMAND_IDS).not.toContain(command);
   });
-  it('effects do not contain lifecycle/getter/track setters, and discovery includes verified scope', () => {
+  it('effects do not contain lifecycle/getter/track setters, and discovery exposes only declared parameters', () => {
     expect(EFFECT_IDS).not.toContain('SetTrack'); expect(EFFECT_IDS).not.toContain('GetPreference');
     expect(describeCommand('NoiseReduction')?.params).toEqual([]);
     expect(() => catalogueCommand('NoiseReduction', { Reduction: 6 })).toThrow();
-    expect(describeCommand('SetEnvelope')?.params?.map((p) => p.key)).toContain('Track');
+    expect(describeCommand('SetEnvelope')?.params?.map((p) => p.key)).toEqual(['Time', 'Value', 'Delete']);
+  });
+  it.each(['SetTrack', 'SetTrackStatus', 'SetTrackAudio', 'SetTrackVisuals', 'SetClip', 'SetEnvelope'].flatMap((command) =>
+    ['Track', 'TrackCount', 'Channel', 'ChannelCount'].map((parameter) => ({ command, parameter }))))('refuses ignored native $command.$parameter scope before pipe transport', ({ command, parameter }) => {
+    const transport = vi.fn(); const ops = new Ops(new AudacityPipe(undefined, 10, transport));
+    const params = { [parameter]: 1 };
+    expect(describeCommand(command)?.params?.map((param) => param.key)).not.toContain(parameter);
+    expect(() => catalogueCommand(command, params)).toThrow();
+    expect(() => ops.command(command, params)).toThrow();
+    expect(() => ops.run(command, params)).toThrow();
+    expect(transport).not.toHaveBeenCalled();
   });
   it('preserves raw Windows paths containing JSON escape letters and valid escaped paths', () => {
     expect(parseInfoJson(String.raw`[{"file":"C:\new\test\rms.ny"}]`)).toEqual([{ file: String.raw`C:\new\test\rms.ny` }]);
@@ -54,13 +64,18 @@ describe('safe saved macros and preferences', () => {
       { command: 'Select', params: { Start: 0, End: 1, RelativeTo: 'ProjectEnd' } }, { command: 'FadeOut', params: {} },
     ]);
     expect(parseMacro('Amplify:Ratio="0.5" AllowClipping="0"')[0]?.params).toEqual({ Ratio: 0.5, AllowClipping: false });
+    expect(parseMacro('SelectTracks:Track=1 TrackCount=2 Mode=Set')[0]?.params).toEqual({ Track: 1, TrackCount: 2, Mode: 'Set' });
+  });
+  it.each(['SetTrack', 'SetTrackStatus', 'SetTrackAudio', 'SetTrackVisuals', 'SetClip', 'SetEnvelope'].flatMap((command) =>
+    ['Track', 'TrackCount', 'Channel', 'ChannelCount'].map((parameter) => ({ command, parameter }))))('rejects undeclared $command.$parameter scope in saved macros', ({ command, parameter }) => {
+    expect(() => parseMacro(`${command}:${parameter}=1`)).toThrow();
   });
   it('translates an export only with a known explicit destination', () => {
     expect(parseMacro('ExportMP3:', 'out.mp3')).toEqual([{ command: 'Export2', params: { Filename: 'out.mp3', NumChannels: 2 } }]);
     expect(() => parseMacro('ExportMP3:')).toThrow('outputTo');
     expect(() => parseMacro('ExportMP3:', 'out.wav')).toThrow('.mp3');
   });
-  it.each(['New:', 'Preferences:', 'Drag:', 'MeasureRms:', 'Repair:', 'ClickRemoval:Threshold=200 Width=20', 'SaveProject2:Filename=x', 'Amplify:Ratio="bogus"', 'Amplify:Bogus=1', 'Amplify:Use_Preset="<Current Settings>"', 'Undo:Param=1', 'Amplify:Ratio=1 Ratio=2', 'No colon', ''])('rejects unsafe/incomplete macro %j', (macro) => {
+  it.each(['New:', 'Preferences:', 'Record1stChoice:', 'Record2ndChoice:', 'Drag:', 'MeasureRms:', 'Repair:', 'ClickRemoval:Threshold=200 Width=20', 'SaveProject2:Filename=x', 'Amplify:Ratio="bogus"', 'Amplify:Bogus=1', 'Amplify:Use_Preset="<Current Settings>"', 'Undo:Param=1', 'Amplify:Ratio=1 Ratio=2', 'No colon', ''])('rejects unsafe/incomplete macro %j', (macro) => {
     expect(() => parseMacro(macro)).toThrow();
   });
   it('restricts preferences to numeric supported sample rates and one/two record channels', () => {
@@ -107,7 +122,7 @@ describe('transport state', () => {
     const register: ToolRegistrar = (name, _description, shape, handler) => {
       handlers.set(name, (args) => handler(z.object(shape).strict().parse(args)));
     };
-    const ops = { run: vi.fn(async () => ''), info: vi.fn(async () => ({ Start: 0, End: 1 })), select: vi.fn() } as unknown as Ops;
+    const ops = { run: vi.fn(async () => ''), record: vi.fn(async () => ''), command: vi.fn(async () => '0'), info: vi.fn(async () => ({ Start: 0, End: 1 })), select: vi.fn() } as unknown as Ops;
     registerControlTools(register, ops);
     const call = handlers.get('audacity_transport')!;
     await expect(call({ action: 'record', end: 2 })).rejects.toThrow('not end');
@@ -117,5 +132,89 @@ describe('transport state', () => {
     expect(await call({ action: 'resume' })).toMatchObject({ state: 'recording' });
     await call({ action: 'stop' });
     await expect(call({ action: 'resume' })).rejects.toThrow('not paused');
+  });
+});
+
+function recordingFixture(preferNew = '0', inputChannels = '2', targetChannels = 2, targetKind = 'wave') {
+  const handlers = new Map<string, (args: unknown) => Promise<unknown>>();
+  const register: ToolRegistrar = (name, _description, shape, handler) => {
+    handlers.set(name, (args) => handler(z.object(shape).strict().parse(args)));
+  };
+  let selection = { Start: 0.5, End: 2 };
+  const ops = {
+    run: vi.fn(async (_command: string) => ''), record: vi.fn(async (_command: string) => ''),
+    command: vi.fn(async (command: string, params: Record<string, unknown>) => {
+      if (command === 'SelectTime') selection = { Start: Number(params.Start), End: Number(params.End) };
+      return params.Name === '/AudioIO/RecordChannels' ? inputChannels : preferNew;
+    }),
+    trackIndex: vi.fn(async () => 1),
+    tracks: vi.fn(async () => [
+      { name: 'Unselected distractor', kind: 'wave', channels: 1, start: 0, end: 10 },
+      { name: 'Target', kind: targetKind, channels: targetChannels, start: 0, end: 3 },
+    ]),
+    info: vi.fn(async () => selection), select: vi.fn(async (scope: { start: number; end: number; track: number }) => {
+      selection = { Start: scope.start, End: scope.end }; return {};
+    }),
+  };
+  registerControlTools(register, ops as unknown as Ops);
+  return { ops, call: handlers.get('audacity_transport')! };
+}
+
+describe('recording modal preflight', () => {
+  it('requires an explicit append target before accessing native preferences or mutating selection', async () => {
+    const { call, ops } = recordingFixture();
+    await expect(call({ action: 'record', newTrack: false })).rejects.toThrow('explicit audio track');
+    expect(ops.command).not.toHaveBeenCalled(); expect(ops.run).not.toHaveBeenCalled();
+    expect(ops.select).not.toHaveBeenCalled(); expect(ops.record).not.toHaveBeenCalled();
+  });
+  it.each([['2', 1], ['1', 2], ['4', 2], ['unknown', 2]] as const)('refuses input channels %s with target channels %i before mutation', async (inputChannels, targetChannels) => {
+    const { call, ops } = recordingFixture('0', inputChannels, targetChannels);
+    await expect(call({ action: 'record', newTrack: false, track: 1 })).rejects.toThrow(/channels/);
+    expect(ops.run).not.toHaveBeenCalled(); expect(ops.select).not.toHaveBeenCalled(); expect(ops.record).not.toHaveBeenCalled();
+  });
+  it('refuses a label recording target before querying preferences or mutating selection', async () => {
+    const { call, ops } = recordingFixture('0', '2', 2, 'label');
+    await expect(call({ action: 'record', newTrack: false, track: 1 })).rejects.toThrow('audio track');
+    expect(ops.command).not.toHaveBeenCalled(); expect(ops.run).not.toHaveBeenCalled(); expect(ops.record).not.toHaveBeenCalled();
+  });
+  it.each([
+    { newTrack: false, preferNew: '0', command: 'Record1stChoice' },
+    { newTrack: false, preferNew: '1', command: 'Record2ndChoice' },
+    { newTrack: true, preferNew: '0', command: 'Record2ndChoice' },
+    { newTrack: true, preferNew: '1', command: 'Record1stChoice' },
+  ])('respects preference $preferNew for newTrack=$newTrack and replaces a time range with a cursor', async ({ newTrack, preferNew, command }) => {
+    const { call, ops } = recordingFixture(preferNew);
+    const result = await call({ action: 'record', newTrack, track: 1, start: 1 }) as { state: string; positionSeconds: number };
+    expect(ops.select).toHaveBeenCalledWith({ track: 1, start: 1, end: 1 });
+    expect(ops.record).toHaveBeenCalledExactlyOnceWith(command);
+    expect(ops.run).toHaveBeenCalledExactlyOnceWith('Stop');
+    expect(result.state).toBe('recording'); expect(result.positionSeconds).toBeGreaterThanOrEqual(newTrack ? 1 : 3);
+    expect(result.positionSeconds).toBeLessThan((newTrack ? 1 : 3) + 0.1);
+  });
+  it('clears track selection before untargeted new recording to avoid mixed-rate selected tracks', async () => {
+    const { call, ops } = recordingFixture();
+    await call({ action: 'record' });
+    expect(ops.run.mock.calls).toEqual([['Stop'], ['SelectNone']]);
+    expect(ops.command).toHaveBeenCalledWith('SelectTime', { Start: 0.5, End: 0.5, RelativeTo: 'ProjectStart' });
+    expect(ops.trackIndex).not.toHaveBeenCalled(); expect(ops.select).not.toHaveBeenCalled();
+    expect(ops.record).toHaveBeenCalledExactlyOnceWith('Record2ndChoice');
+    expect(ops.run.mock.invocationCallOrder[1]).toBeLessThan(ops.record.mock.invocationCallOrder[0]!);
+  });
+  it('uses the native false default only for an absent preference with an empty Failed reply', async () => {
+    const { call, ops } = recordingFixture();
+    ops.command.mockRejectedValueOnce(new CommandFailed('GetPreference', { ok: false, body: '', status: 'Failed!' }));
+    await call({ action: 'record' });
+    expect(ops.record).toHaveBeenCalledExactlyOnceWith('Record2ndChoice');
+  });
+  it('preserves a native preference error and leaves selection untouched', async () => {
+    const { call, ops } = recordingFixture();
+    ops.command.mockRejectedValueOnce(new CommandFailed('GetPreference', { ok: false, body: 'The native preference is unavailable.', status: 'Failed!' }));
+    await expect(call({ action: 'record' })).rejects.toThrow('The native preference is unavailable.');
+    expect(ops.run).not.toHaveBeenCalled(); expect(ops.select).not.toHaveBeenCalled(); expect(ops.record).not.toHaveBeenCalled();
+  });
+  it.each(['True', 'false', '2', ''])('rejects malformed recording preference %j before any mutation', async (preference) => {
+    const { call, ops } = recordingFixture(preference);
+    await expect(call({ action: 'record' })).rejects.toThrow('expected 0 or 1');
+    expect(ops.run).not.toHaveBeenCalled(); expect(ops.select).not.toHaveBeenCalled(); expect(ops.record).not.toHaveBeenCalled();
   });
 });

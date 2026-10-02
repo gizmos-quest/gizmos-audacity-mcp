@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 import { AudacityNeedsRecovery, AudacityPipe, AudacityUnavailable, type PipeReply } from '../src/pipe.js';
-import { CommandFailed, Ops, preflightCommand, validateProjectFile, type TrackInfo } from '../src/ops.js';
+import { CommandFailed, Ops, preflightCommand, trackPanPercent, validateProjectFile, type TrackInfo } from '../src/ops.js';
 import { parseMacro } from '../src/controls.js';
 import { registerLabelTools } from '../src/labels.js';
 import type { ToolRegistrar } from '../src/tools.js';
@@ -10,9 +10,10 @@ type LabelTuple = [number, number, string];
 type LabelTrack = [number, LabelTuple[]];
 
 /** A stateful fixture catches flat-index mistakes across real label-track ordering. */
-function project(tracks: TrackInfo[], initialLabels: LabelTrack[] = []) {
+function project(tracks: TrackInfo[], initialLabels: LabelTrack[] = [], initialClips: { track: number; start: number; end: number }[] = []) {
   const calls: string[] = [];
   const labelTracks = structuredClone(initialLabels);
+  const clips = structuredClone(initialClips);
   let selection = { track: 0, start: 0, end: 0 };
   let failure: { id: string; text: string } | undefined;
   const pipe = new AudacityPipe({ to: 'fixture.to', from: 'fixture.from' }, 100,
@@ -27,14 +28,26 @@ function project(tracks: TrackInfo[], initialLabels: LabelTrack[] = []) {
       if (id === 'GetInfo') {
         if (parameters.Type === 'Tracks') body = JSON.stringify(tracks);
         else if (parameters.Type === 'Labels') body = JSON.stringify(labelTracks);
+        else if (parameters.Type === 'Clips') body = JSON.stringify(clips);
       } else if (id === 'NewLabelTrack') {
         const index = tracks.length;
         tracks.push({ name: 'Label Track', kind: 'label', start: 0, end: 0 });
         labelTracks.push([index, []]);
       } else if (id === 'SetTrack') {
-        tracks[Number(parameters.Track)]!.name = parameters.Name!;
+        // Native SetTrack visits the current track selection; unknown Track
+        // parameters must never make this fixture mask selection mistakes.
+        tracks[selection.track]!.name = parameters.Name!;
+      } else if (id === 'SelectTracks') {
+        selection.track = Number(parameters.Track);
       } else if (id === 'Select') {
         selection = { track: Number(parameters.Track), start: Number(parameters.Start), end: Number(parameters.End) };
+      } else if (id === 'SetClip') {
+        // Audacity includes both clip boundaries when applying this command.
+        const matches = clips.filter((clip) => clip.track === selection.track && clip.start <= Number(parameters.At) && Number(parameters.At) <= clip.end);
+        for (const clip of matches) {
+          const duration = clip.end - clip.start;
+          clip.start = Number(parameters.Start); clip.end = clip.start + duration;
+        }
       } else if (id === 'AddLabel') {
         const labels = labelTracks.find(([index]) => index === selection.track)![1];
         const before = labels.findIndex(([start]) => start >= selection.start);
@@ -49,13 +62,22 @@ function project(tracks: TrackInfo[], initialLabels: LabelTrack[] = []) {
       }
       return { ok: true, body, status: 'OK' };
     });
-  return { ops: new Ops(pipe), tracks, labelTracks, calls,
+  return { ops: new Ops(pipe), tracks, labelTracks, clips, calls,
     fail: (id: string, text: string) => { failure = { id, text }; } };
 }
 
 const wave = (name: string, start = 0, end = 10): TrackInfo => ({ name, kind: 'wave', start, end });
 const label = (name: string): TrackInfo => ({ name, kind: 'label', start: 0, end: 0 });
 const edits = (calls: string[]) => calls.filter((command) => !command.startsWith('GetInfo:'));
+
+describe('native pan units', () => {
+  it.each([[-1, -100], [-0.4, -40], [0, 0], [0.25, 25], [1, 100]])('maps public pan %s to native percent %s', (pan, percent) => {
+    expect(trackPanPercent(pan)).toBe(percent);
+  });
+  it.each([-1.01, 1.01, NaN, Infinity, -Infinity])('refuses invalid normalized pan %s', (pan) => {
+    expect(() => trackPanPercent(pan)).toThrow('between -1 and 1');
+  });
+});
 
 describe('explicit operation selection', () => {
   it('selects only the requested tracks and their own combined extent', async () => {
@@ -87,6 +109,23 @@ describe('explicit operation selection', () => {
     const fixture = project([wave('Voice')]);
     await expect(fixture.ops.applyEffect('Amplify', { Unknown: 1 }, { track: 0 })).rejects.toThrow();
     expect(fixture.calls).toEqual([]);
+  });
+
+  it.each([{ at: 0, starts: [4, 1] }, { at: 1, starts: [0, 4] }])('moves one clip at boundary $at without moving its neighbor or the selected distractor', async ({ at, starts }) => {
+    const fixture = project([wave('Target', 0, 2), wave('Distractor', 0, 2)], [], [
+      { track: 0, start: 0, end: 1 }, { track: 0, start: 1, end: 2 }, { track: 1, start: 0, end: 2 },
+    ]);
+    await fixture.ops.select({ track: 'Distractor' });
+    await fixture.ops.moveClip('Target', at, 4);
+    expect(fixture.clips.filter((clip) => clip.track === 0).map((clip) => clip.start)).toEqual(starts);
+    expect(fixture.clips.find((clip) => clip.track === 1)).toEqual({ track: 1, start: 0, end: 2 });
+  });
+
+  it('refuses an ambiguous clip point before changing selection or audio', async () => {
+    const clips = [{ track: 0, start: 0, end: 1 }, { track: 0, start: 0.5, end: 1.5 }];
+    const fixture = project([wave('Overlaps')], [], clips);
+    await expect(fixture.ops.moveClip(0, 0.75, 4)).rejects.toThrow('identifies 2 clips');
+    expect(edits(fixture.calls)).toEqual([]); expect(fixture.clips).toEqual(clips);
   });
 });
 

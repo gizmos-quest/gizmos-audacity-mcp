@@ -1,10 +1,11 @@
 # Notice
 
-The TypeScript implementation in this repository is original. No Python/C++
+The TypeScript implementation in this repository is original. No Python/C++/Nyquist
 source code or upstream tool descriptions were copied or translated into the
 runtime. Source tool identifiers in the feature matrix are retained for audit.
 The researched behaviour and workflows were independently implemented with
-this host's live Audacity 3.7.8 catalogue and tests.
+this host's live Audacity 3.7.x catalogue and independently verified Audacity
+3.7.8 behaviour and tests.
 
 ## Research provenance
 
@@ -27,9 +28,10 @@ server remains MIT licensed. No additional upstream runtime is bundled.
 Research is reflected in original `src/tasks.ts` (plans/editing/generation),
 `src/analysis.ts` (measurement/silence/loudness), `src/labels.ts` and
 `src/ops.ts` (label workflows), `src/controls.ts` (macros/preferences/transport),
-`src/batch.ts`, and pipe/catalogue recovery safeguards. Actual wire parameter
+`src/batch.ts`, `src/source-rate.ts` (native sample-rate header queries), and
+pipe/catalogue recovery safeguards. Actual wire parameter
 names are the local catalogue's, with comments for independently live-verified
-extensions. Any future copied or adapted source code must identify its exact
+safeguards. Any future copied or adapted source code must identify its exact
 source file/commit and licence here, retain applicable copyright/licence text,
 and preserve all applicable Apache NOTICE attribution.
 
@@ -39,13 +41,17 @@ Official Audacity 3.7.8 source was inspected alongside live testing to verify
 effect state, undo behavior, modal failures and asynchronous music imports:
 
 - [NoiseReductionBase.cpp](https://github.com/audacity/audacity/blob/Audacity-3.7.8/libraries/lib-builtin-effects/NoiseReductionBase.cpp): process-wide profiling, saved settings and native modal paths.
+- [sample-data-export.ny](https://github.com/audacity/audacity/blob/Audacity-3.7.8/plug-ins/sample-data-export.ny) and [NyquistBase.cpp](https://github.com/audacity/audacity/blob/Audacity-3.7.8/libraries/lib-nyquist-effects/NyquistBase.cpp): silent explicit-file sample export and its header's source-track sample rate, distinct from project-rate rendering. The one-sample query was independently verified with 8 kHz and 48 kHz tracks.
 - [ClickRemovalBase.cpp](https://github.com/audacity/audacity/blob/Audacity-3.7.8/libraries/lib-builtin-effects/ClickRemovalBase.cpp): the no-change modal error.
+- [Repair.cpp](https://github.com/audacity/audacity/blob/Audacity-3.7.8/libraries/lib-builtin-effects/Repair.cpp) and [GetInfoCommand.cpp](https://github.com/audacity/audacity/blob/Audacity-3.7.8/src/commands/GetInfoCommand.cpp): modal selection/context/pitch-speed failures and the missing clip state that prevents reliable dialog-free repair preflight.
 - [BatchCommands.cpp](https://github.com/audacity/audacity/blob/Audacity-3.7.8/src/BatchCommands.cpp): individual scripted effect/command calls skip adding their own undo state.
+- [SetTrackInfoCommand.cpp](https://github.com/audacity/audacity/blob/Audacity-3.7.8/src/commands/SetTrackInfoCommand.cpp), [SetClipCommand.cpp](https://github.com/audacity/audacity/blob/Audacity-3.7.8/src/commands/SetClipCommand.cpp) and [SetEnvelopeCommand.cpp](https://github.com/audacity/audacity/blob/Audacity-3.7.8/src/commands/SetEnvelopeCommand.cpp): setters visit selected tracks and do not define the silently ignored track/channel scope keys.
+- [ProjectAudioManager.cpp](https://github.com/audacity/audacity/blob/Audacity-3.7.8/src/ProjectAudioManager.cpp) and [TransportUtilities.cpp](https://github.com/audacity/audacity/blob/Audacity-3.7.8/src/TransportUtilities.cpp): channel/rate mismatch dialogs, preference-dependent recording mode and cursor selection for asynchronous recording.
 - [ImportExportPrefs.cpp](https://github.com/audacity/audacity/blob/Audacity-3.7.8/src/prefs/ImportExportPrefs.cpp): music-import preference names, choices and defaults.
 - [ProjectFileManager.cpp](https://github.com/audacity/audacity/blob/Audacity-3.7.8/src/ProjectFileManager.cpp) and [MusicInformationRetrieval.cpp](https://github.com/audacity/audacity/blob/Audacity-3.7.8/libraries/lib-music-information-retrieval/MusicInformationRetrieval.cpp): tempo-detection routing, deferred analysis and synchronization behavior.
 
 Audacity's source is GPL licensed. It was used for behavioral research only;
-no C++ implementation was copied, translated, adapted or bundled in this MIT
+no C++ or Nyquist implementation was copied, translated, adapted or bundled in this MIT
 server. The TypeScript safeguards compose public catalogue commands and
 independently verified preference values.
 

@@ -5,7 +5,7 @@ import { parseReply } from '../src/pipe.js';
 
 describe('formatCommand', () => {
   it('writes booleans as 1/0, because Audacity reads "True" as false', () => {
-    expect(formatCommand('SetTrack', { Track: 0, Mute: true, Solo: false })).toBe('SetTrack: Track=0 Mute=1 Solo=0');
+    expect(formatCommand('SetTrack', { Mute: true, Solo: false })).toBe('SetTrack: Mute=1 Solo=0');
   });
 
   it('quotes values with spaces and skips undefined', () => {
@@ -30,7 +30,8 @@ describe('catalogue', () => {
     expect(catalogueCommand('High-passFilter', { FREQUENCY: 80, ROLLOFF: 'dB12' })).toBe('High-passFilter: FREQUENCY=80 ROLLOFF=dB12');
     expect(() => catalogueCommand('High-passFilter', { ROLLOFF: 'dB7' })).toThrow();
     expect(() => catalogueCommand('Amplify', { Bogus: 1 })).toThrow();
-    expect(catalogueCommand('SetEnvelope', { Track: 2, Time: 1, Value: 0.5 })).toBe('SetEnvelope: Time=1 Value=0.5 Track=2');
+    expect(catalogueCommand('SetEnvelope', { Time: 1, Value: 0.5 })).toBe('SetEnvelope: Time=1 Value=0.5');
+    expect(() => catalogueCommand('SetEnvelope', { Track: 2, Time: 1, Value: 0.5 })).toThrow();
   });
 });
 

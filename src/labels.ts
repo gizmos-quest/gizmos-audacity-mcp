@@ -88,7 +88,8 @@ export function registerLabelTools(tool: ToolRegistrar, ops: Ops): void {
         await ops.run('RemoveTracks');
         await ops.run('NewLabelTrack');
         const newTrack = (await ops.tracks()).length - 1;
-        await ops.run('SetTrack', { Track: newTrack, Name: target.trackName });
+        await ops.command('SelectTracks', { Track: newTrack, TrackCount: 1, Mode: 'Set' });
+        await ops.run('SetTrack', { Name: target.trackName });
         if (kept.length) await ops.setLabels(kept.map(({ start, end, text }) => ({ start, end, text })), target.trackName);
       }
       return labels(ops);

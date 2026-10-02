@@ -5,7 +5,7 @@ import { McpServer, LATEST_PROTOCOL_VERSION } from '@modelcontextprotocol/server
 import { z } from 'zod';
 import { COMMAND_IDS, EFFECT_IDS, MENU_IDS, SafeString, describeCommand } from './catalogue.js';
 import { AudacityPipe, AudacityTimeout, AudacityUnavailable } from './pipe.js';
-import { Ops, validateProjectFile } from './ops.js';
+import { Ops, trackPanPercent, validateProjectFile } from './ops.js';
 import { launch, listWindows, quit, setWindowVisible, pipeExists } from './app.js';
 import { SerialQueue } from './queue.js';
 import { registerAnalysisTools } from './analysis.js';
@@ -118,14 +118,14 @@ export function buildServer(pipe = new AudacityPipe()): McpServer {
 
   tool(
     'audacity_command',
-    'Run any scripting command or effect from the catalogue on the current selection (effects: Amplify, Compressor, Limiter, LoudnessNormalization, Normalize, NoiseReduction, High-passFilter, FilterCurve, AutoDuck, FadeIn, …). Parameters are validated against Audacity\'s own list; see audacity_describe.',
+    'Run a catalogue scripting command or effect on the current selection (Amplify, Compressor, Limiter, LoudnessNormalization, Normalize, High-passFilter, FilterCurve, AutoDuck, FadeIn, …). Parameters follow Audacity\'s own list; see audacity_describe. Native Set* setters use selected tracks: call audacity_select first. NoiseReduction requires a captured profile.',
     { command: z.enum(COMMAND_IDS as [string, ...string[]]), params: Params.default({}) },
     ({ command, params }) => ops.command(command, params, 600_000),
   );
 
   tool(
     'audacity_menu',
-    'Run a menu command that needs no dialog (Play, Stop, Record1stChoice, Undo, Redo, SelectAll, SelectNone, NewMonoTrack, NewStereoTrack, NewLabelTrack, AddLabel, ZoomSel, FitInWindow, CursProjectStart, …).',
+    'Run a menu command that needs no dialog (Play, Stop, Undo, Redo, SelectAll, SelectNone, NewMonoTrack, NewStereoTrack, NewLabelTrack, AddLabel, ZoomSel, FitInWindow, CursProjectStart, …). Use audacity_transport for guarded recording.',
     { command: z.enum(MENU_IDS as [string, ...string[]]) },
     ({ command }) => ops.run(command),
   );
@@ -154,14 +154,17 @@ export function buildServer(pipe = new AudacityPipe()): McpServer {
       track: TrackRef,
       name: SafeString.optional(),
       gainDb: z.number().min(-36).max(36).optional(),
-      pan: z.number().min(-1).max(1).optional(),
+      pan: z.number().min(-1).max(1).optional().describe('normalized pan: -1 full left, 0 center, 1 full right'),
       mute: z.boolean().optional(),
       solo: z.boolean().optional(),
     },
     async ({ track, name, gainDb, pan, mute, solo }) => {
       const index = await ops.trackIndex(track);
-      // SetTrack's Volume is in dB (verified on 3.7.8: Volume=0.811 reads back as 1.098 linear).
-      await ops.run('SetTrack', { Track: index, Name: name, Volume: gainDb, Pan: pan, Mute: mute, Solo: solo });
+      // SetTrack's Volume is in dB (live 3.7.8: -6 reads back as ~0.501 linear).
+      // Native Pan is percent (live 3.7.8: Pan=-0.4 reads back as -0.004).
+      // Live 3.7.8 ignores Track on SetTrack; its target is the track selection.
+      await ops.run('SelectTracks', { Track: index, TrackCount: 1, Mode: 'Set' });
+      await ops.run('SetTrack', { Name: name, Volume: gainDb, Pan: pan === undefined ? undefined : trackPanPercent(pan), Mute: mute, Solo: solo });
       return (await ops.tracks())[index];
     },
   );
@@ -199,7 +202,7 @@ export function buildServer(pipe = new AudacityPipe()): McpServer {
 
   tool(
     'audacity_effect',
-    'Select a range and apply one effect in one step (see audacity_command for the effect list).',
+    'Select a track/range and apply one installed effect with exact catalogue parameters. Default time scope is the track extent, avoiding silent gap clips. NoiseReduction requires a captured profile on this same track and params={}; it uses saved UI settings. Scripted effects add no undo entry: save a project backup first.',
     { effect: z.enum(EFFECT_IDS as [string, ...string[]]), params: Params.default({}), ...Scope },
     ({ effect, params, ...scope }) => ops.applyEffect(effect, params, scope),
   );
@@ -216,7 +219,7 @@ export function buildServer(pipe = new AudacityPipe()): McpServer {
 
   tool(
     'audacity_export',
-    'Export the mix of all unmuted tracks (optionally a time range) to WAV/FLAC/MP3 by file extension.',
+    'Export the rendered mix or an explicit time range to WAV/FLAC/MP3/OGG by file extension, honoring gain, pan, mute, solo and envelopes. Selects time and tracks explicitly, including after label editing; channels is 1 or 2.',
     { file: SafeString.min(1), channels: z.number().int().min(1).max(2).default(2), start: Seconds.optional(), end: Seconds.optional() },
     async ({ file, channels, start, end }) => {
       await ops.exportMix(file, channels, start, end);
@@ -226,7 +229,7 @@ export function buildServer(pipe = new AudacityPipe()): McpServer {
 
   tool(
     'audacity_project',
-    'Open or save an .aup3 project. (Opening into a project that has tracks opens a second window; prefer audacity_fresh first.)',
+    'Open an existing .aup3 into an empty project or save to a new .aup3 path. Existing save destinations are refused to prevent a blocking modal. Use audacity_fresh with backupTo before opening when tracks are present.',
     { action: z.enum(['open', 'save']), file: SafeString.min(1) },
     async ({ action, file }) => {
       // Saving over an existing project makes Audacity show a modal error that blocks the pipe.

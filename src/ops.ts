@@ -26,6 +26,7 @@ export interface TrackInfo {
   solo?: number;
   channels?: number;
   selected?: number;
+  focused?: number;
 }
 
 export type TrackRef = number | string;
@@ -54,6 +55,14 @@ export class Ops {
     const reply = await this.pipe.send(command, timeoutMs);
     if (!reply.ok) throw new CommandFailed(command, reply);
     return reply.body;
+  }
+
+  /** Only the transport tool may call this, after its recording preflight. */
+  record(command: 'Record1stChoice' | 'Record2ndChoice'): Promise<string> {
+    // Recording can add tracks before a reply arrives. Never keep a profile
+    // whose source identity might have changed after an uncertain send.
+    this.noiseProfile = 'unknown';
+    return this.raw(formatCommand(command));
   }
 
   run(id: string, params: Record<string, ParamValue | undefined> = {}, timeoutMs?: number): Promise<string> {
@@ -126,11 +135,12 @@ export class Ops {
     const profile = this.noiseProfile;
     if (!profile || profile === 'unknown') throw new Error('noise-profile state changed');
     const selected = (await this.tracks()).flatMap((t, i) => t.kind === 'wave' && t.selected ? [{ ...t, index: i }] : []);
-    // Native 3.7.8 opens a modal on profile/source sample-rate mismatch. The
-    // pipe does not report source track rates; restrict reduction to the same
-    // tracked audio track, and invalidate after track-structure/history edits.
+    // Native 3.7.8 opens a modal on profile/source sample-rate mismatch.
+    // Direct GetInfo omits source rates. Capture queries a silent sample-data
+    // header; reduction conservatively stays on that unchanged tracked audio
+    // track, invalidating after track-structure/history edits.
     if (selected.length !== 1 || selected[0]!.index !== profile.track || selected[0]!.name !== profile.name) {
-      throw new Error('NoiseReduction must select only the unchanged audio track used to capture this profile; cross-track sample rates cannot be verified through the pipe');
+      throw new Error('NoiseReduction must select only the unchanged audio track used to capture this profile; cross-track reduction is not supported');
     }
     return this.raw(command, timeoutMs);
   }
@@ -203,17 +213,29 @@ export class Ops {
     const after = await this.tracks();
     if (after.length <= before) throw new Error(`import added no track: ${file}`);
     const track = before; // a stereo file is one track
-    if (name) await this.run('SetTrack', { Track: track, Name: name });
+    if (name) {
+      await this.run('SelectTracks', { Track: track, TrackCount: 1, Mode: 'Set' });
+      await this.run('SetTrack', { Name: name });
+    }
     if (start !== 0) {
       await this.run('Select', { Track: track, TrackCount: 1, Start: 0, End: 0.001, Mode: 'Set' });
-      await this.run('SetClip', { Track: track, At: 0, Start: start });
+      await this.run('SetClip', { At: 0, Start: start });
     }
     return { track, name: (await this.tracks())[track]?.name ?? name ?? '' };
   }
 
   async moveClip(track: TrackRef, at: number, start: number): Promise<void> {
     const index = await this.trackIndex(track);
-    await this.run('SetClip', { Track: index, At: at, Start: start });
+    const clips = await this.info('Clips') as { track: number; start: number; end: number }[];
+    const matches = clips.filter((clip) => clip.track === index && clip.start <= at && at < clip.end);
+    if (matches.length !== 1) throw new Error(`time ${at}s identifies ${matches.length} clips on track ${index}; choose a point inside one clip`);
+    const clip = matches[0]!;
+    // Native SetClip includes both ends (live 3.7.8). Resolve the half-open
+    // public range first, then use an interior point to avoid moving neighbors.
+    const interior = at > clip.start ? at : clip.start + (clip.end - clip.start) / 2;
+    // Live 3.7.8: SetClip ignores a Track wire key and visits selected tracks.
+    await this.run('SelectTracks', { Track: index, TrackCount: 1, Mode: 'Set' });
+    await this.run('SetClip', { At: interior, Start: start });
   }
 
   /**
@@ -225,9 +247,9 @@ export class Ops {
     const index = await this.trackIndex(track);
     const end = await this.projectEnd();
     await this.run('Select', { Track: index, TrackCount: 1, Start: 0, End: Math.max(end, 0.001), Mode: 'Set' });
-    if (replace) await this.run('SetEnvelope', { Track: index, Delete: true });
+    if (replace) await this.run('SetEnvelope', { Delete: true });
     for (const point of points) {
-      await this.run('SetEnvelope', { Track: index, Time: point.time, Value: point.value });
+      await this.run('SetEnvelope', { Time: point.time, Value: point.value });
     }
     return points.length;
   }
@@ -245,7 +267,8 @@ export class Ops {
     if (labelTrack < 0) {
       await this.run('NewLabelTrack');
       labelTrack = tracks.length;
-      await this.run('SetTrack', { Track: labelTrack, Name: trackName });
+      await this.run('SelectTracks', { Track: labelTrack, TrackCount: 1, Mode: 'Set' });
+      await this.run('SetTrack', { Name: trackName });
     }
     for (const label of labels) {
       const end = label.end ?? label.start;
@@ -302,9 +325,20 @@ export class Ops {
     // Live verified 3.7.8: first no-parameter call profiles, subsequent calls
     // reduce; Reduction/Sensitivity/Smoothing are ignored, not controllable.
     // Prevent the native "profile too short" modal before the first call.
+    const clips = await this.info('Clips') as { track: number; start: number; end: number }[];
+    const intersecting = clips.filter((clip) => clip.track === index && clip.start < end && start < clip.end);
+    if (intersecting.length !== 1 || intersecting[0]!.start > start || intersecting[0]!.end < end) {
+      throw new Error('noise profile must be contained in one audio clip, without timeline gaps or overlapping clips');
+    }
     const { measureScope } = await import('./analysis.js');
     const measured = await measureScope(this, { track: index, start, end }, { backend: 'wav' });
     if (measured.frames < 4096) throw new Error('noise profile must contain at least 4096 rendered samples; select a longer room-tone interval');
+    // Live 3.7.8: an 8 kHz source rendered at 48 kHz can pass the WAV frame
+    // minimum while still opening the native profile-too-short dialog.
+    const { measureSourceFrames } = await import('./source-rate.js');
+    if (await measureSourceFrames(this, { track: index, start, end }) < 4096) {
+      throw new Error('noise profile must contain at least 4096 source samples; select a longer room-tone interval');
+    }
     await this.select({ track: index, start, end });
     this.noiseProfile = 'unknown'; // A lost reply must never cause profile replay.
     await this.run('NoiseReduction', {}, 120_000);
@@ -324,6 +358,12 @@ export class Ops {
     await this.run('Select', { Start: from, End: to, Track: 0, TrackCount: tracks.length, Mode: 'Set' });
     await this.run('Export2', { Filename: file, NumChannels: channels }, 600_000);
   }
+}
+
+/** Public track pan is normalized; native SetTrack Pan is a percentage. */
+export function trackPanPercent(value: number): number {
+  if (!Number.isFinite(value) || value < -1 || value > 1) throw new RangeError('pan must be finite and between -1 and 1');
+  return value * 100;
 }
 
 export function validateExportFile(file: string): void {

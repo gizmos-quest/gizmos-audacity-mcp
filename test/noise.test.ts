@@ -4,8 +4,9 @@ import { AudacityPipe, AudacityTimeout, type PipeReply } from '../src/pipe.js';
 import { Ops, type TrackInfo } from '../src/ops.js';
 import { PipelineSchema, pipeline, planPipeline } from '../src/tasks.js';
 
-const { measureScopeMock } = vi.hoisted(() => ({ measureScopeMock: vi.fn() }));
+const { measureScopeMock, measureSourceFramesMock } = vi.hoisted(() => ({ measureScopeMock: vi.fn(), measureSourceFramesMock: vi.fn() }));
 vi.mock('../src/analysis.js', () => ({ measureScope: measureScopeMock }));
+vi.mock('../src/source-rate.js', () => ({ measureSourceFrames: measureSourceFramesMock }));
 
 function fixture(tracks: TrackInfo[] = [
   { name: 'Voice', kind: 'wave', start: 0, end: 10 },
@@ -13,12 +14,13 @@ function fixture(tracks: TrackInfo[] = [
   { name: 'Labels', kind: 'label', start: 0, end: 10 },
 ]) {
   const calls: string[] = [];
+  const clips = tracks.flatMap((track, index) => track.kind === 'wave' ? [{ track: index, start: track.start, end: track.end }] : []);
   let rejection: string | undefined;
   let timeout = false;
   const pipe = new AudacityPipe({ to: 'fixture.to', from: 'fixture.from' }, 100,
     async (_paths, command): Promise<PipeReply> => {
       calls.push(command);
-      if (command.startsWith('GetInfo:')) return { ok: true, status: 'OK', body: JSON.stringify(tracks) };
+      if (command.startsWith('GetInfo:')) return { ok: true, status: 'OK', body: JSON.stringify(command.includes('Type=Clips') ? clips : tracks) };
       if (command.startsWith('Select:')) {
         const first = Number(/\bTrack=(\d+)/.exec(command)?.[1]);
         const count = Number(/\bTrackCount=(\d+)/.exec(command)?.[1]);
@@ -28,16 +30,21 @@ function fixture(tracks: TrackInfo[] = [
         if (timeout) throw new AudacityTimeout('fixture native profile reply was lost');
         if (rejection) return { ok: false, status: 'Failed!', body: rejection };
       }
+      if (command.startsWith('Record') && timeout) throw new AudacityTimeout('fixture recording reply was lost');
       return { ok: true, status: 'OK', body: '' };
     });
-  return { ops: new Ops(pipe), pipe, calls, tracks,
+  return { ops: new Ops(pipe), pipe, calls, tracks, clips,
     rejectProfile: (text: string) => { rejection = text; },
-    loseProfileReply: () => { timeout = true; } };
+    loseProfileReply: () => { timeout = true; },
+    loseRecordingReply: () => { timeout = true; } };
 }
 
 const mutations = (calls: string[]) => calls.filter((command) => !command.startsWith('GetInfo:'));
 
-beforeEach(() => { measureScopeMock.mockReset().mockResolvedValue({ frames: 4096 }); });
+beforeEach(() => {
+  measureScopeMock.mockReset().mockResolvedValue({ frames: 4096 });
+  measureSourceFramesMock.mockReset().mockResolvedValue(4096);
+});
 
 describe('noise profile process state', () => {
   it('treats an existing Audacity process as unknown and refuses capture before measurement or mutation', async () => {
@@ -192,6 +199,23 @@ describe('noise profile process state', () => {
     expect(measureScopeMock).toHaveBeenCalledTimes(1);
   });
 
+  it.each([
+    ['Record1stChoice', false], ['Record2ndChoice', false],
+    ['Record1stChoice', true], ['Record2ndChoice', true],
+  ] as const)('invalidates a profile before %s, including a lost reply: %s', async (command, lostReply) => {
+    const project = fixture(); project.ops.freshApplication();
+    await project.ops.captureNoiseProfile(0, 0, 0.25);
+    if (lostReply) {
+      project.loseRecordingReply();
+      await expect(project.ops.record(command)).rejects.toThrow('recording reply was lost');
+      expect(project.pipe.needsRecovery).toBe(true); project.pipe.reset();
+    } else await project.ops.record(command);
+    project.calls.length = 0;
+    expect(() => project.ops.command('NoiseReduction', {})).toThrow('needs a profile captured by this server');
+    await expect(project.ops.captureNoiseProfile(0, 0, 0.25)).rejects.toThrow('state is unknown');
+    expect(mutations(project.calls)).toEqual([]);
+  });
+
   it('invalidates a captured profile after catalogue Import2 through the generic command path', async () => {
     const project = fixture();
     project.ops.freshApplication();
@@ -220,6 +244,41 @@ describe('noise profile process state', () => {
 });
 
 describe('profile measurement and input preflight', () => {
+  it.each([0, 800, 2047, 4095])('refuses %i source samples even when a project-rate render has enough frames', async (frames) => {
+    const project = fixture(); project.ops.freshApplication();
+    measureScopeMock.mockResolvedValue({ frames: 4800 });
+    measureSourceFramesMock.mockResolvedValueOnce(frames);
+    await expect(project.ops.captureNoiseProfile(0, 0, 0.25)).rejects.toThrow('at least 4096 source samples');
+    expect(mutations(project.calls)).toEqual([]);
+    await project.ops.captureNoiseProfile(0, 0, 0.5);
+    expect(project.calls.filter((command) => command === 'NoiseReduction:')).toHaveLength(1);
+  });
+
+  it('refuses gap-spanning room tone before either measurement or native profile capture', async () => {
+    const project = fixture(); project.ops.freshApplication();
+    project.clips.splice(0, 1, { track: 0, start: 0, end: 1 }, { track: 0, start: 2, end: 10 });
+    await expect(project.ops.captureNoiseProfile(0, 0.9, 2.1)).rejects.toThrow('contained in one audio clip');
+    expect(measureScopeMock).not.toHaveBeenCalled(); expect(measureSourceFramesMock).not.toHaveBeenCalled();
+    expect(mutations(project.calls)).toEqual([]);
+  });
+
+  it('preserves source-rate query errors without starting or poisoning profile capture', async () => {
+    const project = fixture(); project.ops.freshApplication();
+    measureSourceFramesMock.mockRejectedValueOnce(new Error('Audacity own source export failure'));
+    await expect(project.ops.captureNoiseProfile(0, 0, 0.25)).rejects.toThrow('Audacity own source export failure');
+    expect(mutations(project.calls)).toEqual([]);
+    await project.ops.captureNoiseProfile(0, 0, 0.25);
+    expect(project.calls.filter((command) => command === 'NoiseReduction:')).toHaveLength(1);
+  });
+
+  it('refuses a second clip partially overlapping room tone before measurement or capture', async () => {
+    const project = fixture(); project.ops.freshApplication();
+    project.clips.push({ track: 0, start: 0.2, end: 0.4 });
+    await expect(project.ops.captureNoiseProfile(0, 0, 0.25)).rejects.toThrow('contained in one audio clip');
+    expect(measureScopeMock).not.toHaveBeenCalled(); expect(measureSourceFramesMock).not.toHaveBeenCalled();
+    expect(mutations(project.calls)).toEqual([]);
+  });
+
   it.each([0, 1, 2047, 4095])('refuses %i rendered samples before native profile selection or capture', async (frames) => {
     const project = fixture();
     project.ops.freshApplication();

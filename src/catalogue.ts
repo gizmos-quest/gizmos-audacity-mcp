@@ -41,8 +41,9 @@ const RESERVED = new Set([
   // ClickRemoval opens a blocking error dialog on valid audio without clicks
   // (live 3.7.8, 2026-10-02; confirmed in official ClickRemovalBase::Process).
   'ClickRemoval',
-  // Repair's native processing opens a modal error for selections over 128
-  // samples (live 3.7.8, 2026-10-02); no safe bounded wrapper is exposed.
+  // Repair opens a modal above 128 samples (live 3.7.8, 2026-10-02).
+  // Official Repair.cpp also rejects pitch/speed clips and missing context;
+  // GetInfo omits pitch/speed state, so a length bound alone is not safe.
   'Repair',
 ]);
 
@@ -54,16 +55,19 @@ export const COMMAND_IDS = COMMANDS.map((c) => c.id).filter((id) => !RESERVED.ha
  */
 const MENU_DENY = new Set([
   'ClickRemoval', 'Repair',
+  // Recording can open channel/rate mismatch dialogs. The dedicated transport
+  // tool verifies topology and chooses the action from the user's preference.
+  'Record1stChoice', 'Record2ndChoice',
   'Exit', 'Close', 'New', 'Preferences', 'ManageTools', 'Macros', 'ManageMacros', 'ApplyMacrosPalette',
   // open a dialog although their label has no "..." (collected from other Audacity MCP servers)
   'TrackGain', 'TrackPan', 'ChangeAudio', 'InputDevice', 'OutputDevice', 'EditLabels', 'TimerRecord', 'Resample',
   'EditMetaData', 'PlotSpectrum', 'ContrastAnalyser', 'MixerBoard', 'UndoHistory', 'Log',
   'ConfigReset', 'ManageGenerators', 'ManageEffects', 'ManageAnalyzers', 'About', 'QuickHelp', 'Manual',
   'AudacitySupport', 'AudioSetup', 'LinkAccount', 'Updates', 'ExportAudio', 'ExportMultiple',
-  'Save', 'UpdateMixdown', 'AddRealtimeEffects', 'RepeatLastEffect', 'Scrub', 'Seek', 'PunchAndRoll',
+  'Save', 'UpdateMixdown', 'ShareAudioTB', 'AddRealtimeEffects', 'RepeatLastEffect', 'Scrub', 'Seek', 'PunchAndRoll',
 ]);
-/** Transport and view commands from the hidden "Extra" menu, which GetInfo does not list (verified live on 3.7.8). */
-const EXTRA_MENU = ['Play', 'Stop', 'Pause', 'Record1stChoice', 'CursProjectStart', 'CursProjectEnd', 'ZoomSel', 'FitInWindow'];
+/** Verified transport/view aliases; Play and Stop are absent from GetInfo's menu listing. */
+const EXTRA_MENU = ['Play', 'Stop', 'Pause', 'CursProjectStart', 'CursProjectEnd', 'ZoomSel', 'FitInWindow'];
 export const MENU_IDS = [
   ...new Set([
     ...MENUS.filter(
@@ -103,27 +107,16 @@ function paramSchema(param: CatalogueParam): z.ZodType {
   }
 }
 
-const TRACK_SCOPE: CatalogueParam[] = [
-  { key: 'Track', type: 'int' },
-  { key: 'TrackCount', type: 'int' },
-  { key: 'Channel', type: 'int' },
-  { key: 'ChannelCount', type: 'int' },
-];
-
-/**
- * Parameters Audacity accepts but does not list in GetInfo: the track scope
- * of the Set* commands (verified live on 3.7.8).
- */
-const UNLISTED: Record<string, CatalogueParam[]> = {
-  SetTrack: TRACK_SCOPE,
-  SetTrackStatus: TRACK_SCOPE,
-  SetTrackAudio: TRACK_SCOPE,
-  SetTrackVisuals: TRACK_SCOPE,
-  SetClip: TRACK_SCOPE,
-  SetEnvelope: TRACK_SCOPE,
-  // NoiseReduction has no automation parameters in 3.7.8. Live acceptance
-  // of arbitrary keys is misleading: NoiseReductionBase ignores them.
-};
+// Audacity 3.7.8's SetTrack/SetClip/SetEnvelope implementations operate on
+// the current selection and declare no Track/TrackCount/Channel/ChannelCount
+// parameters. A successful pipe reply can silently ignore undeclared keys.
+// Live 3.7.8, 2026-10-02: all 24 scope-key probes changed the selected track
+// instead of the requested target; SetTrackVisuals changed selected-track height.
+// Keep only the actual catalogue contract; task tools select explicitly.
+// Source: Audacity-3.7.8/src/commands/SetTrackInfoCommand.cpp,
+// SetClipCommand.cpp and SetEnvelopeCommand.cpp (VisitSettings/Apply).
+// NoiseReduction likewise has no automation parameters: its implementation
+// ignores guessed Reduction/Sensitivity/Smoothing keys.
 
 const schemas = new Map<string, z.ZodType>();
 
@@ -133,7 +126,7 @@ export function commandSchema(id: string): z.ZodType {
   const command = COMMANDS.find((c) => c.id === id);
   if (!command) throw new Error(`unknown Audacity command: ${id}`);
   const shape: Record<string, z.ZodType> = {};
-  for (const param of [...(command.params ?? []), ...(UNLISTED[id] ?? [])]) {
+  for (const param of command.params ?? []) {
     shape[param.key] = paramSchema(param).optional();
   }
   const schema = z.object(shape).strict();
@@ -143,5 +136,5 @@ export function commandSchema(id: string): z.ZodType {
 
 export function describeCommand(id: string): CatalogueCommand | undefined {
   const command = COMMANDS.find((c) => c.id === id);
-  return command ? { ...command, params: [...(command.params ?? []), ...(UNLISTED[id] ?? [])] } : undefined;
+  return command ? { ...command, params: [...(command.params ?? [])] } : undefined;
 }
