@@ -2,17 +2,21 @@
 // headless mode; a hidden main window is the clean equivalent, because the
 // pipe works the same and the tools never open a dialog.
 import { spawn } from 'node:child_process';
-import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { rm, copyFile, writeFile } from 'node:fs/promises';
+import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
+import { rm, copyFile, writeFile, mkdtemp } from 'node:fs/promises';
 import { tmpdir, homedir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve, sep } from 'node:path';
 import { AudacityPipe, defaultPipePaths } from './pipe.js';
 import { formatCommand } from './format.js';
 import { validateProjectFile } from './ops.js';
 
 export function audacityExe(): string {
+  if (process.env.AUDACITY_EXE !== undefined) {
+    const file = process.env.AUDACITY_EXE;
+    if (!file || !existsSync(file) || !statSync(file).isFile()) throw new Error(`AUDACITY_EXE is not an existing executable file: ${file}`);
+    return resolve(file);
+  }
   const candidates = [
-    process.env.AUDACITY_EXE,
     'C:\\Program Files\\Audacity\\Audacity.exe',
     '/usr/bin/audacity',
     '/Applications/Audacity.app/Contents/MacOS/Wrapper',
@@ -27,11 +31,36 @@ function powershell(script: string): Promise<string> {
     const child = spawn('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script], { windowsHide: true });
     let out = '';
     let err = '';
-    child.stdout.on('data', (d) => (out += d));
-    child.stderr.on('data', (d) => (err += d));
-    child.on('error', reject);
-    child.on('close', (code) => (code === 0 ? resolve(out.trim()) : reject(new Error(err.trim() || `exit ${code}`))));
+    let cancelled: Error | undefined;
+    const timer = setTimeout(() => { cancelled = new Error('Audacity Windows helper timed out after 30000 ms'); child.kill(); }, 30_000);
+    child.stdout.on('data', (d) => {
+      if (out.length + d.length > 1_000_000) { cancelled = new Error('Audacity Windows helper output exceeds 1 MB'); child.kill(); }
+      else out += d;
+    });
+    child.stderr.on('data', (d) => (err = (err + d).slice(-4096)));
+    child.on('error', (error) => { clearTimeout(timer); reject(error); });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      if (cancelled) reject(cancelled);
+      else if (code === 0) resolve(out.trim());
+      else reject(new Error(err.trim() || `exit ${code}`));
+    });
   });
+}
+
+export interface AudacityProcess { pid: number; executable: string | null; fileVersion: string | null; productVersion: string | null }
+
+/** Inspect actual running Windows binaries; a winget version pin alone is not evidence. */
+export async function audacityProcesses(): Promise<AudacityProcess[]> {
+  if (process.platform !== 'win32') return [];
+  const out = await powershell(`
+$found = @(Get-Process Audacity -ErrorAction SilentlyContinue | ForEach-Object {
+  $processPath = $_.Path
+  $version = if ($processPath) { (Get-Item -LiteralPath $processPath).VersionInfo } else { $null }
+  [pscustomobject]@{ pid = $_.Id; executable = $processPath; fileVersion = $version.FileVersion; productVersion = $version.ProductVersion }
+})
+ConvertTo-Json -Compress -InputObject @($found)`);
+  return out ? JSON.parse(out) as AudacityProcess[] : [];
 }
 
 export async function isRunning(): Promise<boolean> {
@@ -49,12 +78,13 @@ export function pipeExists(): boolean {
   }
 }
 
-export async function launch(visible: boolean, waitMs = 60_000): Promise<{ started: boolean; visible: boolean }> {
+export async function launch(visible: boolean, waitMs = 60_000): Promise<{ started: boolean; visible: boolean; processes: AudacityProcess[] }> {
+  if (!Number.isFinite(waitMs) || waitMs <= 0 || waitMs > 2_147_483_647) throw new Error('waitMs must be positive, finite and at most 2147483647');
   if (pipeExists()) {
     const reply = await new AudacityPipe().send('GetInfo: Type=Tracks Format=JSON', 20_000);
     if (!reply.ok) throw new Error(reply.body || reply.status);
     if (process.platform === 'win32') await setWindowVisible(visible);
-    return { started: false, visible };
+    return { started: false, visible, processes: await audacityProcesses() };
   }
   if (await isRunning()) throw new Error('Audacity is running without a reachable pipe. Use audacity_dialogs or audacity_recover; do not start a second project window.');
   const recovery = recoveryEntries();
@@ -73,7 +103,7 @@ export async function launch(visible: boolean, waitMs = 60_000): Promise<{ start
       const reply = await new AudacityPipe().send('GetInfo: Type=Tracks Format=JSON', Math.min(20_000, Math.max(1000, deadline - Date.now())));
       if (!reply.ok) throw new Error(reply.body || reply.status);
       if (process.platform === 'win32') await setWindowVisible(visible);
-      return { started: true, visible };
+      return { started: true, visible, processes: await audacityProcesses() };
     }
     await new Promise((r) => setTimeout(r, 500));
   }
@@ -173,19 +203,26 @@ export async function setWindowVisible(show: boolean): Promise<number> {
  * keepProject to save to a real path instead.
  */
 export async function quit(pipe: AudacityPipe, keepProject?: string): Promise<{ savedTo?: string }> {
-  const target = keepProject ?? join(tmpdir(), `gizmos-audacity-quit-${Date.now()}.aup3`);
+  const scratch = keepProject === undefined ? await mkdtemp(join(tmpdir(), 'gizmos-audacity-quit-')) : undefined;
+  const target = keepProject ?? join(scratch!, 'project.aup3');
   validateProjectFile(target, true);
-  const save = await pipe.send(formatCommand('SaveProject2', { Filename: target }), 120_000);
+  let save;
+  try { save = await pipe.send(formatCommand('SaveProject2', { Filename: target }), 120_000); }
+  catch (error) {
+    if (scratch && error instanceof Error && pipe.needsRecovery) error.message += `. Temporary save destination retained for inspection: ${target}`;
+    throw error;
+  }
   if (!save.ok) throw new Error(save.body || save.status);
-  await pipe.send(formatCommand('Exit'), 30_000).catch(() => undefined); // the pipe closes with the app
+  const exit = await pipe.send(formatCommand('Exit'), 30_000).catch(() => undefined); // the pipe closes with the app
+  if (exit && !exit.ok) throw new Error(`${exit.body || exit.status}. Project retained at ${target}`);
   const deadline = Date.now() + 30_000;
   while (await isRunning() && Date.now() < deadline) await new Promise((r) => setTimeout(r, 300));
   if (await isRunning()) throw new Error(`Audacity did not quit; project retained at ${target}. Check audacity_dialogs.`);
   pipe.reset();
-  if (!keepProject) {
-    await rm(target, { force: true });
-    await rm(`${target}-shm`, { force: true });
-    await rm(`${target}-wal`, { force: true });
+  if (scratch) {
+    const resolved = resolve(scratch);
+    if (!resolved.startsWith(resolve(tmpdir()) + sep) || !resolved.includes('gizmos-audacity-quit-')) throw new Error(`refusing unsafe quit scratch cleanup: ${resolved}`);
+    await rm(resolved, { recursive: true, force: true });
   }
   return keepProject ? { savedTo: target } : {};
 }

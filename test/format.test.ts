@@ -44,4 +44,8 @@ describe('replies', () => {
   it('reads GetInfo JSON with unescaped Windows paths', () => {
     expect(parseInfoJson('[ { "default":"C:\\Users\\x.wav" } ]')).toEqual([{ default: 'C:\\Users\\x.wav' }]);
   });
+
+  it.each(['', 'No readable project information', 'null'])('does not turn missing GetInfo JSON %j into an empty project', (body) => {
+    expect(() => parseInfoJson(body)).toThrow(/project state is unknown/);
+  });
 });

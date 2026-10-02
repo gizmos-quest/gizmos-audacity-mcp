@@ -34,7 +34,7 @@ export function catalogueCommand(id: string, params: Record<string, unknown> = {
 
 export function parseInfoJson(body: string): unknown {
   const start = body.search(/[[{]/);
-  if (start < 0) return [];
+  if (start < 0) throw new Error('Audacity GetInfo returned no JSON; project state is unknown');
   const text = body.slice(start).replace(/"(?:\\.|[^"\\])*"/g, (value) => {
     // GetInfo writes Windows paths verbatim, including sequences like \n and \t.
     // Preserve those as path separators without disturbing ordinary JSON escapes.
