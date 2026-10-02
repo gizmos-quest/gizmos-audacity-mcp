@@ -15,12 +15,13 @@ function formatValue(value: ParamValue): string {
 }
 
 export function formatCommand(id: string, params: Record<string, ParamValue | undefined> = {}): string {
-  if (!/^[A-Za-z][A-Za-z0-9-]*$/.test(id)) throw new Error(`invalid command id: ${id}`);
+  if (!/^[A-Za-z][A-Za-z0-9_-]*$/.test(id)) throw new Error(`invalid command id: ${id}`);
   const parts = Object.entries(params)
     .filter((entry): entry is [string, ParamValue] => entry[1] !== undefined)
     .map(([key, value]) => {
-      if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(key)) throw new Error(`invalid parameter name: ${key}`);
-      return `${key}=${formatValue(value)}`;
+      if (!/^[A-Za-z_][A-Za-z0-9_ -]*$/.test(key)) throw new Error(`invalid parameter name: ${key}`);
+      // Hyphens (Nyquist) and quoted spaced keys (FindClipping/DTMF) verified on live 3.7.8, 2026-10-02.
+      return `${key.includes(' ') ? `"${key}"` : key}=${formatValue(value)}`;
     });
   return `${id}:${parts.length ? ' ' + parts.join(' ') : ''}`;
 }
@@ -34,6 +35,11 @@ export function catalogueCommand(id: string, params: Record<string, unknown> = {
 export function parseInfoJson(body: string): unknown {
   const start = body.search(/[[{]/);
   if (start < 0) return [];
-  const text = body.slice(start).replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
+  const text = body.slice(start).replace(/"(?:\\.|[^"\\])*"/g, (value) => {
+    // GetInfo writes Windows paths verbatim, including sequences like \n and \t.
+    // Preserve those as path separators without disturbing ordinary JSON escapes.
+    if (/[A-Za-z]:\\(?!\\)/.test(value)) return value.replace(/\\(?!\\)|\\\\/g, (slash) => slash === '\\\\' ? slash : '\\\\');
+    return value.replace(/\\(?:["\\/bfnrt]|u[0-9a-fA-F]{4})|\\/g, (slash) => slash.length === 1 ? '\\\\' : slash);
+  });
   return JSON.parse(text.replace(/[\u0000-\u001f]+/g, ' '));
 }

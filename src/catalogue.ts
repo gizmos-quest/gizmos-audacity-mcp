@@ -33,7 +33,18 @@ export const COMMANDS: CatalogueCommand[] = load('commands.json');
 export const MENUS: MenuItem[] = load('menus.json');
 
 /** Commands handled by dedicated tools or unsafe for an agent (they act outside the project). */
-const RESERVED = new Set(['Help', 'Message', 'SetPreference', 'SaveLog', 'ClearLog', 'NyquistPrompt', 'NyquistPluginInstaller']);
+const RESERVED = new Set([
+  'Help', 'Message', 'SetPreference', 'SaveLog', 'ClearLog', 'NyquistPrompt', 'NyquistPluginInstaller',
+  'Drag', 'OpenProject2', 'SaveProject2', 'SaveCopy',
+  // MeasureRms opens two modal result dialogs (live 3.7.8, 2026-10-02). Use audacity_measure.
+  'MeasureRms', 'SampleDataImport',
+  // ClickRemoval opens a blocking error dialog on valid audio without clicks
+  // (live 3.7.8, 2026-10-02; confirmed in official ClickRemovalBase::Process).
+  'ClickRemoval',
+  // Repair's native processing opens a modal error for selections over 128
+  // samples (live 3.7.8, 2026-10-02); no safe bounded wrapper is exposed.
+  'Repair',
+]);
 
 export const COMMAND_IDS = COMMANDS.map((c) => c.id).filter((id) => !RESERVED.has(id));
 
@@ -42,21 +53,31 @@ export const COMMAND_IDS = COMMANDS.map((c) => c.id).filter((id) => !RESERVED.ha
  * open a modal window, which would block the pipe until a person closes it.
  */
 const MENU_DENY = new Set([
-  'Exit', 'Close', 'New', 'Preferences', 'ManageTools', 'Macros', 'ApplyMacrosPalette',
+  'ClickRemoval', 'Repair',
+  'Exit', 'Close', 'New', 'Preferences', 'ManageTools', 'Macros', 'ManageMacros', 'ApplyMacrosPalette',
   // open a dialog although their label has no "..." (collected from other Audacity MCP servers)
   'TrackGain', 'TrackPan', 'ChangeAudio', 'InputDevice', 'OutputDevice', 'EditLabels', 'TimerRecord', 'Resample',
   'EditMetaData', 'PlotSpectrum', 'ContrastAnalyser', 'MixerBoard', 'UndoHistory', 'Log',
+  'ConfigReset', 'ManageGenerators', 'ManageEffects', 'ManageAnalyzers', 'About', 'QuickHelp', 'Manual',
+  'AudacitySupport', 'AudioSetup', 'LinkAccount', 'Updates', 'ExportAudio', 'ExportMultiple',
+  'Save', 'UpdateMixdown', 'AddRealtimeEffects', 'RepeatLastEffect', 'Scrub', 'Seek', 'PunchAndRoll',
 ]);
 /** Transport and view commands from the hidden "Extra" menu, which GetInfo does not list (verified live on 3.7.8). */
 const EXTRA_MENU = ['Play', 'Stop', 'Pause', 'Record1stChoice', 'CursProjectStart', 'CursProjectEnd', 'ZoomSel', 'FitInWindow'];
 export const MENU_IDS = [
   ...new Set([
     ...MENUS.filter(
-      (m): m is MenuItem & { id: string } => typeof m.id === 'string' && !m.label.endsWith('...') && !MENU_DENY.has(m.id),
+      (m): m is MenuItem & { id: string } => typeof m.id === 'string' && !/[.…]/.test(m.label) &&
+        /^[A-Za-z][A-Za-z0-9_-]*$/.test(m.id) && !MENU_DENY.has(m.id) && !m.id.startsWith('Effect_') && !m.id.startsWith('Macro_'),
     ).map((m) => m.id),
     ...EXTRA_MENU,
   ]),
 ];
+
+export const EFFECT_IDS = COMMAND_IDS.filter((id) => {
+  const command = COMMANDS.find((c) => c.id === id)!;
+  return !/^(Get|Set|Select|Import|Export|Open|Save)/.test(id) && !['Comment', 'CompareAudio'].includes(command.id);
+});
 
 /** A value Audacity's parser takes verbatim; quotes and line breaks cannot be escaped. */
 export const SafeString = z
@@ -91,8 +112,7 @@ const TRACK_SCOPE: CatalogueParam[] = [
 
 /**
  * Parameters Audacity accepts but does not list in GetInfo: the track scope
- * of the Set* commands (verified live on 3.7.8), and the settings of the
- * built-in Noise Reduction effect.
+ * of the Set* commands (verified live on 3.7.8).
  */
 const UNLISTED: Record<string, CatalogueParam[]> = {
   SetTrack: TRACK_SCOPE,
@@ -101,11 +121,8 @@ const UNLISTED: Record<string, CatalogueParam[]> = {
   SetTrackVisuals: TRACK_SCOPE,
   SetClip: TRACK_SCOPE,
   SetEnvelope: TRACK_SCOPE,
-  NoiseReduction: [
-    { key: 'Reduction', type: 'double' },
-    { key: 'Sensitivity', type: 'double' },
-    { key: 'Smoothing', type: 'int' },
-  ],
+  // NoiseReduction has no automation parameters in 3.7.8. Live acceptance
+  // of arbitrary keys is misleading: NoiseReductionBase ignores them.
 };
 
 const schemas = new Map<string, z.ZodType>();
@@ -125,5 +142,6 @@ export function commandSchema(id: string): z.ZodType {
 }
 
 export function describeCommand(id: string): CatalogueCommand | undefined {
-  return COMMANDS.find((c) => c.id === id);
+  const command = COMMANDS.find((c) => c.id === id);
+  return command ? { ...command, params: [...(command.params ?? []), ...(UNLISTED[id] ?? [])] } : undefined;
 }

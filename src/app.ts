@@ -2,12 +2,13 @@
 // headless mode; a hidden main window is the clean equivalent, because the
 // pipe works the same and the tools never open a dialog.
 import { spawn } from 'node:child_process';
-import { existsSync, readdirSync } from 'node:fs';
-import { rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { rm, copyFile, writeFile } from 'node:fs/promises';
+import { tmpdir, homedir } from 'node:os';
 import { join } from 'node:path';
-import type { AudacityPipe } from './pipe.js';
+import { AudacityPipe, defaultPipePaths } from './pipe.js';
 import { formatCommand } from './format.js';
+import { validateProjectFile } from './ops.js';
 
 export function audacityExe(): string {
   const candidates = [
@@ -28,18 +29,19 @@ function powershell(script: string): Promise<string> {
     let err = '';
     child.stdout.on('data', (d) => (out += d));
     child.stderr.on('data', (d) => (err += d));
+    child.on('error', reject);
     child.on('close', (code) => (code === 0 ? resolve(out.trim()) : reject(new Error(err.trim() || `exit ${code}`))));
   });
 }
 
 export async function isRunning(): Promise<boolean> {
-  if (process.platform !== 'win32') return false;
+  if (process.platform !== 'win32') return pipeExists();
   const out = await powershell('(Get-Process Audacity -ErrorAction SilentlyContinue | Measure-Object).Count');
   return Number(out) > 0;
 }
 
 export function pipeExists(): boolean {
-  if (process.platform !== 'win32') return true;
+  if (process.platform !== 'win32') return existsSync(defaultPipePaths().to) && existsSync(defaultPipePaths().from);
   try {
     return readdirSync('\\\\.\\pipe\\').includes('ToSrvPipe');
   } catch {
@@ -48,7 +50,15 @@ export function pipeExists(): boolean {
 }
 
 export async function launch(visible: boolean, waitMs = 60_000): Promise<{ started: boolean; visible: boolean }> {
-  if (pipeExists()) return { started: false, visible };
+  if (pipeExists()) {
+    const reply = await new AudacityPipe().send('GetInfo: Type=Tracks Format=JSON', 20_000);
+    if (!reply.ok) throw new Error(reply.body || reply.status);
+    if (process.platform === 'win32') await setWindowVisible(visible);
+    return { started: false, visible };
+  }
+  if (await isRunning()) throw new Error('Audacity is running without a reachable pipe. Use audacity_dialogs or audacity_recover; do not start a second project window.');
+  const recovery = recoveryEntries();
+  if (recovery.length) throw new Error(`Audacity has ${recovery.length} crash-recovery entries. Use audacity_recover to inspect them before launch.`);
   if (process.platform !== 'win32') {
     spawn(audacityExe(), [], { detached: true, stdio: 'ignore' }).unref();
   } else {
@@ -59,6 +69,10 @@ export async function launch(visible: boolean, waitMs = 60_000): Promise<{ start
   while (Date.now() < deadline) {
     if (pipeExists()) {
       await new Promise((r) => setTimeout(r, 1500)); // let the module finish registering
+      // The pipe is published before the UI event loop finishes startup.
+      const reply = await new AudacityPipe().send('GetInfo: Type=Tracks Format=JSON', Math.min(20_000, Math.max(1000, deadline - Date.now())));
+      if (!reply.ok) throw new Error(reply.body || reply.status);
+      if (process.platform === 'win32') await setWindowVisible(visible);
       return { started: true, visible };
     }
     await new Promise((r) => setTimeout(r, 500));
@@ -79,13 +93,18 @@ public static class GizmosWin {
   [DllImport("user32.dll")] public static extern bool ShowWindow(IntPtr h, int cmd);
   [DllImport("user32.dll")] public static extern int GetWindowTextLength(IntPtr h);
   [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr h);
+  [DllImport("user32.dll")] public static extern IntPtr GetWindow(IntPtr h, uint cmd);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetClassName(IntPtr h, StringBuilder s, int n);
+  [DllImport("user32.dll")] public static extern int GetWindowLong(IntPtr h, int index);
 }
 "@
 $ids = @(Get-Process Audacity -ErrorAction SilentlyContinue | ForEach-Object { [uint32]$_.Id })
 $count = 0
 [GizmosWin]::EnumWindows({ param($h, $l)
   $p = [uint32]0; [void][GizmosWin]::GetWindowThreadProcessId($h, [ref]$p)
-  if ($ids -contains $p -and [GizmosWin]::GetWindowTextLength($h) -gt 0) {
+  $c = New-Object System.Text.StringBuilder 256; [void][GizmosWin]::GetClassName($h, $c, 256)
+  # wxWidgets' hidden parent panel must also be shown for its project frame to become visible.
+  if ($ids -contains $p -and [GizmosWin]::GetWindowTextLength($h) -gt 0 -and $c.ToString().StartsWith('wxWindow')) {
     [void][GizmosWin]::ShowWindow($h, ${show ? 5 : 0}); ${show ? '[void][GizmosWin]::SetForegroundWindow($h);' : ''} $script:count++ }
   return $true }, [IntPtr]::Zero) | Out-Null
 $count`;
@@ -96,9 +115,13 @@ using System; using System.Runtime.InteropServices; using System.Text;
 public static class GizmosDlg {
   public delegate bool EnumProc(IntPtr h, IntPtr l);
   [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc f, IntPtr l);
+  [DllImport("user32.dll")] public static extern bool EnumChildWindows(IntPtr h, EnumProc f, IntPtr l);
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
   [DllImport("user32.dll")] public static extern bool IsWindowVisible(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool IsWindowEnabled(IntPtr h);
+  [DllImport("user32.dll")] public static extern IntPtr GetWindow(IntPtr h, uint cmd);
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
+  [DllImport("user32.dll")] public static extern int GetWindowLong(IntPtr h, int index);
   [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetClassName(IntPtr h, StringBuilder s, int n);
   [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
 }
@@ -107,22 +130,31 @@ $found = New-Object System.Collections.ArrayList
 $ids = @(Get-Process Audacity -ErrorAction SilentlyContinue | ForEach-Object { [uint32]$_.Id })
 [GizmosDlg]::EnumWindows({ param($h, $l)
   $p = [uint32]0; [void][GizmosDlg]::GetWindowThreadProcessId($h, [ref]$p)
-  if ($ids -contains $p -and [GizmosDlg]::IsWindowVisible($h)) {
+  if ($ids -contains $p) {
     $t = New-Object System.Text.StringBuilder 512; [void][GizmosDlg]::GetWindowText($h, $t, 512)
     $c = New-Object System.Text.StringBuilder 256; [void][GizmosDlg]::GetClassName($h, $c, 256)
-    $dialog = $c.ToString() -eq '#32770'
+    $owner = [GizmosDlg]::GetWindow($h, 4)
+    $blockedOwner = $owner -ne [IntPtr]::Zero -and -not [GizmosDlg]::IsWindowEnabled($owner)
+    $dialog = ($c.ToString() -eq '#32770' -and ([GizmosDlg]::IsWindowVisible($h) -or $blockedOwner)) -or ($blockedOwner -and ([GizmosDlg]::GetWindowLong($h, -20) -band 1) -ne 0)
+    $script:dialogTexts = New-Object System.Collections.ArrayList
+    if ($dialog) {
+      [void][GizmosDlg]::EnumChildWindows($h, { param($child, $unused)
+        $text = New-Object System.Text.StringBuilder 2048; [void][GizmosDlg]::GetWindowText($child, $text, 2048)
+        if ($text.Length -gt 0) { [void]$script:dialogTexts.Add($text.ToString()) }
+        return $true }, [IntPtr]::Zero)
+    }
     $closed = $false
     if (${close ? '$true' : '$false'} -and $dialog) { [void][GizmosDlg]::PostMessage($h, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero); $closed = $true }
-    [void]$found.Add([pscustomobject]@{ title = $t.ToString(); dialog = $dialog; closed = $closed })
+    if ($t.Length -gt 0) { [void]$found.Add([pscustomobject]@{ title = $t.ToString(); className = $c.ToString(); dialog = $dialog; message = ($script:dialogTexts -join '\n'); closed = $closed; visible = [GizmosDlg]::IsWindowVisible($h) }) }
   }
   return $true }, [IntPtr]::Zero) | Out-Null
 ConvertTo-Json -Compress -InputObject @($found)`;
 
 /** Audacity's visible top-level windows; with close, its standard dialogs get WM_CLOSE (no input simulation). */
-export async function listWindows(close: boolean): Promise<{ title: string; dialog: boolean; closed: boolean }[]> {
+export async function listWindows(close: boolean): Promise<{ title: string; dialog: boolean; closed: boolean; visible: boolean }[]> {
   if (process.platform !== 'win32') throw new Error('dialog handling is implemented for Windows only');
   const out = await powershell(DIALOG_SCRIPT(close));
-  return out ? (JSON.parse(out) as { title: string; dialog: boolean; closed: boolean }[]) : [];
+  return out ? (JSON.parse(out) as { title: string; dialog: boolean; closed: boolean; visible: boolean }[]) : [];
 }
 
 export async function setWindowVisible(show: boolean): Promise<number> {
@@ -137,15 +169,45 @@ export async function setWindowVisible(show: boolean): Promise<number> {
  */
 export async function quit(pipe: AudacityPipe, keepProject?: string): Promise<{ savedTo?: string }> {
   const target = keepProject ?? join(tmpdir(), `gizmos-audacity-quit-${Date.now()}.aup3`);
-  if (existsSync(target)) throw new Error(`${target} exists; Audacity would stop at a modal error instead of saving`);
-  await pipe.send(formatCommand('SaveProject2', { Filename: target }), 120_000);
+  validateProjectFile(target, true);
+  const save = await pipe.send(formatCommand('SaveProject2', { Filename: target }), 120_000);
+  if (!save.ok) throw new Error(save.body || save.status);
   await pipe.send(formatCommand('Exit'), 30_000).catch(() => undefined); // the pipe closes with the app
   const deadline = Date.now() + 30_000;
-  while (pipeExists() && Date.now() < deadline) await new Promise((r) => setTimeout(r, 300));
+  while (await isRunning() && Date.now() < deadline) await new Promise((r) => setTimeout(r, 300));
+  if (await isRunning()) throw new Error(`Audacity did not quit; project retained at ${target}. Check audacity_dialogs.`);
+  pipe.reset();
   if (!keepProject) {
     await rm(target, { force: true });
     await rm(`${target}-shm`, { force: true });
     await rm(`${target}-wal`, { force: true });
   }
   return keepProject ? { savedTo: target } : {};
+}
+
+export function configPath(): string {
+  if (process.env.AUDACITY_CONFIG) return process.env.AUDACITY_CONFIG;
+  if (process.platform === 'win32') return join(process.env.APPDATA ?? homedir(), 'audacity', 'audacity.cfg');
+  if (process.platform === 'darwin') return join(homedir(), 'Library', 'Application Support', 'audacity', 'audacity.cfg');
+  return join(process.env.XDG_CONFIG_HOME ?? join(homedir(), '.config'), 'audacity', 'audacity.cfg');
+}
+
+export function parseActiveProjects(config: string): string[] {
+  const section = config.match(/^\[ActiveProjects\]\r?\n([\s\S]*?)(?=^\[|$(?![\s\S]))/m)?.[1] ?? '';
+  return section.split(/\r?\n/).flatMap((line) => /^\d+=(.+)$/.exec(line)?.[1]?.replace(/\\\\/g, '\\') ?? []);
+}
+
+/** Entries are expected while a project is open; they are stale only after a clean process check. */
+export function recoveryEntries(): string[] {
+  return existsSync(configPath()) ? parseActiveProjects(readFileSync(configPath(), 'utf8')) : [];
+}
+
+export async function discardStaleRecovery(): Promise<{ backup: string; projects: string[] }> {
+  if (await isRunning()) throw new Error('recovery entries can only be changed while Audacity is stopped');
+  const file = configPath(); const config = readFileSync(file, 'utf8');
+  const projects = parseActiveProjects(config);
+  const backup = `${file}.before-recovery-${Date.now()}.bak`;
+  await copyFile(file, backup);
+  await writeFile(file, config.replace(/^(\[ActiveProjects\]\r?\n)[\s\S]*?(?=^\[|$(?![\s\S]))/m, '$1'));
+  return { backup, projects }; // Project files and their recovery data are never deleted.
 }
