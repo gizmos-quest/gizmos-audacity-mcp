@@ -328,7 +328,9 @@ reviewable. Preference writes allow only
   SelectAll could select label text and produce an empty export.
 - Saves to an existing `.aup3` are refused before the pipe to prevent modal
   errors. Fresh backs up tracks; quit saves before exit and clears recovery
-  entries normally.
+  entries normally. On Windows quit closes the project window with WM_CLOSE
+  instead of the scripted `Exit`, which crashed 3.7.9 during project teardown
+  and left a crash report each time.
 
 After a timeout, inspect `audacity_dialogs`, close the blocking dialog with
 `{"close":true}`, then call `audacity_recover`. Inspect the resulting project

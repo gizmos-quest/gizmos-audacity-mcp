@@ -159,6 +159,39 @@ foreach ($frame in $script:frames) { if ($frame.title -ne 'panel') { [void][Gizm
 ` : `foreach ($frame in $script:frames) { [void][GizmosWin]::SetWindowPos($frame.handle, [IntPtr]::Zero, 0, 0, 0, 0, 0x97) }`}
 $script:frames.Count`;
 
+// Live 3.7.9: the scripted Exit command crashed Audacity while tearing down the
+// project (access violation in lib-track.dll) and left a crash report behind.
+// Closing the project frame with WM_CLOSE takes the same path as the window's X
+// button and exits cleanly once nothing is unsaved.
+const CLOSE_FRAMES_SCRIPT = `
+Add-Type @"
+using System; using System.Runtime.InteropServices; using System.Text;
+public static class GizmosClose {
+  public delegate bool EnumProc(IntPtr h, IntPtr l);
+  [DllImport("user32.dll")] public static extern bool EnumWindows(EnumProc f, IntPtr l);
+  [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetWindowText(IntPtr h, StringBuilder s, int n);
+  [DllImport("user32.dll", CharSet=CharSet.Unicode)] public static extern int GetClassName(IntPtr h, StringBuilder s, int n);
+  [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
+}
+"@
+$ids = @(Get-Process Audacity -ErrorAction SilentlyContinue | ForEach-Object { [uint32]$_.Id })
+$script:closed = 0
+[GizmosClose]::EnumWindows({ param($h, $l)
+  $p = [uint32]0; [void][GizmosClose]::GetWindowThreadProcessId($h, [ref]$p)
+  $c = New-Object System.Text.StringBuilder 256; [void][GizmosClose]::GetClassName($h, $c, 256)
+  $t = New-Object System.Text.StringBuilder 512; [void][GizmosClose]::GetWindowText($h, $t, 512)
+  if ($ids -contains $p -and $t.Length -gt 0 -and $t.ToString() -ne 'panel' -and $c.ToString().StartsWith('wxWindow')) {
+    [void][GizmosClose]::PostMessage($h, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero); $script:closed++ }
+  return $true }, [IntPtr]::Zero) | Out-Null
+$script:closed`;
+
+/** Posts WM_CLOSE to Audacity's project frames (no input simulation); returns how many were asked to close. */
+export async function closeProjectFrames(): Promise<number> {
+  if (process.platform !== 'win32') throw new Error('closing project frames is implemented for Windows only');
+  return Number(await powershell(CLOSE_FRAMES_SCRIPT));
+}
+
 const DIALOG_SCRIPT = (close: boolean) => `
 Add-Type @"
 using System; using System.Runtime.InteropServices; using System.Text;
@@ -214,8 +247,9 @@ export async function setWindowVisible(show: boolean): Promise<number> {
 
 /**
  * Quit without a "save changes?" prompt: save the project to a temporary
- * file first (so nothing is unsaved), exit, then delete that file. Pass
- * keepProject to save to a real path instead.
+ * file first (so nothing is unsaved), close the project window (Exit on other
+ * platforms), then delete that file. Pass keepProject to save to a real path
+ * instead.
  */
 export async function quit(pipe: AudacityPipe, keepProject?: string): Promise<{ savedTo?: string }> {
   await preflightExecutableOverride();
@@ -229,8 +263,13 @@ export async function quit(pipe: AudacityPipe, keepProject?: string): Promise<{ 
     throw error;
   }
   if (!save.ok) throw new Error(save.body || save.status);
-  const exit = await pipe.send(formatCommand('Exit'), 30_000).catch(() => undefined); // the pipe closes with the app
-  if (exit && !exit.ok) throw new Error(`${exit.body || exit.status}. Project retained at ${target}`);
+  if (process.platform === 'win32') {
+    // Nothing is unsaved now, so closing the frame exits without a prompt and without the Exit-command crash.
+    if (!(await closeProjectFrames())) throw new Error(`no Audacity project window to close; project retained at ${target}`);
+  } else {
+    const exit = await pipe.send(formatCommand('Exit'), 30_000).catch(() => undefined); // the pipe closes with the app
+    if (exit && !exit.ok) throw new Error(`${exit.body || exit.status}. Project retained at ${target}`);
+  }
   const deadline = Date.now() + 30_000;
   while (await isRunning() && Date.now() < deadline) await new Promise((r) => setTimeout(r, 300));
   if (await isRunning()) throw new Error(`Audacity did not quit; project retained at ${target}. Check audacity_dialogs.`);
