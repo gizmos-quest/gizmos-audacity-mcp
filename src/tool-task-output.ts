@@ -23,7 +23,7 @@ const Scope = z
     start: NumberValue.optional(),
     end: NumberValue.optional(),
   })
-  .strict();
+  .passthrough();
 const Step = z
   .object({
     name: z.string().optional(),
@@ -32,27 +32,27 @@ const Step = z
     scope: Scope,
     captureProfile: z.literal(true).optional(),
   })
-  .strict();
+  .passthrough();
 const Plan = { preset: z.string(), steps: z.array(Step), notes: Strings };
 
 /** Schemas preserve existing action variants and add no result envelope. */
 export const taskOutputs: Record<string, z.ZodType> = {
-  audacity_launch: z.object(Launch).strict(),
-  audacity_fresh: z.object({ ...Launch, backedUpTo: z.string().nullable() }).strict(),
-  audacity_quit: z.object({ savedTo: z.string().optional() }).strict(),
-  audacity_window: z.object({ windows: NumberValue }).strict(),
-  audacity_dialogs: z.object({ windows: z.array(Window) }).strict(),
-  audacity_import: z.object({ track: NumberValue, name: z.string() }).strict(),
-  audacity_envelope_set: z.object({ points: NumberValue }).strict(),
-  audacity_labels_set: z.object({ labels: NumberValue }).strict(),
-  audacity_export: z.object({ file: z.string() }).strict(),
-  audacity_pipeline: z.object({ dryRun: z.boolean(), ...Plan, applied: Strings.optional() }).strict(),
+  audacity_launch: z.object(Launch).passthrough(),
+  audacity_fresh: z.object({ ...Launch, backedUpTo: z.string().nullable() }).passthrough(),
+  audacity_quit: z.object({ savedTo: z.string().optional() }).passthrough(),
+  audacity_window: z.object({ windows: NumberValue }).passthrough(),
+  audacity_dialogs: z.object({ windows: z.array(Window) }).passthrough(),
+  audacity_import: z.object({ track: NumberValue, name: z.string() }).passthrough(),
+  audacity_envelope_set: z.object({ points: NumberValue }).passthrough(),
+  audacity_labels_set: z.object({ labels: NumberValue }).passthrough(),
+  audacity_export: z.object({ file: z.string() }).passthrough(),
+  audacity_pipeline: z.object({ dryRun: z.boolean(), ...Plan, applied: Strings.optional() }).passthrough(),
   audacity_edit: z
     .object({ action: z.string(), track: NumberValue, start: NumberValue, end: NumberValue, reply: z.string() })
-    .strict(),
+    .passthrough(),
   audacity_generate: z
     .object({ kind: z.string(), track: NumberValue, start: NumberValue, end: NumberValue, name: z.string().optional() })
-    .strict(),
+    .passthrough(),
   audacity_clip_set: z
     .object({
       track: NumberValue,
@@ -62,7 +62,7 @@ export const taskOutputs: Record<string, z.ZodType> = {
       gainDbApplied: NumberValue.optional(),
       color: z.string().optional(),
     })
-    .strict(),
+    .passthrough(),
   audacity_track_edit: z
     .object({
       track: NumberValue.optional(),
@@ -70,10 +70,10 @@ export const taskOutputs: Record<string, z.ZodType> = {
       reply: z.string().optional(),
       tracks: z.array(Track),
     })
-    .strict(),
+    .passthrough(),
   audacity_fade: z
     .object({ track: NumberValue, start: NumberValue, end: NumberValue, direction: z.enum(['in', 'out']) })
-    .strict(),
+    .passthrough(),
   audacity_auto_duck: z
     .object({
       dryRun: z.boolean(),
@@ -83,7 +83,7 @@ export const taskOutputs: Record<string, z.ZodType> = {
       params: JsonObject,
       scope: Scope,
     })
-    .strict(),
+    .passthrough(),
   audacity_transport: z
     .object({
       state: z.enum(['playing', 'paused', 'recording', 'stopped']),
@@ -91,8 +91,8 @@ export const taskOutputs: Record<string, z.ZodType> = {
       positionSource: z.string(),
       selection: z.json(),
     })
-    .strict(),
-  audacity_history: z.object({ action: z.enum(['undo', 'redo']), completed: NumberValue }).strict(),
+    .passthrough(),
+  audacity_history: z.object({ action: z.enum(['undo', 'redo']), completed: NumberValue }).passthrough(),
   audacity_macros: z
     .object({
       directory: z.string().optional(),
@@ -102,7 +102,7 @@ export const taskOutputs: Record<string, z.ZodType> = {
       steps: z.array(JsonObject).optional(),
       completed: NumberValue.optional(),
     })
-    .strict(),
+    .passthrough(),
   audacity_recover: z
     .object({
       running: z.boolean(),
@@ -115,7 +115,7 @@ export const taskOutputs: Record<string, z.ZodType> = {
       previousOutcome: z.string().optional(),
       note: z.string().optional(),
     })
-    .strict(),
+    .passthrough(),
   audacity_labels_file: z
     .object({
       imported: NumberValue.optional(),
@@ -124,8 +124,8 @@ export const taskOutputs: Record<string, z.ZodType> = {
       format: z.string().optional(),
       count: NumberValue.optional(),
     })
-    .strict(),
-  audacity_label_regions_export: z.object({ files: Strings, count: NumberValue }).strict(),
+    .passthrough(),
+  audacity_label_regions_export: z.object({ files: Strings, count: NumberValue }).passthrough(),
   audacity_batch: z
     .object({
       dryRun: z.boolean(),
@@ -135,5 +135,5 @@ export const taskOutputs: Record<string, z.ZodType> = {
       completed: NumberValue.optional(),
       results: z.array(JsonObject).optional(),
     })
-    .strict(),
+    .passthrough(),
 };

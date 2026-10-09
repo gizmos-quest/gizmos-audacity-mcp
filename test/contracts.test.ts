@@ -188,6 +188,27 @@ describe('public MCP compatibility contract', () => {
     }
   });
 
+  it('returns plans with omitted optional fields as SDK-valid structured content', async () => {
+    const scratch = mkdtempSync(join(tmpdir(), 'audacity-contract-'));
+    const source = join(scratch, 'source.wav');
+    writeFileSync(source, 'synthetic input');
+    const { client, server } = await session();
+    try {
+      for (const [name, args] of [
+        ['audacity_batch', { dryRun: true, jobs: [{ file: source, output: join(scratch, 'out.wav') }] }],
+        ['audacity_pipeline', { dryRun: true, track: 'Voice' }],
+      ] as [string, Record<string, unknown>][]) {
+        const result = await client.callTool({ name, arguments: args });
+        expect(result.isError, text(result)).not.toBe(true);
+        expect(result.structuredContent).toEqual(JSON.parse(text(result)));
+      }
+    } finally {
+      await client.close();
+      await server.close();
+      rmSync(scratch, { recursive: true, force: true });
+    }
+  });
+
   it('rejects unknown root/nested fields and nonfinite values before native I/O', async () => {
     const { client, server, transport } = await session();
     try {

@@ -21,11 +21,13 @@ export function toolResult(value: unknown, schema?: z.ZodType): CallToolResult {
   // Legacy clients parse arrays directly from text. Never replace those with
   // an object envelope: some clients prefer structuredContent when present.
   if (schema) {
-    // Validate the actual JSON representation: optional nested JS properties
-    // are omitted on the wire, including scopes inside batch dry-run plans.
-    schema.parse(JSON.parse(text));
-    if (value && typeof value === 'object' && !Array.isArray(value)) {
-      result.structuredContent = value as Record<string, unknown>;
+    // Use the JSON representation for both: optional nested JS properties (for
+    // example undefined scope times in batch plans) are omitted on the wire, and
+    // the SDK validates structured content against the same schema again.
+    const json: unknown = JSON.parse(text);
+    schema.parse(json);
+    if (json && typeof json === 'object' && !Array.isArray(json)) {
+      result.structuredContent = json as Record<string, unknown>;
     }
   }
   return result;
@@ -35,9 +37,7 @@ export function toolFailure(error: unknown): CallToolResult {
   let message =
     error instanceof z.ZodError ? z.prettifyError(error) : error instanceof Error ? error.message : String(error);
   if (error instanceof AudacityUnavailable) {
-    message += error.uncertainOutcome
-      ? ' Use audacity_dialogs and audacity_recover; do not replay edits blindly.'
-      : ' Use audacity_launch.';
+    message += error.advice;
   } else if (error instanceof AudacityTimeout) {
     message += '. A modal dialog may be blocking Audacity: check audacity_dialogs.';
   }

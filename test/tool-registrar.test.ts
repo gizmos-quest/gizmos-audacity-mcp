@@ -1,6 +1,7 @@
 import type { CallToolResult, McpServer, ServerContext } from '@modelcontextprotocol/server';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
+import { COMMAND_IDS, describeCommand } from '../src/catalogue.js';
 import { AudacityTimeout, AudacityUnavailable } from '../src/pipe.js';
 import { SerialQueue } from '../src/queue.js';
 import { toolAnnotations, toolTitle } from '../src/tool-metadata.js';
@@ -41,13 +42,23 @@ describe('MCP result compatibility', () => {
   it('adds structured object reports while retaining exact JSON text and legacy arrays/strings', () => {
     const value = { running: false };
     const result = toolResult(value, outputSchema('audacity_status'));
-    expect(result.structuredContent).toBe(value);
+    expect(result.structuredContent).toEqual(value);
     expect(result.content).toEqual([{ type: 'text', text: JSON.stringify(value, null, 1) }]);
     expect(toolResult([1, 2])).toEqual({ content: [{ type: 'text', text: '[\n 1,\n 2\n]' }] });
     expect(toolResult('selected')).toEqual({ content: [{ type: 'text', text: 'selected' }] });
     expect(outputSchema('audacity_info')).toBeUndefined();
     expect(outputSchema('audacity_labels')).toBeUndefined();
     expect(() => toolResult({ running: 'yes' }, outputSchema('audacity_status'))).toThrow();
+  });
+
+  it('never turns a completed edit into an error because a report carries an extra field', () => {
+    const report = { points: 2, note: 'informational' };
+    expect(toolResult(report, outputSchema('audacity_envelope_set')).structuredContent).toEqual(report);
+  });
+
+  it('describes every bundled command within the advertised output schema', () => {
+    for (const id of COMMAND_IDS)
+      expect(outputSchema('audacity_describe')!.safeParse(describeCommand(id)).success).toBe(true);
   });
 
   it('validates the serialized JSON shape for optional nested task fields', () => {
@@ -64,7 +75,12 @@ describe('MCP result compatibility', () => {
       ],
       requiresEmptyProject: false,
     };
-    expect(toolResult(report, outputSchema('audacity_batch')).structuredContent).toEqual(report);
+    const structured = toolResult(report, outputSchema('audacity_batch')).structuredContent;
+    expect(structured).toEqual(report);
+    // The SDK validates structured content against the schema again: the raw
+    // object's undefined scope times would fail there after a completed batch.
+    expect(outputSchema('audacity_batch')!.safeParse(structured).success).toBe(true);
+    expect(outputSchema('audacity_batch')!.safeParse(report).success).toBe(false);
     const recover = {
       running: true,
       entries: [],
@@ -92,6 +108,10 @@ describe('MCP result compatibility', () => {
     });
     expect(toolFailure(new AudacityUnavailable('partial reply', true)).content[0]).toMatchObject({
       text: expect.stringContaining('do not replay'),
+    });
+    expect(toolFailure(new AudacityUnavailable('pipe busy.', false, ' Retry later.')).content[0]).toEqual({
+      type: 'text',
+      text: 'pipe busy. Retry later.',
     });
     expect(toolFailure(new AudacityTimeout('wait exceeded')).content[0]).toMatchObject({
       text: expect.stringContaining('audacity_dialogs'),
