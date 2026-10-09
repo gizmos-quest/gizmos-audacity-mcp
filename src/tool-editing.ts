@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { EFFECT_IDS, SafeString } from './catalogue.js';
+import { catalogueCommand } from './format.js';
 import { type Ops, trackPanPercent, validateProjectFile } from './ops.js';
 import { Params, Scope, Seconds, TrackRef } from './tool-input.js';
 import type { ToolRegistrar } from './tools.js';
@@ -36,18 +37,20 @@ export function registerEditingTools(tool: ToolRegistrar, ops: Ops): void {
     async ({ track, name, gainDb, pan, mute, solo }) => {
       if ([name, gainDb, pan, mute, solo].every((value) => value === undefined))
         throw new Error('supply at least one track property');
-      const index = await ops.trackIndex(track);
       // SetTrack's Volume is in dB (live 3.7.8: -6 reads back as ~0.501 linear).
       // Native Pan is percent (live 3.7.8: Pan=-0.4 reads back as -0.004).
-      // Live 3.7.8 ignores Track on SetTrack; its target is the track selection.
-      await ops.run('SelectTracks', { Track: index, TrackCount: 1, Mode: 'Set' });
-      await ops.run('SetTrack', {
+      const params = {
         Name: name,
         Volume: gainDb,
         Pan: pan === undefined ? undefined : trackPanPercent(pan),
         Mute: mute,
         Solo: solo,
-      });
+      };
+      catalogueCommand('SetTrack', params); // Refuse untransmittable text before selecting.
+      const index = await ops.trackIndex(track);
+      // Live 3.7.8 ignores Track on SetTrack; its target is the track selection.
+      await ops.run('SelectTracks', { Track: index, TrackCount: 1, Mode: 'Set' });
+      await ops.run('SetTrack', params);
       return (await ops.tracks())[index];
     },
   );

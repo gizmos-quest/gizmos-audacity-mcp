@@ -60,6 +60,13 @@ describe('editing tool contracts', () => {
     expect(ops.run).toHaveBeenLastCalledWith('SetTrack', expect.objectContaining({ Pan: undefined, Mute: true }));
   });
 
+  it('refuses a name native parsing would change before looking up or selecting tracks', async () => {
+    const { call, ops } = session();
+    await expect(call('audacity_track_set', { track: 0, name: 'a\\nb' })).rejects.toThrow(/parameter parser/);
+    expect(ops.trackIndex).not.toHaveBeenCalled();
+    expect(ops.run).not.toHaveBeenCalled();
+  });
+
   it('retains clip/envelope/label defaults and returns unchanged reports', async () => {
     const { call, ops } = session();
     expect(await call('audacity_clip_move', { track: 0, at: 0.5, start: 1 })).toBe('moved');

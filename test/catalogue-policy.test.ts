@@ -68,12 +68,13 @@ describe('catalogue boundaries', () => {
     expect(() => ops.run(command, params)).toThrow();
     expect(transport).not.toHaveBeenCalled();
   });
-  it('preserves raw Windows paths containing JSON escape letters and valid escaped paths', () => {
+  it('preserves raw Windows paths containing JSON escape letters and native raw control bytes', () => {
     expect(parseInfoJson(String.raw`[{"file":"C:\new\test\rms.ny"}]`)).toEqual([
       { file: String.raw`C:\new\test\rms.ny` },
     ]);
-    expect(parseInfoJson(JSON.stringify([{ file: String.raw`C:\new\test.wav`, name: 'line\nnext' }]))).toEqual([
-      { file: String.raw`C:\new\test.wav`, name: 'line\nnext' },
+    // GetInfo writes a raw line break inside a string; it is repaired to a space, never a parse failure.
+    expect(parseInfoJson('[{"file":"C:\\new\\test.wav","name":"line\nnext"}]')).toEqual([
+      { file: String.raw`C:\new\test.wav`, name: 'line next' },
     ]);
   });
   it.each([

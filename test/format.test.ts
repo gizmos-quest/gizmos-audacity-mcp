@@ -9,14 +9,41 @@ describe('formatCommand', () => {
   });
 
   it('quotes values with spaces and skips undefined', () => {
-    expect(formatCommand('Import2', { Filename: 'C:\\a b\\c.wav', Other: undefined })).toBe(
-      'Import2: Filename="C:\\a b\\c.wav"',
+    expect(formatCommand('Import2', { Filename: '/tmp/a b/c.wav', Other: undefined }, 'linux')).toBe(
+      'Import2: Filename="/tmp/a b/c.wav"',
     );
   });
 
   it('refuses quotes and line breaks it cannot escape', () => {
     expect(() => formatCommand('SetLabel', { Text: 'say "hi"' })).toThrow();
     expect(() => formatCommand('SetLabel', { Text: 'a\nb' })).toThrow();
+  });
+
+  it('sends Windows file paths with forward slashes so native Unescape keeps \\n folders', () => {
+    expect(formatCommand('Import2', { Filename: 'C:\\new\\a b.wav' }, 'win32')).toBe(
+      'Import2: Filename="C:/new/a b.wav"',
+    );
+    expect(formatCommand('SampleDataExport', { FILENAME: '\\\\server\\notes\\x.txt' }, 'win32')).toBe(
+      'SampleDataExport: FILENAME=//server/notes/x.txt',
+    );
+    expect(() => formatCommand('Import2', { Filename: '/tmp/odd\\name.wav' }, 'linux')).toThrow(/parameter parser/);
+  });
+
+  it('sends relative file paths as absolute, since Audacity resolves them against its own directory', () => {
+    expect(formatCommand('Export2', { Filename: 'mix.wav' }, 'win32')).toMatch(
+      /^Export2: Filename="?[A-Za-z]:\/.*\/mix\.wav"?$/,
+    );
+    expect(formatCommand('Export2', { Filename: 'mix.wav' }, 'linux')).toMatch(
+      /^Export2: Filename="?\/.*\/mix\.wav"?$/,
+    );
+  });
+
+  it.each(['a\\nb', 'a\\\\b', 'ends\\'])('refuses text %j that native parsing would change', (Text) => {
+    expect(() => formatCommand('SetLabel', { Text }, 'win32')).toThrow(/parameter parser/);
+  });
+
+  it('keeps other backslashes in text, which native parsing leaves alone', () => {
+    expect(formatCommand('SetTrack', { Name: 'C:\\temp mix' }, 'win32')).toBe('SetTrack: Name="C:\\temp mix"');
   });
 });
 
@@ -49,6 +76,13 @@ describe('replies', () => {
 
   it('reads GetInfo JSON with unescaped Windows paths', () => {
     expect(parseInfoJson('[ { "default":"C:\\Users\\x.wav" } ]')).toEqual([{ default: 'C:\\Users\\x.wav' }]);
+  });
+
+  it('decodes native strings where only quotes are escaped', () => {
+    // Native output for: UNC path, literal backslash-n text, a quote, a backslash before a quote.
+    expect(parseInfoJson(String.raw`[{"a":"\\server\new\t.wav","b":"x\ny","c":"say \"hi\"","d":"x\\"y"}]`)).toEqual([
+      { a: String.raw`\\server\new\t.wav`, b: String.raw`x\ny`, c: 'say "hi"', d: String.raw`x\"y` },
+    ]);
   });
 
   it.each(['', 'No readable project information', 'null'])(

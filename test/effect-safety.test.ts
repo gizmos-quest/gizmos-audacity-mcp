@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { preflightEffect, preflightEffectParameters, preflightMacroEffects } from '../src/effect-safety.js';
+import { catalogueCommand } from '../src/format.js';
 import { Ops, type TrackInfo } from '../src/ops.js';
 import { AudacityPipe } from '../src/pipe.js';
 import { pipeline } from '../src/tasks.js';
@@ -216,7 +217,10 @@ describe('selection and topology Nyquist guards', () => {
   it('preflights source frames for the public silent sample exporter', async () => {
     const state = fixture([8000]);
     await state.ops.command('SampleDataExport', { NUMBER: 1, FILENAME: 'samples.txt', MESSAGES: 'None' });
-    expect(edits(state.calls)).toEqual(['SampleDataExport: NUMBER=1 FILENAME=samples.txt MESSAGES=None']);
+    // Relative paths are sent absolute, exactly as the shared formatter writes them.
+    expect(edits(state.calls)).toEqual([
+      catalogueCommand('SampleDataExport', { NUMBER: 1, FILENAME: 'samples.txt', MESSAGES: 'None' }),
+    ]);
     expect(mocks.measureSourceRate).toHaveBeenCalledOnce();
   });
 

@@ -2,7 +2,8 @@
 // enables process or pipe access. User projects are backed up persistently;
 // every test edit happens in the hidden, disposable test project.
 
-import { existsSync, statSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { expect, it } from 'vitest';
 import { type LiveContext, type Measurement, type Track, testTimeout, type Windows } from './session.js';
 
@@ -46,6 +47,31 @@ export function registerImports(context: LiveContext) {
       ).rejects.toThrow(/end must be after start/);
       expect(await tracks()).toEqual(previousTracks);
       expect(await call('audacity_info', { type: 'Selection' })).toEqual(previousSelection);
+      expect((await call<Windows>('audacity_dialogs')).windows.filter((window) => window.dialog)).toEqual([]);
+    },
+    testTimeout,
+  );
+
+  it(
+    'keeps Windows paths with \\n folders and literal backslashes in names intact',
+    async () => {
+      // Native CommandParameters::Unescape would turn `\n` into a newline; a raw
+      // `C:\...\new\` path then opened a blocking error dialog on live 3.7.8.
+      const folder = join(context.dir, 'new');
+      mkdirSync(folder, { recursive: true });
+      const source = join(folder, 'nested.wav');
+      copyFileSync(context.fixture, source);
+      await call('audacity_import', { file: source, name: String.raw`x\y` });
+      expect((await tracks()).map((track) => track.name)).toEqual([String.raw`x\y`]);
+      await expect(refuse('audacity_track_set', { track: String.raw`x\y`, name: String.raw`a\nb` })).rejects.toThrow(
+        /parameter parser/,
+      );
+      const mix = join(folder, 'mix.wav');
+      await call('audacity_export', { file: mix, channels: 1 });
+      expect(statSync(mix).size).toBeGreaterThan(44);
+      const project = join(folder, 'nested.aup3');
+      await call('audacity_project', { action: 'save', file: project });
+      expect(existsSync(project)).toBe(true);
       expect((await call<Windows>('audacity_dialogs')).windows.filter((window) => window.dialog)).toEqual([]);
     },
     testTimeout,

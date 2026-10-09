@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { formatCommand } from '../../src/format.js';
 import { CommandFailed, Ops, type TrackInfo } from '../../src/ops.js';
 import { AudacityPipe, type PipeReply } from '../../src/pipe.js';
 
@@ -103,7 +104,7 @@ describe('export and Audacity failures', () => {
     await fixture.ops.exportMix('mix.wav', 1);
     expect(edits(fixture.calls)).toEqual([
       'Select: Start=0 End=5 Track=0 TrackCount=3 Mode=Set',
-      'Export2: Filename=mix.wav NumChannels=1',
+      formatCommand('Export2', { Filename: 'mix.wav', NumChannels: 1 }),
     ]);
     expect(fixture.calls).not.toContain('SelectAll:');
   });
