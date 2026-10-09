@@ -118,8 +118,6 @@ export function publish() {
       'main moved after publication; rerun after reviewing the published version',
     );
     git('add', 'package.json', 'package-lock.json', 'server.json', 'CHANGELOG.md');
-    const message = `chore(release): ${state.tag}\n\nCo-Authored-By: Codex (GPT-6.1-Sol) <noreply@openai.com>\n`;
-    writeFileSync(join(root, '.release/commit-message'), message);
     git(
       '-c',
       'user.name=github-actions[bot]',
@@ -127,8 +125,8 @@ export function publish() {
       'user.email=41898282+github-actions[bot]@users.noreply.github.com',
       'commit',
       '--allow-empty',
-      '--file',
-      '.release/commit-message',
+      '-m',
+      `chore(release): ${state.tag}`,
     );
     git('push', 'origin', 'HEAD:main');
   }
