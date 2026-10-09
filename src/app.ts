@@ -21,7 +21,7 @@ import {
 import { closeProjectWindow, listWindows, setWindowVisible } from './app-windows.js';
 import { formatCommand, parseInfoJson } from './format.js';
 import { errorWithContext, validateProjectFile } from './ops.js';
-import { AudacityPipe } from './pipe.js';
+import { AudacityNoProject, AudacityPipe, type PipeReply } from './pipe.js';
 
 export * from './app-config.js';
 export * from './app-process.js';
@@ -40,7 +40,7 @@ export function assertEnglishCommands(body: string): void {
 
 const pause = (ms: number) => new Promise((resolveWait) => setTimeout(resolveWait, ms));
 
-async function readyWindows(deadline = Date.now()): Promise<void> {
+async function readyWindows(deadline = Date.now(), waitForFrame = true): Promise<void> {
   if (process.platform !== 'win32') return;
   for (;;) {
     const windows = await listWindows(false);
@@ -66,7 +66,7 @@ async function readyWindows(deadline = Date.now()): Promise<void> {
       (window) => window.className.startsWith('wxWindow') && window.title && window.title !== 'panel' && !window.dialog,
     );
     if (frames.length === 1 && frames[0]!.enabled) return;
-    if (Date.now() >= deadline || frames.length > 1)
+    if (!waitForFrame || Date.now() >= deadline || frames.length > 1)
       throw new Error(
         `Audacity has no single enabled project window; startup may be incomplete or the process is windowless. Candidates: ${JSON.stringify(frames.map(({ title, enabled }) => ({ title, enabled })))}. Inspect audacity_dialogs.`,
       );
@@ -109,15 +109,28 @@ export async function launch(
     );
   // The module is published before InitPart2/OnRun (3.7.8 AudacityApp.cpp
   // :1563/:1685/:1693). A pipe or even a reply inside a startup modal is weaker
-  // than an enabled project frame. No read retry after a possibly sent command.
-  await readyWindows(started ? deadline : Date.now());
+  // than an enabled project frame. An attached process may still show its
+  // startup frame: wait for that, but never for a frame in a windowless process.
+  await readyWindows(deadline, started);
   if (started) {
     await pause(750);
     await readyWindows();
   }
   const pipe = new AudacityPipe();
-  const timeout = Math.max(1, deadline - Date.now());
-  const tracks = await pipe.send('GetInfo: Type=Tracks Format=JSON', timeout);
+  // On a first start or after plugin changes, 3.7.8 runs PluginStartupRegistration
+  // before creating the project (AudacityApp.cpp:1656-1668); live x64 3.7.8 under
+  // emulation, 2026-10-10: its window passed the frame check. The relay then sends
+  // the projectless lone LF and runs nothing, so only this read-only probe waits.
+  let tracks: PipeReply | undefined;
+  while (!tracks) {
+    try {
+      tracks = await pipe.send('GetInfo: Type=Tracks Format=JSON', Math.max(1, deadline - Date.now()));
+    } catch (error) {
+      if (!(error instanceof AudacityNoProject) || Date.now() >= deadline) throw error;
+      pipe.reset();
+      await pause(500);
+    }
+  }
   if (!tracks.ok) throw new Error(tracks.body || tracks.status);
   if (!Array.isArray(parseInfoJson(tracks.body))) throw new Error('Audacity has no readable active project');
   const commands = await pipe.send('GetInfo: Type=Commands Format=JSON', Math.max(1, deadline - Date.now()));

@@ -81,7 +81,6 @@ export function registerDiscovery(context: LiveContext) {
   it(
     'refuses a different executable override before lifecycle calls touch the live project',
     async () => {
-      const { fixture } = context;
       await importVoice('Preserved voice');
       await call('audacity_select', { track: 'Preserved voice', start: 0.25, end: 0.75 });
       const before = await tracks();
@@ -92,9 +91,9 @@ export function registerDiscovery(context: LiveContext) {
           process.env[key] === undefined ? [] : [[key, process.env[key]!]],
         ),
       );
-      // This existing fixture is deliberately a different path; preflight must
+      // An existing, valid but different executable (Node itself): preflight must
       // refuse it before attempting either pipe access or executable launch.
-      env.AUDACITY_EXE = fixture;
+      env.AUDACITY_EXE = process.execPath;
       try {
         await other.connect(
           new StdioClientTransport({ command: process.execPath, args: [join(root, 'dist', 'main.js')], env }),

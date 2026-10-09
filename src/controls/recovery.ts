@@ -31,10 +31,7 @@ export function registerRecoveryTool(tool: ToolRegistrar, ops: Ops): void {
       if (!reconnect) return { running, entries, windows, discarded, needsRecovery: ops.pipe.needsRecovery };
       if (windows.some((w) => w.dialog && !w.closed)) throw new Error('blocking dialogs remain; use closeDialogs=true');
       ops.unknownApplication();
-      if (!running) {
-        await launch(visible);
-        ops.freshApplication();
-      }
+      if (!running && (await launch(visible)).started) ops.freshApplication();
       const reply = await ops.pipe.reconnect();
       if (!reply.ok) throw new CommandFailed('GetInfo', reply);
       const tracks = await ops.tracks();

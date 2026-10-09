@@ -39,7 +39,7 @@ vi.mock('../src/app-config.js', () => ({ recoveryEntries: fake.recovery }));
 vi.mock('../src/app-helper.js', () => ({ powershell: fake.helper }));
 
 import { assertEnglishCommands, launch, quit } from '../src/app.js';
-import { AudacityPipe, AudacityTimeout } from '../src/pipe.js';
+import { AudacityNoProject, AudacityPipe, AudacityTimeout } from '../src/pipe.js';
 
 const frame = { handle: '123', pid: 42, title: 'Audacity', className: 'wxWindowNR', enabled: true, dialog: false };
 const actualPlatform = process.platform;
@@ -130,6 +130,34 @@ describe('qualified launch', () => {
     await vi.runAllTimersAsync();
     expect(await pending).toMatchObject({ started: true });
     expect(send).toHaveBeenCalledTimes(2);
+  });
+  it('retries only the read-only readiness probe while Audacity has no project yet', async () => {
+    vi.useFakeTimers();
+    const reply = transport();
+    const send = vi
+      .spyOn(AudacityPipe.prototype, 'send')
+      .mockRejectedValueOnce(new AudacityNoProject('projectless', true))
+      .mockImplementation((command) => reply({}, command));
+    const pending = launch(false);
+    await vi.runAllTimersAsync();
+    expect(await pending).toMatchObject({ started: false });
+    expect(send.mock.calls.map(([command]) => command)).toEqual([
+      'GetInfo: Type=Tracks Format=JSON',
+      'GetInfo: Type=Tracks Format=JSON',
+      'GetInfo: Type=Commands Format=JSON',
+    ]);
+  });
+  it('lets an attach wait out the startup frame but not a windowless process', async () => {
+    vi.useFakeTimers();
+    fake.windows.mockResolvedValueOnce([{ ...frame, title: 'Audacity is starting up...' }]).mockResolvedValue([frame]);
+    const send = vi.spyOn(AudacityPipe.prototype, 'send').mockImplementation((command) => transport()({}, command));
+    const pending = launch(false);
+    await vi.runAllTimersAsync();
+    expect(await pending).toMatchObject({ started: false });
+    expect(send).toHaveBeenCalledTimes(2);
+    fake.windows.mockReset().mockResolvedValue([]);
+    await expect(launch(false)).rejects.toThrow('single enabled project');
+    expect(fake.windows).toHaveBeenCalledOnce();
   });
   it('bounds launch waiting when no pipe appears', async () => {
     vi.useFakeTimers();

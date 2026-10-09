@@ -156,6 +156,18 @@ describe('real reconnection requirement', () => {
     expect(ops.restoreImportPreferences).not.toHaveBeenCalled();
   });
 
+  it('treats only a process recovery itself started as fresh', async () => {
+    fixtures.isRunning.mockResolvedValue(false);
+    const started = controls();
+    await started.call('audacity_recover', {});
+    expect(started.ops.freshApplication).toHaveBeenCalledOnce();
+    fixtures.launch.mockResolvedValueOnce({ started: false });
+    const attached = controls();
+    await attached.call('audacity_recover', {});
+    expect(attached.ops.freshApplication).not.toHaveBeenCalled();
+    expect(attached.ops.unknownApplication).toHaveBeenCalledOnce();
+  });
+
   it('does not reset application state for inspection without reconnecting', async () => {
     const { call, ops } = controls();
     await call('audacity_recover', { reconnect: false });

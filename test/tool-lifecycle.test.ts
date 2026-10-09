@@ -25,6 +25,7 @@ function session() {
   const ops = {
     pipe: { needsRecovery: false },
     freshApplication: vi.fn(),
+    unknownApplication: vi.fn(),
     tracks: vi.fn(async () => [] as object[]),
     restoreImportPreferences: vi.fn(async () => undefined),
   };
@@ -99,6 +100,16 @@ describe('lifecycle tool boundaries', () => {
     const { call, ops } = session();
     await call('audacity_fresh');
     expect(ops.freshApplication).not.toHaveBeenCalled();
+    expect(ops.unknownApplication).toHaveBeenCalledOnce();
+  });
+
+  it('keeps profile state unknown when a restart attaches to another process', async () => {
+    native.launch.mockResolvedValueOnce({ started: false, visible: true, processes: [] });
+    const { call, ops } = session();
+    await call('audacity_fresh');
+    expect(native.quit).toHaveBeenCalledOnce();
+    expect(ops.freshApplication).not.toHaveBeenCalled();
+    expect(ops.unknownApplication).toHaveBeenCalledOnce();
   });
 
   it('restarts even an empty project after restoring pending choices', async () => {

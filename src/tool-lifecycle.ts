@@ -56,25 +56,24 @@ export function registerLifecycleTools(tool: ToolRegistrar, ops: Ops): void {
     },
     async ({ visible, backupTo }) => {
       await preflightExecutableOverride();
-      if (!pipeExists()) {
+      // Process-wide effect state is known fresh only for a process this call started.
+      const relaunch = async () => {
         const result = await launch(visible);
         if (result.started) ops.freshApplication();
-        return { ...result, backedUpTo: null };
-      }
+        else ops.unknownApplication();
+        return result;
+      };
+      if (!pipeExists()) return { ...(await relaunch()), backedUpTo: null };
       const tracks = await ops.tracks();
       if (tracks.length === 0) {
         await ops.restoreImportPreferences();
         await quit(pipe);
-        const result = await launch(visible);
-        ops.freshApplication();
-        return { ...result, backedUpTo: null };
+        return { ...(await relaunch()), backedUpTo: null };
       }
       if (!backupTo) throw new Error(`the open project has ${tracks.length} tracks; pass backupTo to keep them`);
       await ops.restoreImportPreferences();
       await quit(pipe, backupTo);
-      const result = await launch(visible);
-      ops.freshApplication();
-      return { ...result, backedUpTo: backupTo };
+      return { ...(await relaunch()), backedUpTo: backupTo };
     },
   );
 }
