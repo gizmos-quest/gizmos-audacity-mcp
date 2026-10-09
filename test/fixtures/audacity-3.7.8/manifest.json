@@ -1,0 +1,169 @@
+{
+  "capturedAt": "2026-10-09",
+  "audacity": {
+    "fileVersion": "3,7,8,0",
+    "productVersion": "3,7,8,0",
+    "peMachine": "0xaa64",
+    "sourceCommit": "6120ce413cf8abd4cca7f9470915f0ff0a0d2ded",
+    "executableSha256": "da29996728a55b27ab8550c2653af0490f415bb86dcbf903c6c0f220ef5a0008"
+  },
+  "architecture": "ARM64",
+  "platform": "Windows 11",
+  "method": "Requests and every raw reply Buffer captured before decoding. Native framing and UTF-8 bytes retained unchanged.",
+  "privacy": "All selected request/reply bytes reviewed: neutral generated audio and track names; no personal paths or project names. Catalogue defaults excluded.",
+  "syntheticAudio": {
+    "nativeGenerator": "Tone",
+    "frequencyHz": 440,
+    "amplitude": 0.2,
+    "seconds": 0.5,
+    "channels": 1,
+    "projectRateHz": 44100
+  },
+  "transformations": {
+    "nonce": "For recovery tests only, substitute the captured ASCII token audit-sync-7156c164f77b4d6080e99d4c7367a8fe with the requested gizmos-sync token in both request and response. No other bytes change.",
+    "faults": "Fragmentation and delay change delivery only. Disconnect tests intentionally truncate a recorded response and declare its prefix length.",
+    "acknowledgements": "The fake may reuse the recorded empty native OK for safe composition steps; asserted commands establish dispatch, not native audio processing."
+  },
+  "captures": [
+    {
+      "capture": "01-empty-tracks",
+      "command": "GetInfo: Type=Tracks Format=JSON",
+      "request": {
+        "file": "01-empty-tracks.request.bin",
+        "bytes": 35,
+        "sha256": "cf29f1b743ca2735fdc4944bcea0e119333332984fabbf19574f04e9ddf7f5be"
+      },
+      "response": {
+        "file": "01-empty-tracks.response.bin",
+        "bytes": 33,
+        "sha256": "d327dee8b56062afc3b5291f42d08bec7dce76a3faf9507129608211f2c7d1d8"
+      }
+    },
+    {
+      "capture": "05-selection",
+      "command": "GetInfo: Type=Selection Format=JSON",
+      "request": {
+        "file": "05-selection.request.bin",
+        "bytes": 38,
+        "sha256": "b4d74b7339e3357ca2b40c88cf4418c1db0563fe3a6df3fedfc8d60bf9d418c7"
+      },
+      "response": {
+        "file": "05-selection.response.bin",
+        "bytes": 51,
+        "sha256": "5fedcb2fc1d581b7a3d8f79521f6f35640cca2457b88b4849b9e8ebfa58092ac"
+      }
+    },
+    {
+      "capture": "06-known-rejection",
+      "command": "GetPreference: Name=\"/audit/nonexistent\"",
+      "request": {
+        "file": "06-known-rejection.request.bin",
+        "bytes": 43,
+        "sha256": "4b1ae437529863fcd36c4b46a10655d86e87e8130208468ec37a5fa78994c0c8"
+      },
+      "response": {
+        "file": "06-known-rejection.response.bin",
+        "bytes": 33,
+        "sha256": "c2dfaad679416d4251b926dbc04b52df20c51be869222253b1960344143890d8"
+      }
+    },
+    {
+      "capture": "07-new-mono",
+      "command": "NewMonoTrack:",
+      "request": {
+        "file": "07-new-mono.request.bin",
+        "bytes": 16,
+        "sha256": "a5c16f9288d97d3d96d6124d279bddedbaf66b04c4d355c6289c42b06eb6db30"
+      },
+      "response": {
+        "file": "07-new-mono.response.bin",
+        "bytes": 28,
+        "sha256": "8b12518b0438716101ed6de0d61e5707ec17fe190c1ba6d601367b2858d9241f"
+      }
+    },
+    {
+      "capture": "08-select",
+      "command": "Select: Track=0 TrackCount=1 Start=0 End=0.5",
+      "request": {
+        "file": "08-select.request.bin",
+        "bytes": 47,
+        "sha256": "3792c80bc6fb7ad03caca717a46c643b2a03fb17ae80cd2535d255b4f0649520"
+      },
+      "response": {
+        "file": "08-select.response.bin",
+        "bytes": 28,
+        "sha256": "8b12518b0438716101ed6de0d61e5707ec17fe190c1ba6d601367b2858d9241f"
+      }
+    },
+    {
+      "capture": "09-tone",
+      "command": "Tone: Frequency=440 Amplitude=0.2 Waveform=\"Sine\" Interpolation=\"Linear\"",
+      "request": {
+        "file": "09-tone.request.bin",
+        "bytes": 75,
+        "sha256": "cda5c5a30ebe877054988cbd0a1ed8871118facd53ffed5ed58ae22934c40933"
+      },
+      "response": {
+        "file": "09-tone.response.bin",
+        "bytes": 28,
+        "sha256": "8b12518b0438716101ed6de0d61e5707ec17fe190c1ba6d601367b2858d9241f"
+      }
+    },
+    {
+      "capture": "10-unicode-name",
+      "command": "SetTrackStatus: Name=\"Fixture café 音\"",
+      "request": {
+        "file": "10-unicode-name.request.bin",
+        "bytes": 43,
+        "sha256": "d5724741fadf1bdf95e7342e1b42cbd9940215108c66e56c4cf9a81493156739"
+      },
+      "response": {
+        "file": "10-unicode-name.response.bin",
+        "bytes": 28,
+        "sha256": "8b12518b0438716101ed6de0d61e5707ec17fe190c1ba6d601367b2858d9241f"
+      }
+    },
+    {
+      "capture": "11-audio-tracks",
+      "command": "GetInfo: Type=Tracks Format=JSON",
+      "request": {
+        "file": "11-audio-tracks.request.bin",
+        "bytes": 35,
+        "sha256": "cf29f1b743ca2735fdc4944bcea0e119333332984fabbf19574f04e9ddf7f5be"
+      },
+      "response": {
+        "file": "11-audio-tracks.response.bin",
+        "bytes": 214,
+        "sha256": "b39ce51403b970ca922e2863d4a9fb24ec9b691438771e07640217634ceb284e"
+      }
+    },
+    {
+      "capture": "12-clips",
+      "command": "GetInfo: Type=Clips Format=JSON",
+      "request": {
+        "file": "12-clips.request.bin",
+        "bytes": 34,
+        "sha256": "6fa13faf3a14f74fa842ead45cc3738db3472279c5053e633abdc835cbfae874"
+      },
+      "response": {
+        "file": "12-clips.response.bin",
+        "bytes": 102,
+        "sha256": "ec36e672c989a1bbb8f6e9cc3fe0fe3b151cda277cca238bbad02d7f6961b13e"
+      }
+    },
+    {
+      "capture": "15-recovery-nonce",
+      "command": "Message: Text=\"audit-sync-7156c164f77b4d6080e99d4c7367a8fe\"",
+      "request": {
+        "file": "15-recovery-nonce.request.bin",
+        "bytes": 62,
+        "sha256": "d02cf9acb39c84238486b55236a47b32ed62aa5e5a276340fc44c98f90bf0005"
+      },
+      "response": {
+        "file": "15-recovery-nonce.response.bin",
+        "bytes": 71,
+        "sha256": "1176230938f0f566b0d5d1b93129a24c579fad6dd52ccb4acc2fb8f2c4d805f2"
+      }
+    }
+  ]
+}

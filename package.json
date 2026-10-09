@@ -1,9 +1,8 @@
 {
-  "name": "@gizmos-quest/gizmos-audacity-mcp",
+  "name": "@gizmos-quest/audacity-mcp",
   "version": "0.1.0",
-  "description": "MCP server that drives a running Audacity 3.x live through mod-script-pipe",
+  "description": "Safe local audio editing, analysis and production in Audacity 3.7 through mod-script-pipe",
   "license": "MIT",
-  "private": true,
   "type": "module",
   "bin": {
     "gizmos-audacity-mcp": "dist/main.js"
@@ -14,20 +13,58 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "test": "vitest run",
-    "test:live": "node -e \"process.exit(require('node:child_process').spawnSync(process.execPath,['node_modules/vitest/vitest.mjs','run','test/live.test.ts'],{stdio:'inherit',env:{...process.env,AUDACITY_LIVE:'1'}}).status ?? 1)\"",
+    "test": "vitest run --coverage",
+    "test:live": "node -e \"process.exit(require('node:child_process').spawnSync(process.execPath,['node_modules/vitest/vitest.mjs','run','--config','vitest.live.config.ts'],{stdio:'inherit',env:{...process.env,AUDACITY_LIVE:'1'}}).status ?? 1)\"",
     "catalogue": "tsx scripts/refresh-catalogue.ts",
-    "start": "node dist/main.js"
+    "start": "node dist/main.js",
+    "lint": "biome ci .",
+    "format": "biome check --write .",
+    "test:unit": "vitest run --coverage",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
+    "check:package": "node scripts/check-package.mjs",
+    "check:workflows": "node scripts/check-workflows.mjs",
+    "release:prepare": "node scripts/release.mjs prepare",
+    "release:publish": "node scripts/release.mjs publish",
+    "prepublishOnly": "npm run lint && npm run typecheck && npm test && npm run build && npm run test:e2e && npm run check:package"
   },
   "dependencies": {
-    "@modelcontextprotocol/server": "^2.3.0",
-    "zod": "^4.6.5"
+    "@modelcontextprotocol/server": "2.3.1",
+    "zod": "4.6.5"
   },
   "devDependencies": {
-    "@modelcontextprotocol/client": "^2.3.0",
-    "@types/node": "^26.6.4",
+    "@biomejs/biome": "2.5.15",
+    "@modelcontextprotocol/client": "2.3.1",
+    "@types/node": "24.19.2",
+    "@vitest/coverage-v8": "5.0.3",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",
-    "vitest": "^5.0.3"
+    "vitest": "5.0.3"
+  },
+  "files": [
+    "dist/",
+    "catalogue/",
+    "LICENSE",
+    "NOTICE.md",
+    "README.md",
+    "server.json"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gizmos-quest/gizmos-audacity-mcp.git"
+  },
+  "homepage": "https://github.com/gizmos-quest/gizmos-audacity-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/gizmos-quest/gizmos-audacity-mcp/issues"
+  },
+  "keywords": [
+    "mcp",
+    "audacity",
+    "audio",
+    "editing",
+    "model-context-protocol"
+  ],
+  "mcpName": "io.github.gizmos-quest/gizmos-audacity-mcp",
+  "publishConfig": {
+    "access": "public"
   }
 }

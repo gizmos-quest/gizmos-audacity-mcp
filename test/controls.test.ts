@@ -1,23 +1,42 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { parseMacro, registerControlTools } from '../src/controls.js';
-import { AudacityTimeout } from '../src/pipe.js';
 import type { Ops } from '../src/ops.js';
+import { AudacityTimeout } from '../src/pipe.js';
 import type { ToolRegistrar } from '../src/tools.js';
 
-const fixtures = vi.hoisted(() => ({ readFile: vi.fn(), readdir: vi.fn(), isRunning: vi.fn(), launch: vi.fn(), listWindows: vi.fn() }));
-vi.mock('node:fs/promises', async (original) => ({ ...await original<typeof import('node:fs/promises')>(), readFile: fixtures.readFile, readdir: fixtures.readdir }));
+const fixtures = vi.hoisted(() => ({
+  readFile: vi.fn(),
+  readdir: vi.fn(),
+  isRunning: vi.fn(),
+  launch: vi.fn(),
+  listWindows: vi.fn(),
+}));
+vi.mock('node:fs/promises', async (original) => ({
+  ...(await original<typeof import('node:fs/promises')>()),
+  readFile: fixtures.readFile,
+  readdir: fixtures.readdir,
+}));
 vi.mock('../src/app.js', () => ({
   preflightExecutableOverride: vi.fn(),
-  configPath: () => '/fixtures/audacity.cfg', recoveryEntries: () => [], discardStaleRecovery: vi.fn(),
-  isRunning: fixtures.isRunning, launch: fixtures.launch, listWindows: fixtures.listWindows,
+  configPath: () => '/fixtures/audacity.cfg',
+  recoveryEntries: () => [],
+  discardStaleRecovery: vi.fn(),
+  isRunning: fixtures.isRunning,
+  launch: fixtures.launch,
+  listWindows: fixtures.listWindows,
 }));
 
 function controls() {
   const ops = {
     pipe: { needsRecovery: true, reconnect: vi.fn(async () => ({ ok: true, body: '[]', status: 'OK' })) },
-    unknownApplication: vi.fn(), freshApplication: vi.fn(), tracks: vi.fn(async () => []), restoreImportPreferences: vi.fn(),
-    run: vi.fn(async (_command: string, _params?: Record<string, unknown>) => ''), command: vi.fn(async (_command: string, _params?: Record<string, unknown>) => ''), info: vi.fn(async () => ({ Start: 0, End: 1 })),
+    unknownApplication: vi.fn(),
+    freshApplication: vi.fn(),
+    tracks: vi.fn(async () => []),
+    restoreImportPreferences: vi.fn(),
+    run: vi.fn(async (_command: string, _params?: Record<string, unknown>) => ''),
+    command: vi.fn(async (_command: string, _params?: Record<string, unknown>) => ''),
+    info: vi.fn(async () => ({ Start: 0, End: 1 })),
     resolveSelection: vi.fn(async () => ({ Mode: 'Set', Track: 0, TrackCount: 1, Start: 0, End: 1 })),
   };
   const handlers = new Map<string, (args: unknown) => Promise<unknown>>();
@@ -38,7 +57,11 @@ beforeEach(() => {
 });
 
 describe('saved macro edge cases', () => {
-  it.each(['Amplify:Ratio=""', 'Amplify:Ratio="  "', 'FadeIn:Use_Preset="<Current Settings>" Use_Preset="<Current Settings>"'])('rejects empty numeric and duplicated implicit preset fields %s', (source) => {
+  it.each([
+    'Amplify:Ratio=""',
+    'Amplify:Ratio="  "',
+    'FadeIn:Use_Preset="<Current Settings>" Use_Preset="<Current Settings>"',
+  ])('rejects empty numeric and duplicated implicit preset fields %s', (source) => {
     expect(() => parseMacro(source)).toThrow();
   });
 
@@ -49,11 +72,14 @@ describe('saved macro edge cases', () => {
     expect(fixtures.readFile).not.toHaveBeenCalled();
   });
 
-  it.each([{ name: 'Example' }, { dryRun: true }, { outputTo: 'out.wav' }])('rejects ignored list fields before reading files %#', async (fields) => {
-    const { call } = controls();
-    await expect(call('audacity_macros', { action: 'list', ...fields })).rejects.toThrow('list takes no');
-    expect(fixtures.readdir).not.toHaveBeenCalled();
-  });
+  it.each([{ name: 'Example' }, { dryRun: true }, { outputTo: 'out.wav' }])(
+    'rejects ignored list fields before reading files %#',
+    async (fields) => {
+      const { call } = controls();
+      await expect(call('audacity_macros', { action: 'list', ...fields })).rejects.toThrow('list takes no');
+      expect(fixtures.readdir).not.toHaveBeenCalled();
+    },
+  );
 
   it('reports the failing command/count while retaining the original timeout class', async () => {
     const { call, ops } = controls();
@@ -69,7 +95,9 @@ describe('saved macro edge cases', () => {
   });
 
   it('refuses a later silent regular-label command before an earlier macro edit', async () => {
-    fixtures.readFile.mockResolvedValueOnce('Amplify:Ratio=0.5\nRegularIntervalLabels:MODE=Number TOTALNUM=2 REGION=0 VERBOSE=None');
+    fixtures.readFile.mockResolvedValueOnce(
+      'Amplify:Ratio=0.5\nRegularIntervalLabels:MODE=Number TOTALNUM=2 REGION=0 VERBOSE=None',
+    );
     const { call, ops } = controls();
     await expect(call('audacity_macros', { action: 'apply', name: 'Example' })).rejects.toThrow('unsafe');
     expect(ops.command).not.toHaveBeenCalled();
@@ -95,8 +123,16 @@ describe('transport preflight', () => {
   it('uses the already-resolved positive range after stopping transport', async () => {
     const { call, ops } = controls();
     await call('audacity_transport', { action: 'play' });
-    expect(ops.run.mock.calls).toEqual([['Stop'], ['Select', { Mode: 'Set', Track: 0, TrackCount: 1, Start: 0, End: 1 }], ['Play']]);
-    expect(ops.resolveSelection).toHaveBeenCalledExactlyOnceWith({ start: undefined, end: undefined, track: undefined });
+    expect(ops.run.mock.calls).toEqual([
+      ['Stop'],
+      ['Select', { Mode: 'Set', Track: 0, TrackCount: 1, Start: 0, End: 1 }],
+      ['Play'],
+    ]);
+    expect(ops.resolveSelection).toHaveBeenCalledExactlyOnceWith({
+      start: undefined,
+      end: undefined,
+      track: undefined,
+    });
   });
 });
 
@@ -107,7 +143,9 @@ describe('real reconnection requirement', () => {
     expect(ops.unknownApplication).toHaveBeenCalledOnce();
     expect(ops.pipe.reconnect).toHaveBeenCalledOnce();
     expect(ops.pipe.reconnect.mock.invocationCallOrder[0]).toBeLessThan(ops.tracks.mock.invocationCallOrder[0]!);
-    expect(ops.pipe.reconnect.mock.invocationCallOrder[0]).toBeLessThan(ops.restoreImportPreferences.mock.invocationCallOrder[0]!);
+    expect(ops.pipe.reconnect.mock.invocationCallOrder[0]).toBeLessThan(
+      ops.restoreImportPreferences.mock.invocationCallOrder[0]!,
+    );
   });
 
   it('preserves a failed native probe and never restores import preferences through it', async () => {

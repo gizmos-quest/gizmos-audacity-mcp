@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private vulnerability report
+    url: https://github.com/gizmos-quest/gizmos-audacity-mcp/security/advisories/new
+    about: Report security issues privately; see SECURITY.md if reporting is not enabled yet
+  - name: Setup and troubleshooting
+    url: https://github.com/gizmos-quest/gizmos-audacity-mcp/blob/main/docs/troubleshooting.md
+    about: Start with the setup doctor and native capability limits

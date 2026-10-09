@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { catalogueCommand, formatCommand, parseInfoJson } from '../src/format.js';
 import { COMMAND_IDS, MENU_IDS } from '../src/catalogue.js';
+import { catalogueCommand, formatCommand, parseInfoJson } from '../src/format.js';
 import { parseReply } from '../src/pipe.js';
 
 describe('formatCommand', () => {
@@ -9,7 +9,9 @@ describe('formatCommand', () => {
   });
 
   it('quotes values with spaces and skips undefined', () => {
-    expect(formatCommand('Import2', { Filename: 'C:\\a b\\c.wav', Other: undefined })).toBe('Import2: Filename="C:\\a b\\c.wav"');
+    expect(formatCommand('Import2', { Filename: 'C:\\a b\\c.wav', Other: undefined })).toBe(
+      'Import2: Filename="C:\\a b\\c.wav"',
+    );
   });
 
   it('refuses quotes and line breaks it cannot escape', () => {
@@ -20,14 +22,18 @@ describe('formatCommand', () => {
 
 describe('catalogue', () => {
   it('covers effects and scripting commands and keeps dialog menu items out', () => {
-    expect(COMMAND_IDS).toEqual(expect.arrayContaining(['Compressor', 'High-passFilter', 'SetEnvelope', 'Export2', 'AutoDuck']));
+    expect(COMMAND_IDS).toEqual(
+      expect.arrayContaining(['Compressor', 'High-passFilter', 'SetEnvelope', 'Export2', 'AutoDuck']),
+    );
     expect(MENU_IDS).toEqual(expect.arrayContaining(['Play', 'Stop', 'NewLabelTrack', 'AddLabel']));
     expect(MENU_IDS).not.toContain('Exit');
     expect(MENU_IDS).not.toContain('Open');
   });
 
   it('validates parameters against the catalogue', () => {
-    expect(catalogueCommand('High-passFilter', { FREQUENCY: 80, ROLLOFF: 'dB12' })).toBe('High-passFilter: FREQUENCY=80 ROLLOFF=dB12');
+    expect(catalogueCommand('High-passFilter', { FREQUENCY: 80, ROLLOFF: 'dB12' })).toBe(
+      'High-passFilter: FREQUENCY=80 ROLLOFF=dB12',
+    );
     expect(() => catalogueCommand('High-passFilter', { ROLLOFF: 'dB7' })).toThrow();
     expect(() => catalogueCommand('Amplify', { Bogus: 1 })).toThrow();
     expect(catalogueCommand('SetEnvelope', { Time: 1, Value: 0.5 })).toBe('SetEnvelope: Time=1 Value=0.5');
@@ -45,7 +51,10 @@ describe('replies', () => {
     expect(parseInfoJson('[ { "default":"C:\\Users\\x.wav" } ]')).toEqual([{ default: 'C:\\Users\\x.wav' }]);
   });
 
-  it.each(['', 'No readable project information', 'null'])('does not turn missing GetInfo JSON %j into an empty project', (body) => {
-    expect(() => parseInfoJson(body)).toThrow(/project state is unknown/);
-  });
+  it.each(['', 'No readable project information', 'null'])(
+    'does not turn missing GetInfo JSON %j into an empty project',
+    (body) => {
+      expect(() => parseInfoJson(body)).toThrow(/project state is unknown/);
+    },
+  );
 });

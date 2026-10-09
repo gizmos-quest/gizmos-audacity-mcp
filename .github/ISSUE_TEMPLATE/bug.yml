@@ -1,0 +1,36 @@
+name: Bug report
+description: Report a reproducible server problem
+title: "bug: "
+body:
+  - type: markdown
+    attributes:
+      value: "For vulnerabilities use Security → Report a vulnerability. Redact private paths, audio and configuration."
+  - type: input
+    id: versions
+    attributes:
+      label: Versions and host
+      description: Server, actual Audacity executable version, Node, OS/CPU and MCP client
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction and expected behavior
+      description: Smallest steps with neutral names or synthetic audio
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: Doctor checks and relevant errors
+      description: Redact personal paths, private names and credentials before posting
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Actual outcome
+      description: Include whether an edit may have completed, any dialogs and recovery attempted
+    validations:
+      required: true

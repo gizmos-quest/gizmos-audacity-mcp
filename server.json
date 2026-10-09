@@ -1,0 +1,43 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.gizmos-quest/gizmos-audacity-mcp",
+  "title": "Gizmos Audacity",
+  "description": "Safe local audio editing, analysis and production in Audacity 3.7 through mod-script-pipe.",
+  "version": "0.1.0",
+  "repository": { "url": "https://github.com/gizmos-quest/gizmos-audacity-mcp", "source": "github" },
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "@gizmos-quest/audacity-mcp",
+      "version": "0.1.0",
+      "runtimeHint": "npx",
+      "transport": { "type": "stdio" },
+      "environmentVariables": [
+        {
+          "name": "AUDACITY_EXE",
+          "description": "Optional full path to the Audacity 3.7 executable.",
+          "format": "filepath",
+          "isRequired": false
+        },
+        {
+          "name": "AUDACITY_CONFIG",
+          "description": "Optional path to the configuration Audacity itself uses.",
+          "format": "filepath",
+          "isRequired": false
+        },
+        {
+          "name": "AUDACITY_FFMPEG",
+          "description": "Optional full path to ffmpeg for loudness measurement and decoding.",
+          "format": "filepath",
+          "isRequired": false
+        },
+        {
+          "name": "AUDACITY_FFPROBE",
+          "description": "Optional full path to ffprobe for container and stream metadata.",
+          "format": "filepath",
+          "isRequired": false
+        }
+      ]
+    }
+  ]
+}

@@ -1570,57 +1570,49 @@
   "depth": 1,
   "flags": 0,
   "label": "Chirp...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Chirp_Built-in Effect: Chirp"
+  "accel": ""
  },
  {
   "depth": 1,
   "flags": 0,
   "label": "DTMF Tones...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_DTMF Tones_Built-in Effect: DTMF Tones"
+  "accel": ""
  },
  {
   "depth": 1,
   "flags": 0,
   "label": "Noise...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Noise_Built-in Effect: Noise"
+  "accel": ""
  },
  {
   "depth": 1,
   "flags": 0,
   "label": "Pluck...",
-  "accel": "",
-  "id": "Effect_Nyquist_David R.Sky_Pluck_AUDACITY_PLUGINS/pluck.ny"
+  "accel": ""
  },
  {
   "depth": 1,
   "flags": 0,
   "label": "Rhythm Track...",
-  "accel": "",
-  "id": "Effect_Nyquist_Dominic Mazzoni, David R. Sky and Steve Daulton_Rhythm Track_AUDACITY_PLUGINS/rhythmtrack.ny"
+  "accel": ""
  },
  {
   "depth": 1,
   "flags": 0,
   "label": "Risset Drum...",
-  "accel": "",
-  "id": "Effect_Nyquist_Steven Jones_Risset Drum_AUDACITY_PLUGINS/rissetdrum.ny"
+  "accel": ""
  },
  {
   "depth": 1,
   "flags": 0,
   "label": "Silence...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Silence_Built-in Effect: Silence"
+  "accel": ""
  },
  {
   "depth": 1,
   "flags": 0,
   "label": "Tone...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Tone_Built-in Effect: Tone"
+  "accel": ""
  },
  {
   "depth": 0,
@@ -1684,43 +1676,37 @@
   "depth": 2,
   "flags": 0,
   "label": "Amplify...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Amplify_Built-in Effect: Amplify"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Auto Duck...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Auto Duck_Built-in Effect: Auto Duck"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Compressor...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Compressor_Built-in Effect: Compressor"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Limiter...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Limiter_Built-in Effect: Limiter"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Loudness Normalization...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Loudness Normalization_Built-in Effect: Loudness Normalization"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Normalize...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Normalize_Built-in Effect: Normalize"
+  "accel": ""
  },
  {
   "depth": 1,
@@ -1732,43 +1718,37 @@
   "depth": 2,
   "flags": 0,
   "label": "Adjustable Fade...",
-  "accel": "",
-  "id": "Effect_Nyquist_Steve Daulton_Adjustable Fade_AUDACITY_PLUGINS/adjustable-fade.ny"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Crossfade Clips",
-  "accel": "",
-  "id": "Effect_Nyquist_Steve Daulton_Crossfade Clips_AUDACITY_PLUGINS/crossfadeclips.ny"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Crossfade Tracks...",
-  "accel": "",
-  "id": "Effect_Nyquist_Steve Daulton_Crossfade Tracks_AUDACITY_PLUGINS/crossfadetracks.ny"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Fade In",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Fade In_Built-in Effect: Fade In"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Fade Out",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Fade Out_Built-in Effect: Fade Out"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Studio Fade Out",
-  "accel": "",
-  "id": "Effect_Nyquist_Steve Daulton_Studio Fade Out_AUDACITY_PLUGINS/StudioFadeOut.ny"
+  "accel": ""
  },
  {
   "depth": 1,
@@ -1780,36 +1760,31 @@
   "depth": 2,
   "flags": 0,
   "label": "Change Pitch...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Change Pitch_Built-in Effect: Change Pitch"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Change Speed and Pitch...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Change Speed and Pitch_Built-in Effect: Change Speed and Pitch"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Change Tempo...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Change Tempo_Built-in Effect: Change Tempo"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Paulstretch...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Paulstretch_Built-in Effect: Paulstretch"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Sliding Stretch...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Sliding Stretch_Built-in Effect: Sliding Stretch"
+  "accel": ""
  },
  {
   "depth": 1,
@@ -1821,50 +1796,43 @@
   "depth": 2,
   "flags": 0,
   "label": "Bass and Treble...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Bass and Treble_Built-in Effect: Bass and Treble"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Filter Curve EQ...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Filter Curve_Built-in Effect: Filter Curve"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Graphic EQ...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Graphic EQ_Built-in Effect: Graphic EQ"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "High-Pass Filter...",
-  "accel": "",
-  "id": "Effect_Nyquist_Dominic Mazzoni_High-Pass Filter_AUDACITY_PLUGINS/highpass.ny"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Low-Pass Filter...",
-  "accel": "",
-  "id": "Effect_Nyquist_Dominic Mazzoni_Low-Pass Filter_AUDACITY_PLUGINS/lowpass.ny"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Notch Filter...",
-  "accel": "",
-  "id": "Effect_Nyquist_Steve Daulton and Bill Wharrie_Notch Filter_AUDACITY_PLUGINS/notch.ny"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Shelf Filter...",
-  "accel": "",
-  "id": "Effect_Nyquist_Steve Daulton_Shelf Filter_AUDACITY_PLUGINS/ShelfFilter.ny"
+  "accel": ""
  },
  {
   "depth": 1,
@@ -1876,36 +1844,31 @@
   "depth": 2,
   "flags": 0,
   "label": "Click Removal...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Click Removal_Built-in Effect: Click Removal"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Clip Fix...",
-  "accel": "",
-  "id": "Effect_Nyquist_Benjamin Schwartz and Steve Daulton_Clip Fix_AUDACITY_PLUGINS/clipfix.ny"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Noise Gate...",
-  "accel": "",
-  "id": "Effect_Nyquist_Steve Daulton_Noise Gate_AUDACITY_PLUGINS/noisegate.ny"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Noise Reduction...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Noise Reduction_Built-in Effect: Noise Reduction"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Repair",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Repair_Built-in Effect: Repair"
+  "accel": ""
  },
  {
   "depth": 1,
@@ -1917,22 +1880,19 @@
   "depth": 2,
   "flags": 0,
   "label": "Delay...",
-  "accel": "",
-  "id": "Effect_Nyquist_Steve Daulton_Delay_AUDACITY_PLUGINS/delay.ny"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Echo...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Echo_Built-in Effect: Echo"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Reverb...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Reverb_Built-in Effect: Reverb"
+  "accel": ""
  },
  {
   "depth": 1,
@@ -1944,36 +1904,31 @@
   "depth": 2,
   "flags": 0,
   "label": "Distortion...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Distortion_Built-in Effect: Distortion"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Phaser...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Phaser_Built-in Effect: Phaser"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Tremolo...",
-  "accel": "",
-  "id": "Effect_Nyquist_Steve Daulton_Tremolo_AUDACITY_PLUGINS/tremolo.ny"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Vocoder...",
-  "accel": "",
-  "id": "Effect_Nyquist_Edgar-RFT and Steve Daulton_Vocoder_AUDACITY_PLUGINS/vocoder.ny"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Wahwah...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Wahwah_Built-in Effect: Wahwah"
+  "accel": ""
  },
  {
   "depth": 1,
@@ -1985,29 +1940,25 @@
   "depth": 2,
   "flags": 0,
   "label": "Invert",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Invert_Built-in Effect: Invert"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Repeat...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Repeat_Built-in Effect: Repeat"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Reverse",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Reverse_Built-in Effect: Reverse"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Truncate Silence...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Truncate Silence_Built-in Effect: Truncate Silence"
+  "accel": ""
  },
  {
   "depth": 1,
@@ -2019,29 +1970,25 @@
   "depth": 2,
   "flags": 0,
   "label": "Spectral Delete",
-  "accel": "",
-  "id": "Effect_Nyquist_Steve Daulton_Spectral Delete_AUDACITY_PLUGINS/spectral-delete.ny"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Spectral Edit Multi Tool",
-  "accel": "",
-  "id": "Effect_Nyquist_Paul Licameli_Spectral Edit Multi Tool_AUDACITY_PLUGINS/SpectralEditMulti.ny"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Spectral Edit Parametric EQ...",
-  "accel": "",
-  "id": "Effect_Nyquist_Paul Licameli_Spectral Edit Parametric EQ_AUDACITY_PLUGINS/SpectralEditParametricEQ.ny"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Spectral Edit Shelves...",
-  "accel": "",
-  "id": "Effect_Nyquist_Paul Licameli_Spectral Edit Shelves_AUDACITY_PLUGINS/SpectralEditShelves.ny"
+  "accel": ""
  },
  {
   "depth": 1,
@@ -2053,22 +2000,19 @@
   "depth": 2,
   "flags": 0,
   "label": "Classic Filters...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Classic Filters_Built-in Effect: Classic Filters"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Legacy Compressor...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Legacy Compressor_Built-in Effect: Legacy Compressor"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Legacy Limiter...",
-  "accel": "",
-  "id": "Effect_Nyquist_Steve Daulton_Legacy Limiter_AUDACITY_PLUGINS/legacy-limiter.ny"
+  "accel": ""
  },
  {
   "depth": 0,
@@ -2107,29 +2051,25 @@
   "depth": 1,
   "flags": 0,
   "label": "Beat Finder...",
-  "accel": "",
-  "id": "Effect_Nyquist_Audacity_Beat Finder_AUDACITY_PLUGINS/beat.ny"
+  "accel": ""
  },
  {
   "depth": 1,
   "flags": 0,
   "label": "Find Clipping...",
-  "accel": "",
-  "id": "Effect_Audacity_Audacity_Find Clipping_Built-in Effect: Find Clipping"
+  "accel": ""
  },
  {
   "depth": 1,
   "flags": 0,
   "label": "Label Sounds...",
-  "accel": "",
-  "id": "Effect_Nyquist_Steve Daulton_Label Sounds_AUDACITY_PLUGINS/label-sounds.ny"
+  "accel": ""
  },
  {
   "depth": 1,
   "flags": 0,
   "label": "Measure RMS",
-  "accel": "",
-  "id": "Effect_Nyquist_Steve Daulton_Measure RMS_AUDACITY_PLUGINS/rms.ny"
+  "accel": ""
  },
  {
   "depth": 0,
@@ -2180,29 +2120,25 @@
   "depth": 2,
   "flags": 0,
   "label": "Enden ausblenden",
-  "accel": "",
-  "id": "Macro_Endenausblenden"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "Fade Ends",
-  "accel": "",
-  "id": "Macro_FadeEnds"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "MP3 Conversion",
-  "accel": "",
-  "id": "Macro_MP3Conversion"
+  "accel": ""
  },
  {
   "depth": 2,
   "flags": 0,
   "label": "MP3-Umwandlung",
-  "accel": "",
-  "id": "Macro_MP3-Umwandlung"
+  "accel": ""
  },
  {
   "depth": 1,
@@ -2234,36 +2170,31 @@
   "depth": 1,
   "flags": 0,
   "label": "Nyquist Plugin Installer...",
-  "accel": "",
-  "id": "Effect_Nyquist_Steve Daulton_Nyquist Plugin Installer_AUDACITY_PLUGINS/nyquist-plug-in-installer.ny"
+  "accel": ""
  },
  {
   "depth": 1,
   "flags": 0,
   "label": "Nyquist Prompt...",
-  "accel": "",
-  "id": "Effect_Nyquist_Audacity_Nyquist Prompt_Nyquist Prompt"
+  "accel": ""
  },
  {
   "depth": 1,
   "flags": 0,
   "label": "Regular Interval Labels...",
-  "accel": "",
-  "id": "Effect_Nyquist_Steve Daulton_Regular Interval Labels_AUDACITY_PLUGINS/equalabel.ny"
+  "accel": ""
  },
  {
   "depth": 1,
   "flags": 0,
   "label": "Sample Data Export...",
-  "accel": "",
-  "id": "Effect_Nyquist_Steve Daulton_Sample Data Export_AUDACITY_PLUGINS/sample-data-export.ny"
+  "accel": ""
  },
  {
   "depth": 1,
   "flags": 0,
   "label": "Sample Data Import...",
-  "accel": "",
-  "id": "Effect_Nyquist_Steve Daulton_Sample Data Import_AUDACITY_PLUGINS/sample-data-import.ny"
+  "accel": ""
  },
  {
   "depth": 0,

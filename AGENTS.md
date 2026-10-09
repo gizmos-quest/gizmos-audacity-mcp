@@ -1,111 +1,78 @@
-# AGENTS.md
+# Contributor and agent instructions
 
-- Keep this server Audacity-only: TypeScript, Node 24+, official MCP SDK v2
-  (`@modelcontextprotocol/server`) and zod. No additional runtime dependency
-  without a measured need. ffmpeg/ffprobe are optional external executables;
-  never install/download runtimes or models from a tool.
-- Read README.md, NOTICE.md, src/ and test/ before changes. Keep the tool table
-  and docs/feature-matrix.md consistent with the registered tools and honest
-  capability limits. Attribute any copied/adapted source with file/commit and
-  licence in NOTICE.md, retaining applicable Apache notices and licence text.
-- Validate all root and nested input strictly before mutation, including
-  finite numbers, ranges and operation-specific fields. Preserve Audacity's
-  own error text. Generic calls stay bound to the safe catalogue; task tools
-  compose existing commands. Keep argument compatibility with
-  ../example-consumer/tools/short.py, or update and verify that chain.
-- Before trusting a parameter/command absent from the catalogue, test it
-  against live pinned English Audacity 3.7.8 and record the evidence in a code
-  comment. Do not guess older upstream aliases or Audacity 4 fork APIs.
-  Verify the running executable path and actual file version first; a 3.7.*
-  gating pin is not an exact 3.7.8 pin. Forward explicit AUDACITY_* overrides
-  through the SDK's restricted stdio environment for isolated-version tests.
-  Validate an explicit AUDACITY_EXE before lifecycle pipe I/O; the shared
-  Windows pipe must not attach to or restart a different running installation.
-- Native SetTrack/SetTrackStatus/SetTrackAudio/SetTrackVisuals/SetClip/SetEnvelope
-  ignore unlisted Track/TrackCount/Channel/ChannelCount keys. Reject those keys
-  and select targets explicitly with Select/SelectTracks before setters.
-  Live targeting tests must begin with a different track selected.
-- Never offer modal commands. Deny ellipsis menus and known exceptions;
-  MeasureRms/Contrast/PlotSpectrum, ClickRemoval and Repair are unsafe;
-  ClickRemoval opens a modal error even on valid audio without removable clicks.
-  Repair also rejects pitch/speed clips whose state GetInfo does not expose;
-  bounding selection length alone cannot guarantee dialog-free processing.
-  Keep raw lifecycle commands and
-  unrestricted preferences/macros/Nyquist programs reserved. Require silent
-  explicit-file options for result-producing sample/label commands.
-- Serialize complete operations as well as pipe exchanges. Recreate pipe
-  handles after commands and retry opening briefly. Bound blocked I/O with a
-  disposable client helper; never terminate Audacity. A timeout or lost post-send reply leaves outcome
-  unknown: require recovery and never replay an edit automatically.
-- Encode booleans as 1/0. Track Volume input is dB, reported volume is linear.
-  Public audacity_track_set pan is normalized [-1,1]; native SetTrack/SetTrackAudio
-  Pan uses percentage [-100,100]. Convert public pan before sending it.
-  Select explicit tracks/time before exports; AddLabel can leave text focus.
-  Default effects to the track extent to avoid creating silent gap clips.
-  Refuse existing .aup3 save destinations before the pipe. Never use New;
-  audacity_fresh preserves the current project before orderly restart, including
-  restarting empty projects to reset process-wide effect state. Trim all audio
-  outside the retained range on selected tracks without shifting the timeline;
-  clip metadata changes require a time strictly inside one clip.
-- Raw recording menu commands are reserved. The transport tool uses a cursor
-  selection, maps new/append recording through /GUI/PreferNewTrackRecord, and
-  preflights append to one explicit audio track matching /AudioIO/RecordChannels.
-  Clear unrelated track selection for untargeted new recording; mixed rates or
-  incompatible channels can open native dialogs. Invalidate known noise-profile
-  state before recording, including an uncertain reply.
-- Every Import2 path must temporarily disable asynchronous Music Import prompts
-  and automatic tempo alignment using the live-verified 3.7.8 choices
-  /FileFormats/MusicFileImportSettingChoice=No and
-  /FileFormats/MusicFileImportOnExistingProjectSettingChoice=DoNothing.
-  Restore prior supported choices afterward, or native defaults Ask and
-  MatchIfBeatsAndMeasures if absent. On an uncertain pipe outcome, retain saved
-  values for audacity_recover to restore after a real reconnection response.
-  These internal import guards do not expand the public preference allowlist.
-- NoiseReduction in 3.7.8 has no effect automation parameters. Do not expose
-  Reduction/Sensitivity/Smoothing: native processing ignores them and uses saved
-  UI settings. Require a known fresh process and audacity_noise_profile before
-  reduction; capture only one room-tone interval per process, reuse an identical
-  interval, and require audacity_fresh for a different profile. Reduction must
-  select only the same captured audio track, with its original index/name;
-  track-structure/history changes invalidate known profile state. Capture must
-  fit wholly inside one audio clip, with at least 4096 rendered frames and 4096
-  source frames. GetInfo does not report source-track rates: query the selected
-  track silently using SampleDataExport NUMBER=1, HEADER=Standard, MESSAGES=None
-  and an explicit temporary text file; restore selection/focus and remove scratch.
-  A higher project render rate does not establish enough source frames.
-  Cross-track reduction remains conservatively refused; use only the captured
-  audio track with unchanged index/name and source identity.
-  A new MCP server attaching to an existing Audacity must treat profile state as unknown.
-- Audacity's individual scripting effect/command path uses kSkipState and does
-  not add an undo entry per call. History tools operate existing native undo
-  states from menu edits/imports; do not promise per-effect pipeline rollback.
-  Preserve a project backup before destructive processing. Batch processing
-  excludes noiseProfile because one process cannot profile successive temporary tracks.
-- Hidden Windows operation is first-class. Never simulate mouse/keyboard
-  input; WM_CLOSE through audacity_dialogs is allowed. Keep
-  mod-cloud-audiocom and mod-musehub-ui disabled in the pinned host config.
-- Before live tests, preserve an existing project with audacity_fresh to a
-  unique backup path; retain that backup and all user files. At the end, quit
-  test sessions cleanly, verify no stale ActiveProjects entries/open dialogs,
-  then reopen the original visible project:
-  EXAMPLE_WORKSPACE/example-consumer/productions/example-project/media/example-project.aup3.
-  Distinguish legitimate entries for that running project from stale recovery
-  entries. Recovery clearing is allowed only while stopped, with config backup
-  and all project files retained.
-- Peak/RMS/true peak/LUFS are distinct metrics. Unavailable metrics/targets
-  remain unknown; quiet-block RMS and discontinuities are advisory estimates.
-  Never claim certification or restore information lost to clipping. Pipeline
-  normalization/limiting and room-tone capture must remain explicit, with
-  dry-run plans; timing edits must identify video-sync consequences.
-- Verify with npm run typecheck, npm test, npm run build, npm run test:live
-  (AUDACITY_LIVE=1, real stdio server and hidden Audacity), and
-  npm audit --audit-level=high. Live coverage must include every tool plus
-  blocking-dialog closure, save-over refusal, pipe restart and recovery.
-  GitHub Actions runs only typecheck/unit tests on Ubuntu/Node 24.
-- Check dependency freshness with npm view <package> version. Verify the integration from ../example-consumer with:
-  python tools/short.py audacity example-project --hidden.
-  Confirm its mix-audacity.wav contains sound and restore the visible project.
-- Public code, comments, docs and commit messages are English. Use Conventional
-  Commits in sensible verified slices; push directly to main, no pull requests
-  or branches left behind. End every commit message with:
-  Co-Authored-By: Codex (GPT-6.1-Sol) <noreply@openai.com>
+Read README, NOTICE, `src/` and `test/` before changing code. Native evidence and
+limits are in [docs/safety.md](docs/safety.md) and [docs/effects.md](docs/effects.md).
+Keep those facts, the tool reference and capability matrix consistent with
+registrations. `CLAUDE.md` points here.
+
+## Commands
+
+```sh
+npm ci
+npm run lint
+npm run typecheck
+npm test
+npm run build
+npm run test:e2e
+npm run check:package
+npm audit --audit-level=high
+```
+
+Native changes also need `npm run test:live` on exact English Audacity 3.7.8.
+Check package freshness with `npm view <package> version`. Do not claim skipped
+or incomplete checks passed. [Testing](docs/testing.md) explains preservation,
+recorded fixtures, architecture/platform evidence and teardown.
+
+## Architecture
+
+- `main.ts` / `server.ts`: CLI/stdio entry and MCP assembly.
+- `tools.ts` / `tool-*.ts`: strict registrations, metadata, reports/progress.
+- `pipe.ts` / `pipe-worker.ts` / `format.ts`: byte framing, bounded transport.
+- `app.ts` and platform modules: discovery, config, native window lifecycle.
+- `catalogue.ts` / `effect-safety.ts`: safe catalogue and native policy.
+- `ops.ts` / `audacity/`: stateful native operations and selection transactions.
+- `tasks/`, `analysis/`, `controls/`, labels and batch: domain workflows.
+
+Use TypeScript, Node 24+, official MCP SDK v2 (`@modelcontextprotocol/server`)
+and zod. No extra runtime dependency without a measured need. Keep source/tests
+about 300 lines or less; generated catalogue JSON and lockfile are exceptions.
+Prefer the smallest domain change over speculative abstractions.
+
+## Invariants
+
+- Validate strict root/nested inputs, finite ranges and action-specific fields
+  before mutation. Generic calls stay bound to the safe bundled catalogue.
+  Preserve native error text and existing tool/argument/result contracts.
+- Verify actual executable/version before live mutations. A `3.7.*` pin is not
+  exact 3.7.8. New noncatalogue values need pinned live evidence beside the code.
+  Explicit executable overrides must not attach/restart a different installation.
+- Serialize complete operations and pipe exchanges, recreate handles and bound
+  blocked I/O with a disposable helper. Never kill Audacity or replay uncertain
+  edits. Dialog/window native messages remain available while pipe calls wait.
+- Booleans are 1/0. Enforce the encoded native request budget; never truncate or
+  split commands. Reject ignored native setter scope keys and select explicitly.
+  Track gain input is dB/readback linear; public pan is -1..1/native percentage.
+- Never offer known modal commands or raw lifecycle/recording/program/preference
+  bypasses. Preserve all source-rate/frame/context guards and import guards.
+- Save to new `.aup3` destinations, preserve tracks before fresh, restart empty
+  projects too, and prove orderly exit before deleting disposable saves. No New.
+- Keep noise state unknown on attach/recovery/process changes; profile only an
+  explicit one-clip room-tone interval with both source/render frame minimums.
+  No guessed noise parameters, cross-track reduction or batch noise profiling.
+- Scripted effects add no per-call undo state. Normalization, limiting and
+  timing changes stay explicit and reviewable with dry-run plans/backups.
+- Distinguish peak/RMS/true peak/LUFS and keep unavailable metrics unknown.
+  Advisory estimates do not certify targets or recover clipping information.
+- Preserve actual user projects/visibility and retain backups before live work.
+  Cleanly quit tests, inspect dialogs/recovery entries, then restore original state.
+  Stopped-only recovery clearing backs up config and retains every project file.
+- Runtime tools never install/download models/executables, simulate mouse/keyboard
+  input, or introduce a network listener. Windows native messages are allowed.
+- GitHub Actions uses hosted runners only, full-SHA actions, explicit permissions
+  and positive job timeouts. Preserve this repository's runner restrictions.
+
+Keep public source/comments/docs/commits English. Use Conventional Commits and
+include required author attribution. Attribute copied/adapted source by exact
+file/commit/license in NOTICE and retain applicable notices/license text. Never
+add personal machine paths, private project details or credential material.
+LICENSE copyright and Git author identities must stay unchanged.

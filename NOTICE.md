@@ -2,15 +2,15 @@
 
 The TypeScript implementation in this repository is original. No Python/C++/Nyquist
 source code or upstream tool descriptions were copied or translated into the
-runtime. Source tool identifiers in the feature matrix are retained for audit.
+runtime. Pinned research source commits are retained below.
 The researched behaviour and workflows were independently implemented with
 this host's live Audacity 3.7.x catalogue and independently verified Audacity
 3.7.8 behaviour and tests.
 
 ## Research provenance
 
-The [feature matrix](docs/feature-matrix.md) records the exact inspected commit
-for each source. Licence links below apply to those upstream projects; this
+The pinned source snapshots below record the exact inspected commits.
+Licence links below apply to those upstream projects; this
 server remains MIT licensed. No additional upstream runtime is bundled.
 
 | Source | Upstream licence | Research used here |
@@ -25,7 +25,7 @@ server remains MIT licensed. No additional upstream runtime is bundled.
 | [buckydurddle/audacity-mcp](https://github.com/buckydurddle/audacity-mcp) | [MIT](https://github.com/buckydurddle/audacity-mcp/blob/bf2b08196406629cddae0c9c5799a4e9f396442e/LICENSE), Copyright 2026 Andrew Mercer | Compact discovery/dispatch, selection analysis and backup-first workflow ideas; approximate Undo-count checkpoints are not taken. |
 | [tachyonshuggy/audacity-mcp](https://github.com/tachyonshuggy/audacity-mcp) | [MIT](https://github.com/tachyonshuggy/audacity-mcp/blob/cd2f38783a76a9ef10aa0be2bf3518d3c04e0888/LICENSE), Copyright 2026 Jeff Shoemaker | Selection/export/label/transport and saved-macro coverage. |
 
-Research is reflected in original `src/tasks.ts` (plans/editing/generation),
+Research is reflected in original `src/tasks.ts` and its domain modules (plans/editing/generation),
 `src/analysis.ts` (measurement/silence/loudness), `src/labels.ts` and
 `src/ops.ts` (label workflows), `src/controls.ts` (macros/preferences/transport),
 `src/batch.ts`, `src/source-rate.ts` (native sample-rate header queries),
@@ -35,6 +35,30 @@ names are the local catalogue's, with comments for independently live-verified
 safeguards. Any future copied or adapted source code must identify its exact
 source file/commit and licence here, retain applicable copyright/licence text,
 and preserve all applicable Apache NOTICE attribution.
+
+### Inspected source snapshots
+
+| Project | Commit |
+| --- | --- |
+| xDarkzx/Audacity-MCP | `ef7612eb6766ee96d630783d64c1ce94d602dc9e` |
+| xDarkzx/Audacity4-MCP | `280c7a3f46c19c8686c53a37f788264630aa4b8c` |
+| robworks-code/audacity-mcp-max | `a1fd6af1d068f7f81f976265e452722742304d50` |
+| FFriends/MCP-Audacity | `3f53cdaa37a2339d4c5af6311f7e9f9311a486a8` |
+| Dream-Pixels-Forge/audacity-mcp | `9d812922e46f504f91cca48338ed68511f8d4243` |
+| An-3/an3-audacity-mcp | `5f9705936cb07551214c8cd9aa07f5cb1f7d9531` |
+| PiMPStudios/mcp-audacity | `64a4de11274c594235170abd6f6e47960895a59d` |
+| buckydurddle/audacity-mcp | `bf2b08196406629cddae0c9c5799a4e9f396442e` |
+| tachyonshuggy/audacity-mcp | `cd2f38783a76a9ef10aa0be2bf3518d3c04e0888` |
+
+## Community document attribution
+
+`CODE_OF_CONDUCT.md` adapts the English Contributor Covenant 3.0 from
+[`content/version/3/0/code_of_conduct.md`](https://github.com/ContributorCovenant/contributor_covenant/blob/7255a28d23d5bc296de2e4e4e9bb5ee1126f1345/content/version/3/0/code_of_conduct.md),
+commit `7255a28d23d5bc296de2e4e4e9bb5ee1126f1345`, licensed
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/). The reporting
+placeholder is replaced with the organization's enforcement contact and the
+template editing note is removed. That document retains its upstream attribution
+and license; the server implementation remains MIT licensed.
 
 ## Audacity implementation references
 

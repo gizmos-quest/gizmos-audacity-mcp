@@ -2027,8 +2027,7 @@
   "params": [
    {
     "key": "Filename",
-    "type": "string",
-    "default": "exported.wav"
+    "type": "string"
    },
    {
     "key": "NumChannels",

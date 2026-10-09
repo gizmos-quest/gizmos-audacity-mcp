@@ -1,0 +1,23 @@
+name: Feature request
+description: Describe a concrete audio workflow need
+title: "feat: "
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: User problem
+      description: What workflow is difficult with the current tools?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Expected inputs/results and any existing Audacity command or safe alternative
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Native evidence or constraints
+      description: Actual Audacity version, modal risks, source links or verification details if known
