@@ -1,5 +1,6 @@
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
+import { existsSync, statSync } from 'node:fs';
 import { copyFile, readFile } from 'node:fs/promises';
 import { userInfo } from 'node:os';
 import { dirname, extname, join } from 'node:path';
@@ -40,35 +41,69 @@ export function configValue(config: string, section: string, key: string): strin
   return undefined;
 }
 
-/** Only mod-script-pipe changes; preserve registry, language and all user prefs. */
-export function enablePipeConfig(config: string): string {
+function setConfigValue(config: string, section: string, key: string, value: string): string {
   const newline = config.includes('\r\n') ? '\r\n' : '\n';
   const lines = config.split(/\r?\n/);
-  const start = lines.findIndex((line) => line.trim() === '[Module]');
+  const start = lines.findIndex((line) => line.trim() === `[${section}]`);
   if (start < 0)
-    return `${config}${config.endsWith(newline) ? '' : newline}[Module]${newline}mod-script-pipe=1${newline}`;
+    return `${config}${config.endsWith(newline) ? '' : newline}[${section}]${newline}${key}=${value}${newline}`;
   let end = lines.findIndex((line, index) => index > start && /^\[/.test(line));
   if (end < 0) end = lines.length;
-  const existing = lines.findIndex(
-    (line, index) => index > start && index < end && line.startsWith('mod-script-pipe='),
-  );
-  if (existing >= 0) lines[existing] = 'mod-script-pipe=1';
-  else lines.splice(start + 1, 0, 'mod-script-pipe=1');
+  const existing = lines.findIndex((line, index) => index > start && index < end && line.startsWith(`${key}=`));
+  if (existing >= 0) lines[existing] = `${key}=${value}`;
+  else lines.splice(start + 1, 0, `${key}=${value}`);
   return lines.join(newline);
 }
 
-export async function fixPipeConfig(): Promise<string> {
+/** Only the module's enablement record changes; registry, language and other prefs stay. */
+export function enablePipeConfig(config: string, moduleStamp?: string): string {
+  const enabled = setConfigValue(config, 'Module', 'mod-script-pipe', '1');
+  return moduleStamp ? setConfigValue(enabled, 'ModuleDateTime', 'mod-script-pipe', moduleStamp) : enabled;
+}
+
+/** Windows/portable installs keep modules beside the executable; a macOS bundle in Contents/modules. */
+export function scriptModule(executable: string): string | undefined {
+  const name = `mod-script-pipe${process.platform === 'win32' ? '.dll' : '.so'}`;
+  return [join(dirname(executable), 'modules', name), join(dirname(executable), '..', 'modules', name)].find((file) =>
+    existsSync(file),
+  );
+}
+
+/** wxDateTime::FormatISOCombined of the file's local modification time, as ModuleSettings writes it. */
+export function moduleStamp(file: string): string {
+  const time = new Date(Math.floor(statSync(file).mtimeMs / 1000) * 1000);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${time.getFullYear()}-${pad(time.getMonth() + 1)}-${pad(time.getDate())}T${pad(time.getHours())}:${pad(time.getMinutes())}:${pad(time.getSeconds())}`;
+}
+
+async function readConfig(file = configPath()): Promise<string> {
+  try {
+    return await readFile(file, 'utf8');
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'ENOENT') throw error;
+    throw new Error(`No Audacity settings at ${file}. Start and quit Audacity once, then run doctor again.`);
+  }
+}
+
+/** Returns the backup path, or undefined when the config already enables this module file. */
+export async function fixPipeConfig(): Promise<string | undefined> {
   // Refuse a wrong/unsupported executable before changing any configuration.
-  assertSupportedVersion(await executableVersion(audacityExe()));
+  const executable = audacityExe();
+  assertSupportedVersion(await executableVersion(executable));
   if (await isRunning())
     throw new Error('doctor --fix requires Audacity to be stopped; quit it before changing its config.');
   const file = configPath();
-  const original = await readFile(file, 'utf8');
+  const original = await readConfig(file);
+  const module = scriptModule(executable);
+  // Mirrors ModuleSettings::SetModuleStatus for an explicit user decision: without
+  // the module file's current timestamp, 3.7.8 resets the module to "new" and skips it.
+  const updated = enablePipeConfig(original, module && moduleStamp(module));
+  if (updated === original) return undefined;
   const backup = `${file}.before-doctor-${randomUUID()}.bak`;
   await copyFile(file, backup);
   // Recheck after backup. No first-party pipe session can silently rewrite config.
   if (await isRunning()) throw new Error(`Audacity started during doctor --fix; config unchanged. Backup: ${backup}`);
-  await writeStoppedConfig(file, original, enablePipeConfig(original));
+  await writeStoppedConfig(file, original, updated);
   return backup;
 }
 
@@ -89,10 +124,17 @@ export async function doctor(fix = false): Promise<DoctorReport> {
     return version;
   });
   await check('mod-script-pipe', async () => {
-    const enabled = configValue(await readFile(configPath(), 'utf8'), 'Module', 'mod-script-pipe');
-    if (enabled !== '1')
+    const config = await readConfig();
+    if (configValue(config, 'Module', 'mod-script-pipe') !== '1')
       throw new Error(
         'mod-script-pipe is disabled or missing. While Audacity is stopped, run doctor --fix, then restart.',
+      );
+    // 3.7.8 ModuleSettings::GetModuleStatus loads an enabled module only when its
+    // recorded ModuleDateTime equals the file's; otherwise it is "new" and skipped.
+    const module = scriptModule(audacityExe());
+    if (module && configValue(config, 'ModuleDateTime', 'mod-script-pipe') !== moduleStamp(module))
+      throw new Error(
+        'mod-script-pipe was enabled for a different module file (for example before an update), so Audacity skips it. While Audacity is stopped, run doctor --fix, then restart.',
       );
     return 'Enabled in config; restart Audacity after changing this value.';
   });

@@ -52,6 +52,12 @@ describe('native application preflight', () => {
       ).toThrow(/Preserve and quit that installation/);
     },
   );
+  it('matches the macOS bundle Wrapper with the Audacity binary it executes', () => {
+    const bundle = resolve('Applications', 'Audacity.app', 'Contents', 'MacOS');
+    const running = [{ pid: 7, executable: join(bundle, 'Audacity'), fileVersion: null, productVersion: null }];
+    expect(() => assertExecutableMatches(join(bundle, 'Wrapper'), running, 'darwin')).not.toThrow();
+    expect(() => assertExecutableMatches(join(bundle, 'Other'), running, 'darwin')).toThrow(/running from/);
+  });
   it('does not ignore case differences on a case-sensitive host', () => {
     const executable = resolve('portable', 'Audacity');
     expect(() =>

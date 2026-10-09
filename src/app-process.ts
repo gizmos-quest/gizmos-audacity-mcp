@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process';
-import { accessSync, constants, existsSync, readdirSync, statSync } from 'node:fs';
+import { accessSync, constants, existsSync, readdirSync, readlinkSync, realpathSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { powershell } from './app-helper.js';
 import { defaultPipePaths } from './pipe.js';
@@ -71,6 +71,16 @@ function capture(command: string, args: string[]): Promise<string> {
   });
 }
 
+/** Linux `comm` is a truncated name; /proc names the real binary. macOS `ps`
+ * already prints the path of the binary that mac/Wrapper.c executed. */
+function posixExecutable(pid: number, command: string): string {
+  try {
+    return readlinkSync(`/proc/${pid}/exe`);
+  } catch {
+    return command;
+  }
+}
+
 /** Process records, not stale FIFO names, authorize stopped-only config writes. */
 export async function audacityProcesses(): Promise<AudacityProcess[]> {
   if (process.platform !== 'win32') {
@@ -86,7 +96,7 @@ export async function audacityProcesses(): Promise<AudacityProcess[]> {
         {
           pid: Number(match[1]),
           owner: match[2]!,
-          executable: match[4]!,
+          executable: posixExecutable(Number(match[1]), match[4]!),
           started: match[3]!,
           fileVersion: null,
           productVersion: null,
@@ -119,7 +129,17 @@ export function assertExecutableMatches(
   processes: readonly AudacityProcess[],
   platform = process.platform,
 ): void {
-  const normalize = (file: string) => (platform === 'win32' ? resolve(file).toLowerCase() : resolve(file));
+  const normalize = (file: string) => {
+    if (platform === 'win32') return resolve(file).toLowerCase();
+    let real = resolve(file);
+    try {
+      real = realpathSync(file);
+    } catch {
+      // A missing path keeps its resolved spelling and cannot match a live binary.
+    }
+    // The macOS bundle's Wrapper execs its sibling Audacity binary (mac/Wrapper.c).
+    return real.replace(/([\\/]Contents[\\/]MacOS[\\/])Wrapper$/, '$1Audacity');
+  };
   if (processes.length > 1)
     throw new Error(
       'Multiple Audacity processes share the pipe; preserve and quit extra installations before attaching.',
@@ -154,21 +174,30 @@ export function pipeExists(): boolean {
 }
 
 export async function executableVersion(file = audacityExe()): Promise<string> {
-  if (process.platform === 'win32')
+  if (process.platform === 'win32') {
+    // An empty FileVersion falls back to ProductVersion, so a 4.x build is still recognized.
+    const info = `(Get-Item -LiteralPath '${file.replaceAll("'", "''")}').VersionInfo`;
     return (
-      await powershell(`(Get-Item -LiteralPath '${file.replaceAll("'", "''")}').VersionInfo.FileVersion`)
+      await powershell(`$v = ${info}; if ($v.FileVersion) { $v.FileVersion } else { $v.ProductVersion }`)
     ).replaceAll(',', '.');
+  }
   const output = await capture(file, ['--version']);
   const version = /\b(\d+\.\d+\.\d+)\b/.exec(output)?.[1];
   if (!version) throw new Error('Cannot determine Audacity version');
   return version;
 }
 
+const INSTALL_3_7 =
+  'Install Audacity 3.7.x and pin it, for example `winget install --id Audacity.Audacity -e --version 3.7.8` then `winget pin add --id Audacity.Audacity -e --version 3.7.8`.';
+
 export function assertSupportedVersion(version: string): void {
-  if (/^4\./.test(version)) throw new Error('Audacity 4 has no mod-script-pipe; install Audacity 3.7.x.');
+  if (/^4\./.test(version))
+    throw new Error(
+      `Audacity ${version} is not supported: Audacity 4.0 removed the scripting interface (mod-script-pipe). ${INSTALL_3_7}`,
+    );
   if (!/^3\.7\.(?:8|9)(?:\.0)?$/.test(version))
     throw new Error(
-      `Unsupported Audacity version ${version}; use the verified 3.7.8 target (3.7.9 compatibility is separately tested).`,
+      `Unsupported Audacity version ${version}; use the verified 3.7.8 target (3.7.9 compatibility is separately tested). ${INSTALL_3_7}`,
     );
 }
 

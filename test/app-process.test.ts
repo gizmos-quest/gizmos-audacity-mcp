@@ -2,9 +2,13 @@ import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ helper: vi.fn(), spawn: vi.fn() }));
+const mocks = vi.hoisted(() => ({ helper: vi.fn(), spawn: vi.fn(), readlink: vi.fn() }));
 vi.mock('../src/app-helper.js', () => ({ powershell: mocks.helper }));
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn }));
+vi.mock('node:fs', async (original) => ({
+  ...(await original<typeof import('node:fs')>()),
+  readlinkSync: mocks.readlink,
+}));
 
 import {
   assertSupportedVersion,
@@ -47,8 +51,27 @@ describe('actual process evidence', () => {
     mocks.helper.mockResolvedValue('');
     expect(await audacityProcesses()).toEqual([]);
   });
+  it('names the real Linux binary from /proc instead of its truncated comm', async () => {
+    platform('linux');
+    mocks.readlink.mockImplementation((path: string) => {
+      if (path === '/proc/42/exe') return '/usr/bin/audacity';
+      throw Object.assign(new Error('EACCES'), { code: 'EACCES' });
+    });
+    const process = child();
+    mocks.spawn.mockReturnValue(process);
+    const result = audacityProcesses();
+    process.stdout.write(' 42 1000 Fri Oct  9 20:00:00 2026 audacity\n 43 1001 Fri Oct  9 20:00:00 2026 audacity\n');
+    process.emit('close', 0);
+    expect((await result).map(({ pid, executable }) => ({ pid, executable }))).toEqual([
+      { pid: 42, executable: '/usr/bin/audacity' },
+      { pid: 43, executable: 'audacity' },
+    ]);
+  });
   it('reads actual POSIX process names even when no FIFO exists', async () => {
     platform('linux');
+    mocks.readlink.mockImplementation(() => {
+      throw Object.assign(new Error('ENOENT'), { code: 'ENOENT' });
+    });
     const process = child();
     mocks.spawn.mockReturnValue(process);
     const result = audacityProcesses();
@@ -94,7 +117,10 @@ describe('actual process evidence', () => {
     platform('win32');
     mocks.helper.mockResolvedValue('3,7,8,0');
     expect(await executableVersion('/Audacity.exe')).toBe('3.7.8.0');
-    expect(() => assertSupportedVersion('4.0.0')).toThrow('has no mod-script-pipe');
+    expect(mocks.helper).toHaveBeenLastCalledWith(expect.stringContaining('ProductVersion'));
+    expect(() => assertSupportedVersion('4.0.1')).toThrow(
+      'Audacity 4.0.1 is not supported: Audacity 4.0 removed the scripting interface (mod-script-pipe). Install Audacity 3.7.x and pin it, for example `winget install --id Audacity.Audacity -e --version 3.7.8`',
+    );
     expect(() => assertSupportedVersion('3.6.0')).toThrow('Unsupported');
     for (const version of ['3.7.8', '3.7.8.0', '3.7.9.0']) expect(() => assertSupportedVersion(version)).not.toThrow();
   });

@@ -1,4 +1,4 @@
-import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir, userInfo } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -12,6 +12,7 @@ const fake = vi.hoisted(() => ({
   ffmpeg: vi.fn(),
   english: vi.fn(),
   release: vi.fn(),
+  exe: vi.fn(),
 }));
 vi.mock('../src/app-process.js', async (original) => ({
   ...(await original<typeof import('../src/app-process.js')>()),
@@ -19,7 +20,7 @@ vi.mock('../src/app-process.js', async (original) => ({
   audacityProcesses: fake.processes,
   executableVersion: fake.version,
   pipeExists: fake.present,
-  audacityExe: () => process.execPath,
+  audacityExe: fake.exe,
 }));
 vi.mock('../src/app.js', () => ({ assertEnglishCommands: fake.english }));
 vi.mock('../src/pipe.js', () => ({
@@ -30,7 +31,7 @@ vi.mock('../src/pipe.js', () => ({
 }));
 vi.mock('node:child_process', () => ({ spawnSync: fake.ffmpeg }));
 
-import { configValue, doctor, enablePipeConfig, fixPipeConfig, runDoctor } from '../src/doctor.js';
+import { configValue, doctor, enablePipeConfig, fixPipeConfig, moduleStamp, runDoctor } from '../src/doctor.js';
 
 let dir: string;
 beforeEach(async () => {
@@ -42,7 +43,18 @@ beforeEach(async () => {
   fake.processes.mockResolvedValue([]);
   fake.version.mockResolvedValue('3.7.8.0');
   fake.ffmpeg.mockReturnValue({ status: 0 });
+  fake.exe.mockReturnValue(process.execPath);
 });
+
+/** A portable-style install: modules/ beside the executable, as Audacity searches it. */
+async function installedModule(): Promise<string> {
+  await mkdir(join(dir, 'modules'));
+  const module = join(dir, 'modules', `mod-script-pipe${process.platform === 'win32' ? '.dll' : '.so'}`);
+  await writeFile(module, 'module');
+  await utimes(module, new Date('2026-06-11T07:46:52.400Z'), new Date('2026-06-11T07:46:52.400Z'));
+  fake.exe.mockReturnValue(join(dir, 'Audacity.exe'));
+  return module;
+}
 afterEach(async () => {
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
@@ -54,7 +66,7 @@ describe('stopped-only setup', () => {
     const file = join(dir, 'audacity.cfg');
     const original = await readFile(file, 'utf8');
     fake.version.mockResolvedValue('4.0.0');
-    await expect(doctor(true)).rejects.toThrow('has no mod-script-pipe');
+    await expect(doctor(true)).rejects.toThrow('removed the scripting interface (mod-script-pipe)');
     expect(await readFile(file, 'utf8')).toBe(original);
     expect(await readdir(dir)).toEqual(['audacity.cfg']);
     expect(fake.running).not.toHaveBeenCalled();
@@ -81,10 +93,11 @@ describe('stopped-only setup', () => {
     const original = '[Module]\nmod-script-pipe=0\n';
     await writeFile(join(dir, 'audacity.cfg'), original);
     const backup = await fixPipeConfig();
-    expect(await readFile(backup, 'utf8')).toBe(original);
+    expect(await readFile(backup!, 'utf8')).toBe(original);
     expect(await readFile(join(dir, 'audacity.cfg'), 'utf8')).toBe(enablePipeConfig(original));
   });
   it('refuses running and startup-during-backup without modifying config', async () => {
+    await writeFile(join(dir, 'audacity.cfg'), '[Module]\nmod-script-pipe=0\n');
     fake.running.mockResolvedValue(true);
     await expect(fixPipeConfig()).rejects.toThrow('stopped');
     fake.running.mockResolvedValueOnce(false).mockResolvedValueOnce(true);
@@ -135,7 +148,9 @@ describe('doctor diagnostics', () => {
     fake.processes.mockResolvedValue([{ pid: 42, executable: '/different' }]);
     await writeFile(join(dir, 'audacity.cfg'), '[Module]\nmod-script-pipe=0\n');
     const report = await doctor();
-    expect(report.checks.find((check) => check.name === 'version')?.detail).toContain('has no mod-script-pipe');
+    expect(report.checks.find((check) => check.name === 'version')?.detail).toContain(
+      'winget install --id Audacity.Audacity',
+    );
     expect(report.ok).toBe(false);
     expect(fake.send).not.toHaveBeenCalled();
   });
@@ -164,5 +179,44 @@ describe('doctor diagnostics', () => {
     }
     await expect(runDoctor(['--unknown'])).rejects.toThrow('Usage:');
   });
-  it('includes --fix backup in diagnostics', async () => expect(await doctor(true)).toHaveProperty('backup'));
+  it('includes --fix backup in diagnostics', async () => {
+    await writeFile(join(dir, 'audacity.cfg'), '[Module]\nmod-script-pipe=0\n');
+    expect(await doctor(true)).toHaveProperty('backup');
+  });
+});
+
+describe('native module status', () => {
+  it('formats the local modification time to the second like wxDateTime', async () => {
+    const stamp = moduleStamp(await installedModule());
+    expect(stamp).toMatch(/^2026-06-1[01]T\d{2}:\d{2}:52$/);
+  });
+  it('reports an enabled module recorded for a different file as skipped', async () => {
+    await installedModule();
+    await writeFile(
+      join(dir, 'audacity.cfg'),
+      '[Module]\nmod-script-pipe=1\n[ModuleDateTime]\nmod-script-pipe=2020-01-01T00:00:00\n',
+    );
+    const check = (await doctor()).checks.find((entry) => entry.name === 'mod-script-pipe');
+    expect(check).toMatchObject({ ok: false, detail: expect.stringContaining('different module file') });
+  });
+  it('fix records the current module timestamp, then leaves a correct config untouched', async () => {
+    const module = await installedModule();
+    const file = join(dir, 'audacity.cfg');
+    await writeFile(file, '[Module]\nmod-script-pipe=4\n[ModuleDateTime]\nmod-script-pipe=2020-01-01T00:00:00\n');
+    expect(await fixPipeConfig()).toBeDefined();
+    const fixed = await readFile(file, 'utf8');
+    expect(configValue(fixed, 'Module', 'mod-script-pipe')).toBe('1');
+    expect(configValue(fixed, 'ModuleDateTime', 'mod-script-pipe')).toBe(moduleStamp(module));
+    expect((await doctor()).checks.find((entry) => entry.name === 'mod-script-pipe')?.ok).toBe(true);
+    const files = await readdir(dir);
+    expect(await fixPipeConfig()).toBeUndefined();
+    expect(await readdir(dir)).toEqual(files);
+  });
+  it('explains missing settings instead of a raw file error', async () => {
+    await rm(join(dir, 'audacity.cfg'));
+    await expect(fixPipeConfig()).rejects.toThrow('Start and quit Audacity once');
+    expect((await doctor()).checks.find((entry) => entry.name === 'mod-script-pipe')?.detail).toContain(
+      'No Audacity settings',
+    );
+  });
 });
