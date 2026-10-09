@@ -59,15 +59,18 @@ Forward explicit `AUDACITY_*` overrides through the SDK's restricted environment
 `AUDACITY_CONFIG` only selects inspection; Audacity itself must use that config,
 for example Portable Settings beside a portable executable.
 
-Keep one session owner because Windows pipe names are fixed. Before live work,
-preserve the actual user's open project to a new retained backup with fresh and
-record its visibility. Generate synthetic audio/projects. Cover every tool with
+Keep one session owner because Windows pipe names are fixed. The suite's first
+call saves any open project to `.work/live-backups/before-live-*.aup3` and never
+deletes it; it does not reopen it, so restore that backup yourself afterwards.
+Generate synthetic audio/projects. Cover every tool with
 separate attempted/succeeded/expected-refusal accounting, plus save-over refusal,
 blocking-dialog closure, restart/recovery and non-silent generated exports.
 Unavailable device recording or optional ffmpeg is untested/refused, not passed.
+`AUDACITY_LIVE_DEVICE_INDEPENDENT=1` skips the microphone/playback case; report
+such a run as incomplete hardware coverage.
 
-At teardown, quit orderly, verify actual process exit, no dialogs or stale
-ActiveProjects entries, then restore the original project and visibility.
+At teardown, quit orderly and verify actual process exit, no dialogs and no
+stale ActiveProjects entries; a failed teardown is not a pass.
 Running-project entries are legitimate. Config recovery clearing is stopped-only,
 with backup and all project files retained. Never terminate Audacity or simulate
 mouse/keyboard input from the server. Retain uncertain saves and scratch.

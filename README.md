@@ -14,8 +14,13 @@ the scripting FIFOs; their native window lifecycle is not qualified.
 
 ## Requirements
 
-- English **Audacity 3.7.8**, with `mod-script-pipe` enabled. Audacity 4 has no
-  supported scripting pipe. The bundled catalogue targets 3.7.8.
+- English **Audacity 3.7.8**, with `mod-script-pipe` enabled; the bundled
+  catalogue targets 3.7.8. On Windows, install and pin it:
+  `winget install --id Audacity.Audacity -e --version 3.7.8`, then
+  `winget pin add --id Audacity.Audacity -e --version 3.7.8`.
+- **Audacity 4 is not supported**: 4.0 removed the scripting interface
+  (`mod-script-pipe`). Support would be reconsidered only if Audacity ships a
+  scripting host with full control.
 - **Node.js 24 or newer**, running as the same user as Audacity.
 - Optional **ffmpeg/ffprobe** for LUFS, LRA, true peak, other file formats and
   metadata. Native PCM/float WAV measurement needs neither.

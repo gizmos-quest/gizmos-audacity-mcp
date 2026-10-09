@@ -18,3 +18,10 @@ input/result shapes and environment variables.
 - Native request byte bounds, AutoDuck adjacency and process-sensitive profiling.
 - Startup/shutdown and uncertain reply recovery safeguards.
 - Bounded measurement work and protocol-version compatibility.
+- Windows paths such as `C:\new\` no longer turn into line breaks inside Audacity;
+  relative paths are sent absolute and text Audacity would alter is refused.
+- A projectless or still-starting Audacity is reported within seconds, and
+  launch waits until the project exists (for example after plugin scans).
+- `doctor --fix` also records the module timestamp Audacity needs after updates.
+- Hour-long recordings are measurable; Linux/macOS process checks name real binaries.
+- Audacity 4 is refused with its reason and the 3.7.x install remedy.

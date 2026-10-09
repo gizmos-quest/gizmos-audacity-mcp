@@ -50,7 +50,9 @@ Prefer the smallest domain change over speculative abstractions.
   blocked I/O with a disposable helper. Never kill Audacity or replay uncertain
   edits. Dialog/window native messages remain available while pipe calls wait.
 - Booleans are 1/0. Enforce the encoded native request budget; never truncate or
-  split commands. Reject ignored native setter scope keys and select explicitly.
+  split commands. Native parsing unescapes `\n` and `\\`: send Windows paths with
+  forward slashes and refuse other text it would change. A lone LF reply means no
+  active project. Reject ignored native setter scope keys and select explicitly.
   Track gain input is dB/readback linear; public pan is -1..1/native percentage.
 - Never offer known modal commands or raw lifecycle/recording/program/preference
   bypasses. Preserve all source-rate/frame/context guards and import guards.

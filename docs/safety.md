@@ -3,7 +3,7 @@
 The public surface uses the bundled English Audacity 3.7.8 catalogue. Unknown
 commands, nested fields, ignored native parameters and non-finite numbers fail
 before mutation. Native error text is retained. New parameters require pinned
-live evidence; historical aliases and custom Audacity 4 APIs are not assumed.
+live evidence; historical aliases are not assumed.
 
 ## Projects and timing
 
@@ -118,7 +118,11 @@ An ownership lock coordinates this server's entry points; it cannot coordinate
 unrelated clients or manual UI edits.
 
 Wire booleans are 1/0; True is read as false. Quotes, newlines and NUL cannot
-be safely escaped. Spaced keys are quoted and Nyquist hyphens retained. The
+be safely escaped. Audacity's parameter parser turns `\n` into a newline and
+`\\` into one backslash, so text containing those sequences or ending in a
+backslash is refused; Windows file paths are sent with forward slashes, keeping
+a folder such as `C:\new` intact. GetInfo JSON escapes only quotes; its other
+backslashes are literal. Spaced keys are quoted and Nyquist hyphens retained. The
 encoded whole-command byte budget protects the native fixed request buffer;
 commands are never split/truncated automatically.
 
@@ -156,8 +160,9 @@ threshold, returns capped regions plus the total count, and uses absolute projec
 times for rendered ranges. Contrast is numeric RMS difference. Mono loudness
 defaults to dual-mono compensation.
 
-Analysis uses a total timeout budget, at most 512 MiB of decoded/native audio
-payload and 24 hours duration. LUFS targeting requires established LUFS/true peak,
-caps gain by headroom/maxBoost, then measures again; an unreachable target is
-reported. Native limiting and house references do not certify delivery peaks.
+Analysis streams audio in constant memory under a total timeout budget and a
+24-hour duration cap; an ffmpeg-decoded temporary WAV stops at the 4 GiB WAV
+limit. LUFS targeting requires established LUFS/true peak, caps gain by
+headroom/maxBoost, then measures again; an unreachable target is reported.
+Native limiting and house references do not certify delivery peaks.
 No neural denoise/transcription/stem runtime is bundled.

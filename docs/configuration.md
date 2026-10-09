@@ -2,7 +2,11 @@
 
 Use English Audacity **3.7.8** with its shipped `mod-script-pipe` module.
 Check the executable's actual file version: a `3.7.*` installer pin can admit
-a later patch. Audacity 4 and custom fork APIs are unsupported.
+a later patch. Audacity 4 is not supported: 4.0 removed the scripting
+interface (`mod-script-pipe`). `doctor` and `audacity_launch` refuse a 4.x
+executable and name the remedy: install 3.7.x and pin it, for example
+`winget install --id Audacity.Audacity -e --version 3.7.8` then
+`winget pin add --id Audacity.Audacity -e --version 3.7.8`.
 
 1. Enable `mod-script-pipe` in **Preferences → Modules** and restart.
 2. Run `gizmos-audacity-mcp doctor` (or the package's `npx` command).
@@ -10,9 +14,12 @@ a later patch. Audacity 4 and custom fork APIs are unsupported.
 
 Doctor returns JSON checks for version, process ownership/executable, module
 configuration, pipe presence, essential English IDs and optional ffmpeg.
-Checks requiring a running reachable Audacity remain unknown when it is stopped.
-With Audacity stopped, `doctor --fix` enables the module and retains a unique
-config backup. It does not install Audacity or rewrite plugin/language settings.
+The pipe and English-ID checks need a running Audacity and fail while it is
+stopped. Audacity loads an enabled module only if the config also records that
+module file's timestamp; after an update it treats the file as new and skips it.
+With Audacity stopped, `doctor --fix` writes both values, as **Preferences →
+Modules** does, and retains a unique config backup; an already correct config is
+left untouched. It does not install Audacity or rewrite plugin/language settings.
 
 | Variable | Purpose |
 | --- | --- |
