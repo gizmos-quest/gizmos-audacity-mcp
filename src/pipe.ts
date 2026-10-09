@@ -36,12 +36,20 @@ export class AudacityUnavailable extends Error {
   constructor(
     message: string,
     readonly uncertainOutcome = false,
+    /** The next step that tool errors append to the message. */
+    readonly advice = uncertainOutcome
+      ? ' Use audacity_dialogs and audacity_recover; do not replay edits blindly.'
+      : ' Use audacity_launch.',
   ) {
     super(message);
   }
 }
+/** The relay answered without a project (the lone LF in pipe-worker): nothing ran. */
+export class AudacityNoProject extends AudacityUnavailable {}
 export class AudacityTimeout extends Error {}
 export class AudacityNeedsRecovery extends Error {}
+const NO_PROJECT =
+  'Audacity answered with an empty reply and no status: it has no active project (still starting up, or its project window was closed), so its script relay did not run the command. Wait for startup and check audacity_dialogs.';
 export function parseReply(raw: string): PipeReply {
   const lines = raw.replace(/\r/g, '').split('\n');
   const index = lines.findIndex((line) => line.startsWith('BatchCommand finished:'));
@@ -102,12 +110,29 @@ const exchange: PipeTransport = (paths, command, timeoutMs, nonce) => {
         return;
       }
       try {
-        const result = JSON.parse(output) as { raw?: string; error?: string; code?: string; sent?: boolean };
+        const result = JSON.parse(output) as {
+          raw?: string;
+          idle?: boolean;
+          error?: string;
+          code?: string;
+          sent?: boolean;
+        };
+        // Windows serves one client at a time: busy means an earlier command still
+        // runs (or waits on a dialog) after its client was cancelled.
+        if (result.raw === undefined && result.code === 'EBUSY')
+          throw new AudacityUnavailable(
+            "Audacity's script pipe is busy: an earlier command is still running or waits on a dialog.",
+            result.sent ?? true,
+            ' Check audacity_dialogs, wait, then retry; do not replay edits blindly.',
+          );
         if (result.raw === undefined)
           throw new AudacityUnavailable(
             `Audacity's script pipe is not reachable (${result.code ?? result.error}).`,
             result.sent ?? true,
           );
+        // The relay runs nothing without a project, but keep the latch until a
+        // synchronized recovery read proves an active project again.
+        if (result.idle) throw new AudacityNoProject(NO_PROJECT, true);
         const reply = parseReply(result.raw);
         if (reply.status === 'missing')
           throw new AudacityUnavailable(
@@ -135,7 +160,7 @@ export class AudacityPipe {
   get needsRecovery(): boolean {
     return this.uncertain;
   }
-  /** Clear after an observed process exit, or for isolated transport fixtures. */
+  /** Clear after an observed process exit, a projectless read-only probe, or for transport fixtures. */
   reset(): void {
     this.uncertain = false;
   }

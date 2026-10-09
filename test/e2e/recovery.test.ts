@@ -34,6 +34,32 @@ describe('real disposable helper recovery', () => {
     }
   });
 
+  it.skipIf(process.platform !== 'win32')(
+    'fails fast and stays latched on the recorded projectless lone-LF reply',
+    async () => {
+      let projectless = true;
+      const fake = await replayPipe((command) => {
+        if (projectless) return { bytes: wire('02-no-project-tracks'), holdOpen: true };
+        if (command.startsWith('Message: Text=')) return { bytes: recoveryReply(command) };
+        return { bytes: wire('01-empty-tracks') };
+      });
+      const pipe = new AudacityPipe(fake.paths, 15_000);
+      const started = performance.now();
+      try {
+        await expect(pipe.send('GetInfo: Type=Tracks Format=JSON')).rejects.toThrow(/no active project/);
+        expect(performance.now() - started).toBeLessThan(8_000);
+        expect(pipe.needsRecovery).toBe(true);
+        projectless = false;
+        expect((await pipe.reconnect()).body).toBe('[  ]');
+        expect(pipe.needsRecovery).toBe(false);
+        fake.assertHealthy();
+      } finally {
+        pipe.release();
+        await fake.close();
+      }
+    },
+  );
+
   it('bounds delayed I/O by terminating only its disposable helper', async () => {
     const fake = await replayPipe(() => ({ bytes: wire('07-new-mono'), delayMs: 2_000 }));
     const pipe = new AudacityPipe(fake.paths, 400);

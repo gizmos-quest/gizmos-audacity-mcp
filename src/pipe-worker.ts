@@ -8,7 +8,15 @@ import { fileURLToPath } from 'node:url';
 import { validatePipePaths } from './pipe-paths.js';
 
 type PipeHandle = Pick<FileHandle, 'writeFile' | 'read' | 'close'>;
-type WorkerReply = { raw: string } | { error: string; code?: string; sent: boolean };
+type WorkerReply = { raw: string; idle?: true } | { error: string; code?: string; sent: boolean };
+
+/** 3.7.8 ScriptCommandRelay::ExecCommand runs nothing and answers an empty string,
+ * which ScripterCallback sends as one LF, while no project is active: before
+ * startup creates it, or after its window closed. No status line follows. An
+ * executed command writes all reply lines back to back, and each Windows client
+ * gets its own pipe instance, so a lone LF and then silence ends the exchange
+ * there. POSIX FIFOs can hold a stale LF from an earlier reply: no shortcut. */
+export const LONE_REPLY_MS = process.platform === 'win32' ? 2_000 : undefined;
 
 async function openNativePipe(path: string, flags: 'w' | 'r'): Promise<FileHandle> {
   validatePipePaths({ to: path, from: path });
@@ -26,10 +34,12 @@ export async function exchangePipeRequest(
   command: string,
   openHandle: (path: string, flags: 'w' | 'r') => Promise<PipeHandle> = openNativePipe,
   nonce?: string,
+  loneReplyMs = LONE_REPLY_MS,
 ): Promise<WorkerReply> {
   let to: PipeHandle | undefined;
   let from: PipeHandle | undefined;
   let sent = false;
+  let abandoned = false;
   try {
     const deadline = Date.now() + 5_000;
     for (;;) {
@@ -58,7 +68,24 @@ export async function exchangePipeRequest(
     let body = '';
     let totalBytes = 0;
     for (;;) {
-      const { bytesRead } = await from.read(buffer, 0, buffer.length, null);
+      const pending = from.read(buffer, 0, buffer.length, null);
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const read =
+        loneReplyMs !== undefined && body === '\n'
+          ? await Promise.race([
+              pending,
+              new Promise<undefined>((resolve) => {
+                timer = setTimeout(() => resolve(undefined), loneReplyMs);
+              }),
+            ]).finally(() => clearTimeout(timer))
+          : await pending;
+      if (!read) {
+        // A blocked read cannot be cancelled; the helper process exits instead of closing it.
+        abandoned = true;
+        pending.catch(() => undefined);
+        return { raw: body, idle: true };
+      }
+      const { bytesRead } = read;
       if (!bytesRead) break;
       totalBytes += bytesRead;
       if (totalBytes > 16_000_000) throw new Error('Audacity reply exceeds 16 MB');
@@ -88,7 +115,7 @@ export async function exchangePipeRequest(
     return { error: e.message, code: e.code, sent };
   } finally {
     await to?.close().catch(() => undefined);
-    await from?.close().catch(() => undefined);
+    if (!abandoned) await from?.close().catch(() => undefined);
   }
 }
 
@@ -101,6 +128,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     nonce?: string;
   };
   const reply = await exchangePipeRequest(paths, command, openNativePipe, nonce);
-  process.stdout.write(JSON.stringify(reply));
+  process.stdout.write(JSON.stringify(reply), () => {
+    // Node's exit joins libuv threads; one stays blocked in the abandoned pipe
+    // read, so this disposable helper ends itself once its reply is written.
+    if ('idle' in reply) process.kill(process.pid);
+  });
   if ('error' in reply) process.exitCode = 1;
 }

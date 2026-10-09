@@ -40,6 +40,21 @@
       }
     },
     {
+      "capture": "02-no-project-tracks",
+      "command": "GetInfo: Type=Tracks Format=JSON",
+      "note": "Process left without a project after its project window closed: one LF at 3 ms, then no byte within 7 s.",
+      "request": {
+        "file": "02-no-project-tracks.request.bin",
+        "bytes": 35,
+        "sha256": "cf29f1b743ca2735fdc4944bcea0e119333332984fabbf19574f04e9ddf7f5be"
+      },
+      "response": {
+        "file": "02-no-project-tracks.response.bin",
+        "bytes": 1,
+        "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+      }
+    },
+    {
       "capture": "05-selection",
       "command": "GetInfo: Type=Selection Format=JSON",
       "request": {

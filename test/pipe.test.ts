@@ -139,4 +139,29 @@ describe('disposable pipe helper', () => {
     expect(io.to.writeFile).toHaveBeenCalledExactlyOnceWith(`Stop:${process.platform === 'win32' ? '\r\n\0' : '\n'}`);
     expect(io.from.read).toHaveBeenCalledTimes(2);
   });
+  it('ends a projectless lone-LF reply without waiting for the blocked read or closing it', async () => {
+    const io = handles(['\n']);
+    io.from.read
+      .mockImplementationOnce(async (buffer: Buffer) => {
+        buffer.write('\n');
+        return { bytesRead: 1, buffer };
+      })
+      .mockImplementationOnce(() => new Promise(() => undefined));
+    expect(await exchangePipeRequest({ to: 'to', from: 'from' }, 'GetInfo:', io.open, undefined, 5)).toEqual({
+      raw: '\n',
+      idle: true,
+    });
+    expect(io.from.close).not.toHaveBeenCalled();
+    expect(io.to.close).toHaveBeenCalledOnce();
+  });
+  it('keeps reading when the status line or end of stream follows a leading LF promptly', async () => {
+    const prompt = handles(['\n', 'BatchCommand finished: OK\n']);
+    expect(await exchangePipeRequest({ to: 'to', from: 'from' }, 'Stop:', prompt.open, undefined, 1_000)).toEqual({
+      raw: '\nBatchCommand finished: OK\n',
+    });
+    const closed = handles(['\n', '']);
+    expect(await exchangePipeRequest({ to: 'to', from: 'from' }, 'Stop:', closed.open, undefined, 1_000)).toEqual({
+      raw: '\n',
+    });
+  });
 });

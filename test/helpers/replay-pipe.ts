@@ -13,6 +13,8 @@ export interface Delivery {
   fragmentBytes?: number;
   delayMs?: number;
   truncateAt?: number;
+  /** Windows only: keep the reply connection open, as native Audacity does after a projectless LF. */
+  holdOpen?: boolean;
 }
 export type Replay = (command: string) => Delivery;
 
@@ -61,7 +63,7 @@ export async function replayPipe(replay: Replay) {
             socket.write(chunk, (cause) => (cause ? reject(cause) : resolve())),
           );
         });
-        socket.end();
+        if (!delivery.holdOpen) socket.end();
       } catch (cause) {
         if (!stopped) error = cause;
       }
