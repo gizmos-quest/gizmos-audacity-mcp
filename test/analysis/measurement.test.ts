@@ -58,7 +58,7 @@ describe('bounded file measurement backends', () => {
       dualMono: false,
     });
     expect(backend.run.mock.calls[0]![0]).toContain('-fs');
-    expect(backend.run.mock.calls[0]![0]).toContain('536870913');
+    expect(backend.run.mock.calls[0]![0]).toContain('4294967295');
   });
   it.each([
     { samples: Array(40).fill(0), lufs: '-70', lra: 'nan', peak: '-inf' },

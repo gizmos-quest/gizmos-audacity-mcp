@@ -1,7 +1,7 @@
 import { mkdtemp, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { AnalysisBudget, AnalysisBudgetError, MAX_AUDIO_BYTES } from './budget.js';
+import { AnalysisBudget, AnalysisBudgetError, MAX_DECODED_BYTES } from './budget.js';
 import { parseFfmpegMeasurement, runFfmpeg } from './executables.js';
 import { type MeasureOptions, MeasureOptionsSchema } from './options.js';
 import type { Measurement } from './types.js';
@@ -35,15 +35,15 @@ export async function measureFile(file: string, options: MeasureOptions = {}): P
           '-c:a',
           'pcm_f32le',
           '-fs',
-          String(MAX_AUDIO_BYTES + 1),
+          String(MAX_DECODED_BYTES),
           decoded,
         ],
         budget.remaining(),
       );
       // ffmpeg -fs can return success with a truncated output. Such output
       // cannot establish full-file measurements, so refuse it explicitly.
-      if ((await stat(decoded)).size >= MAX_AUDIO_BYTES)
-        throw new AnalysisBudgetError('decoded measurement output reached the 512 MiB limit; select a shorter file');
+      if ((await stat(decoded)).size >= MAX_DECODED_BYTES)
+        throw new AnalysisBudgetError('decoded measurement output reached the 4 GiB WAV limit; select a shorter file');
       result = await measureWavFile(decoded, validated.silence, budget);
       result.backend = 'ffmpeg-decode+native-wav';
       result.notes.push('ffmpeg decoded the first audio stream without changing its sample rate or channel count.');

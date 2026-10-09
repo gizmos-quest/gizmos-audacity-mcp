@@ -2,7 +2,7 @@ import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { AnalysisBudget, AnalysisBudgetError, assertAudioBudget, MAX_AUDIO_BYTES } from '../src/analysis/budget.js';
+import { AnalysisBudget, AnalysisBudgetError, assertAudioBudget, MAX_DECODED_BYTES } from '../src/analysis/budget.js';
 import { measureFile, measureWavFile } from '../src/analysis.js';
 
 const directories: string[] = [];
@@ -53,7 +53,7 @@ describe('bounded native measurement', () => {
     });
     await expect(measureFile(file, { timeoutMs: 1000 })).rejects.toThrow('measurement exceeded 1000 ms');
   });
-  it('rejects payload and low-rate duration budgets without allocating enormous fixtures', () => {
+  it('rejects low-rate duration budgets but measures hour-long full-rate audio', () => {
     const format = {
       channels: 1,
       sampleRate: 1,
@@ -64,10 +64,11 @@ describe('bounded native measurement', () => {
       dataBytes: 86401,
     };
     expect(() => assertAudioBudget(format)).toThrow('duration exceeds 24 hours');
-    expect(() => assertAudioBudget({ ...format, sampleRate: 48000, dataBytes: MAX_AUDIO_BYTES + 1 })).toThrow(
-      'exceeds 512 MiB',
-    );
     expect(() => assertAudioBudget({ ...format, dataBytes: 86400 })).not.toThrow();
+    // One hour of stereo 48 kHz 32-bit float: 1.38 GB, streamed in constant memory.
+    const hour = { ...format, channels: 2, sampleRate: 48_000, bits: 32, floatingPoint: true, blockAlign: 8 };
+    expect(() => assertAudioBudget({ ...hour, dataBytes: 3600 * 48_000 * 8 })).not.toThrow();
+    expect(MAX_DECODED_BYTES).toBe(2 ** 32 - 1);
   });
   it('refuses a valid long low-rate WAV before scanning or attempting optional decoding', async () => {
     const file = await audioFile();

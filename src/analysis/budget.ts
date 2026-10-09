@@ -1,8 +1,11 @@
 import type { WavFormat } from './types.js';
 
-// Chunked reads alone do not bound low-rate files or retained one-second RMS
-// blocks. These limits cap decoded data and percentile storage independently.
-export const MAX_AUDIO_BYTES = 512 * 1024 * 1024;
+// Streaming reads keep native measurement memory constant except for one RMS
+// value per second of audio, so the duration cap bounds memory (including at
+// very low sample rates) and the deadline bounds work. Size alone needs no cap:
+// RIFF data cannot exceed 4 GiB. Optional ffmpeg decoding writes a temporary
+// WAV, bounded at that same limit, so hour-long podcast files remain measurable.
+export const MAX_DECODED_BYTES = 0xffff_ffff;
 export const MAX_AUDIO_SECONDS = 86_400;
 
 export class AnalysisBudgetError extends Error {}
@@ -25,8 +28,6 @@ export class AnalysisBudget {
 }
 
 export function assertAudioBudget(format: WavFormat): void {
-  if (format.dataBytes > MAX_AUDIO_BYTES)
-    throw new AnalysisBudgetError('native measurement audio data exceeds 512 MiB; select a shorter range');
   if (format.dataBytes / format.blockAlign / format.sampleRate > MAX_AUDIO_SECONDS) {
     throw new AnalysisBudgetError('native measurement duration exceeds 24 hours; select a shorter range');
   }
