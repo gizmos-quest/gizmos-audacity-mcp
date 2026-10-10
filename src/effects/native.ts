@@ -38,10 +38,18 @@ export async function preflightNativeEffect(
     if (params.Independent === true && selected.length > 1)
       throw new Error('TruncateSilence Independent=true processes one selected audio track at a time');
   } else if (id === 'Echo') {
-    // EchoBase.cpp:64-79 allocates rate x Delay samples and reports a failed
-    // allocation in a dialog. A longer delay than the selection adds no echo.
-    if (Number(params.Delay ?? 1) > time.end - time.start)
-      throw new Error('Echo Delay must not exceed the selected duration');
+    // EchoBase.cpp:64-79 truncates source rate x Delay to its history length and
+    // reports a failed allocation in a dialog; zero samples are then written out of
+    // bounds (:100-107). A longer delay than the selection adds no echo.
+    const delay = Number(params.Delay ?? 1);
+    if (delay > time.end - time.start) throw new Error('Echo Delay must not exceed the selected duration');
+    for (const selection of selected) {
+      const samples = Math.trunc((await rate(selection)) * delay);
+      if (samples < 1 || samples > 16_777_216)
+        throw new Error(
+          `Echo Delay=${delay} s is ${samples} samples on track ${selection.index}; it needs 1 to 16777216 (64 MiB)`,
+        );
+    }
   } else if (id === 'Paulstretch') {
     // PaulstretchBase.cpp:192-262: each track's selected audio must hold two
     // buffers plus one sample, or a "Time Resolution is too long" dialog opens.

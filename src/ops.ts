@@ -2,8 +2,8 @@
 // of pipe commands; every reply is checked, so a failed step stops the rest.
 
 import { currentProcessIdentity } from './app-process.js';
-import { requireHistory } from './audacity/history.js';
 import { setLabels } from './audacity/labels.js';
+import { requireMenuState, STATEFUL_MENUS } from './audacity/menu-state.js';
 import { NoiseProfile } from './audacity/noise.js';
 import { preflightCommand } from './audacity/policy.js';
 import { resolveSelection } from './audacity/selection.js';
@@ -98,8 +98,8 @@ export class Ops {
     if (!MENU_IDS.includes(id))
       commandSchema(id).parse(Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined)));
     const command = formatCommand(id, params);
-    if (id === 'Undo' || id === 'Redo')
-      return requireHistory(this, id).then(() => {
+    if (STATEFUL_MENUS.includes(id))
+      return requireMenuState(this, id).then(() => {
         this.noise.invalidate(id, params);
         return this.raw(command, timeoutMs);
       });
@@ -295,5 +295,5 @@ export function trackPanPercent(value: number): number {
   return value * 100;
 }
 
-export { validateExportFile, validateProjectFile } from './audacity/files.js';
+export { validateExportFile, validateImportFile, validateProjectFile } from './audacity/files.js';
 export { preflightCommand } from './audacity/policy.js';

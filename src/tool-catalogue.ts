@@ -58,6 +58,11 @@ export function registerCatalogueTools(tool: ToolRegistrar, ops: Ops): void {
     'audacity_menu',
     'Run a menu command that needs no dialog (Play, Stop, Undo, Redo, SelectAll, SelectNone, NewMonoTrack, NewStereoTrack, NewLabelTrack, AddLabel, ZoomSel, FitInWindow, CursProjectStart, …). Use audacity_transport for guarded recording.',
     { command: z.enum(MENU_IDS as [string, ...string[]]) },
-    ({ command }) => ops.run(command),
+    async ({ command }) => {
+      // Batch dispatch resolves effect IDs before menu items (Audacity-3.7.8
+      // src/BatchCommands.cpp:579-592): the Silence menu item runs the Silence generator.
+      await requireEffectSelection(ops, command);
+      return ops.run(command);
+    },
   );
 }

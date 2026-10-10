@@ -61,7 +61,19 @@ describe('built-in effects with selection- and rate-dependent dialogs', () => {
     await expect(state.ops.command('Echo', { Delay: 1.5 })).rejects.toThrow('Echo Delay');
     await state.ops.command('Echo', { Delay: 0.5 });
     expect(state.edits()).toEqual(['Echo: Delay=0.5']);
-    expect(mocks.measureSourceRate).not.toHaveBeenCalled();
+  });
+
+  it('needs at least one truncated Echo history sample per source rate and bounds the buffer', async () => {
+    const low = fixture([48_000, 800]);
+    // 800 Hz x float(0.001) truncates to zero samples, which EchoBase writes out of bounds.
+    await expect(low.ops.command('Echo', { Delay: Math.fround(0.001) })).rejects.toThrow('0 samples on track 1');
+    await low.ops.command('Echo', { Delay: 0.00125 });
+    expect(low.edits()).toEqual(['Echo: Delay=0.00125']);
+    const long = fixture([48_000], { Start: 0, End: 600 });
+    long.tracks[0]!.end = 600;
+    await expect(long.ops.command('Echo', { Delay: 400 })).rejects.toThrow('19200000 samples');
+    await long.ops.command('Echo', { Delay: 300 });
+    expect(long.edits()).toEqual(['Echo: Delay=300']);
   });
 
   it('allows independent TruncateSilence on one selected audio track only', async () => {
@@ -118,6 +130,27 @@ describe('menu and command reservations from the source audit', () => {
     await edited.ops.run('Undo');
     await edited.ops.run('Redo');
     expect(edited.edits()).toEqual(['Undo:', 'Redo:']);
+  });
+
+  it('refuses a second time track, which would replace the timing of the first', async () => {
+    const state = fixture([48_000]);
+    await state.ops.run('NewTimeTrack');
+    state.tracks.unshift({ name: 'Time Track', kind: 'time', start: 0, end: 0, selected: 0 });
+    await expect(state.ops.run('NewTimeTrack')).rejects.toThrow('already has a time track');
+    expect(state.edits()).toEqual(['NewTimeTrack:']);
+  });
+
+  it('refuses typed imports of project and list files before any pipe exchange', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'audit-typed-import-'));
+    try {
+      const project = join(directory, 'old.aup3');
+      writeFileSync(project, '');
+      const state = fixture([48_000]);
+      await expect(state.ops.importTrack(project, 'Old')).rejects.toThrow('imports audio');
+      expect(state.calls).toEqual([]);
+    } finally {
+      rmSync(directory, { recursive: true, force: true });
+    }
   });
 
   it('keeps clipboard, stretched-clip and device menus and DTMF out of the safe surface', () => {

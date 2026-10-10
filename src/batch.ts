@@ -1,10 +1,10 @@
-import { existsSync, statSync } from 'node:fs';
+import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { z } from 'zod';
 import { compareMeasurements, measureFile, measureScope, selectionTimes } from './analysis.js';
 import { SafeString } from './catalogue.js';
 import { catalogueCommand } from './format.js';
-import { errorWithContext, type Ops, validateExportFile } from './ops.js';
+import { errorWithContext, type Ops, validateExportFile, validateImportFile } from './ops.js';
 import { PipelineSchema, pipeline, planPipeline } from './tasks.js';
 import type { ToolRegistrar } from './tools.js';
 
@@ -39,8 +39,7 @@ export function registerBatchTool(tool: ToolRegistrar, ops: Ops): void {
       const args = BatchSchema.parse(input);
       const outputs = new Set<string>();
       const plans = args.jobs.map((job) => {
-        if (!existsSync(job.file) || !statSync(job.file).isFile())
-          throw new Error(`${job.file} is not an existing audio file`);
+        validateImportFile(job.file);
         validateExportFile(job.output);
         catalogueCommand('Import2', { Filename: job.file });
         catalogueCommand('Export2', { Filename: job.output, NumChannels: args.channels });

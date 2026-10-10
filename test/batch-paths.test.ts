@@ -78,6 +78,21 @@ describe('batch path preflight', () => {
     expect(tool.accesses).toEqual([]);
   });
 
+  it('refuses a later project or list input before the first job reaches Audacity', async () => {
+    const project = join(directory, 'later.aup3');
+    writeFileSync(project, 'project fixture');
+    const tool = registeredBatch();
+    await expect(
+      tool.call({
+        jobs: [
+          { file: input, output },
+          { file: project, output: secondOutput },
+        ],
+      }),
+    ).rejects.toThrow('imports audio');
+    expect(tool.accesses).toEqual([]);
+  });
+
   it('refuses a directory as a source before Ops access', async () => {
     const tool = registeredBatch();
     await expect(tool.call({ jobs: [{ file: directory, output }] })).rejects.toThrow(

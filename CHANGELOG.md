@@ -38,3 +38,6 @@ input/result shapes and environment variables.
   history, project imports, and selection- or rate-dependent dialogs in
   Paulstretch, Echo, equalization, Classic Filters, TruncateSilence and
   FindClipping. Paste, ZeroCross, RescanDevices and DTMF generation are reserved.
+- Typed and batch imports refuse project and list files before any pipe I/O; Echo
+  needs 1 to 16777216 history samples at each source rate; the Silence menu item
+  gets the generator selection guard and a second time track is refused.

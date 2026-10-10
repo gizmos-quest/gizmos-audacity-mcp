@@ -144,12 +144,13 @@ so only a handler's own checks remain.
 | Class | Commands | Guard or reason |
 | --- | --- | --- |
 | Safe | Get*, Set*, Select*, Comment, CompareAudio; menu items not named below | Bounded parameters; Set* act on the current selection |
-| Preflight | Every effect and generator | A selected non-time track and a non-empty time range (`BatchCommands.cpp:543-551`) |
+| Preflight | Every effect and generator, including the Silence menu item that dispatch resolves to the generator (`BatchCommands.cpp:579-592`) | A selected non-time track and a non-empty time range (`BatchCommands.cpp:543-551`) |
 | Preflight | Undo, Redo | The native menu label must name a step (`EditMenus.cpp:181-191, 210-220`) |
-| Preflight | Import2 | An existing audio file, music-import prompts off; `.aup3`, `.aup`, `.lof` refused (`ProjectFileManager.cpp:1539-1546, 1588-1598`) |
+| Preflight | NewTimeTrack | Refused while a time track exists: a new flat one would take over timing (`TimeTrackMenuItems.cpp:27-42`, `TimeTrack.cpp:360-367`) |
+| Preflight | Import2, typed import, batch inputs | An existing audio file, music-import prompts off; `.aup3`, `.aup`, `.lof` refused (`ProjectFileManager.cpp:1539-1546, 1588-1598`) |
 | Preflight | Export2, project open/save, preferences, recording | Typed tools only, as described above |
 | Preflight | Paulstretch | Two buffers plus one sample of selected source audio per track (`PaulstretchBase.cpp:192-262`) |
-| Preflight | Echo | Delay within the selection, which bounds its buffer (`EchoBase.cpp:64-79`) |
+| Preflight | Echo | Delay within the selection and 1 to 16777216 truncated samples at each source rate (`EchoBase.cpp:64-79, 100-107`) |
 | Preflight | FilterCurve, GraphicEq, ClassicFilters | One source rate across selected tracks; equalization above 40 Hz (`EqualizationBase.cpp:254-297`, `ScienFilterBase.cpp:159-183`) |
 | Preflight | TruncateSilence | `Independent:true` on one selected audio track (`TruncSilenceBase.cpp:232-253`) |
 | Preflight | FindClipping | `Duty Cycle Start` at most 16777, a 64 MiB buffer (`FindClippingBase.cpp:118-137`) |

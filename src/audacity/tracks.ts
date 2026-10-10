@@ -1,9 +1,8 @@
-import { existsSync, statSync } from 'node:fs';
 import { z } from 'zod';
 import { SafeString } from '../catalogue.js';
 import { catalogueCommand } from '../format.js';
 import type { Ops, TrackRef } from '../ops.js';
-import { validateExportFile } from './files.js';
+import { validateExportFile, validateImportFile } from './files.js';
 
 const Seconds = z.number().finite().min(0).max(86400);
 const Track = z.union([z.number().int().nonnegative(), SafeString.min(1)]);
@@ -18,12 +17,11 @@ export async function importTrack(
   name?: string,
   start = 0,
 ): Promise<{ track: number; name: string }> {
-  SafeString.min(1).parse(file);
+  validateImportFile(file);
   Seconds.parse(start);
   if (name !== undefined) catalogueCommand('SetTrack', { Name: name });
   catalogueCommand('Import2', { Filename: file });
   catalogueCommand('SetClip', { At: 0, Start: start });
-  if (!existsSync(file) || !statSync(file).isFile()) throw new Error(`${file} is not an existing audio file`);
   const before = (await ops.tracks()).length;
   await ops.run('Import2', { Filename: file }, 300_000);
   const after = await ops.tracks();

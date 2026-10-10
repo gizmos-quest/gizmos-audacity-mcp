@@ -63,6 +63,17 @@ describe('catalogue tools', () => {
     await expect(call('audacity_command', { command: 'Tone', params: {} })).rejects.toThrow('non-empty time selection');
     expect(ops.command).not.toHaveBeenCalled();
   });
+  it('applies the generator selection guard to the colliding Silence menu item', async () => {
+    const { call, ops } = session();
+    ops.info.mockResolvedValue({ Start: 0, End: 0 } as never);
+    ops.tracks.mockResolvedValue([] as never);
+    await expect(call('audacity_menu', { command: 'Silence' })).rejects.toThrow('non-empty time selection');
+    expect(ops.run).not.toHaveBeenCalled();
+    ops.info.mockResolvedValue({ Start: 0, End: 1 } as never);
+    ops.tracks.mockResolvedValue([{ name: 'Voice', kind: 'wave', selected: 1 }] as never);
+    expect(await call('audacity_menu', { command: 'Silence' })).toBe('menu body');
+    expect(ops.run).toHaveBeenCalledExactlyOnceWith('Silence');
+  });
   it('validates generic parameters before reading the selection', async () => {
     const { call, ops } = session();
     await expect(call('audacity_command', { command: 'Compressor', params: { attackMs: 500 } })).rejects.toThrow();
