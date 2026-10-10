@@ -1,7 +1,6 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
-import { tmpdir, userInfo } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const fake = vi.hoisted(() => ({
@@ -15,7 +14,7 @@ vi.mock('node:fs', async (original) => {
   return { ...actual, writeFileSync: fake.write };
 });
 
-import { acquirePipeOwnership, releasePipeOwnership } from '../src/pipe-ownership.js';
+import { acquirePipeOwnership, ownershipDirectory, releasePipeOwnership } from '../src/pipe-ownership.js';
 
 const originalPlatform = process.platform;
 const directories: string[] = [];
@@ -28,12 +27,7 @@ afterEach(() => {
 });
 function fixture() {
   const paths = { to: `\\\\.\\pipe\\ElectionTo-${randomUUID()}`, from: `\\\\.\\pipe\\ElectionFrom-${randomUUID()}` };
-  const normalize = (path: string) => (process.platform === 'win32' ? path.toLowerCase() : resolve(path));
-  const key = createHash('sha256')
-    .update(JSON.stringify([userInfo().username, normalize(paths.to), normalize(paths.from)]))
-    .digest('hex')
-    .slice(0, 24);
-  const directory = join(tmpdir(), `gizmos-audacity-owner-${key}`);
+  const directory = ownershipDirectory(paths);
   directories.push(directory);
   return { paths, directory, owner: join(directory, 'owner.json'), marker: join(directory, 'reclaim') };
 }
@@ -43,11 +37,14 @@ const dead = () => {
 
 describe('endpoint owner election', () => {
   it('normalizes Windows pipe casing to one session lock', () => {
-    Object.defineProperty(process, 'platform', { value: 'win32' });
     const state = fixture();
+    const alias = { to: state.paths.to.toUpperCase(), from: state.paths.from.toUpperCase() };
+    Object.defineProperty(process, 'platform', { value: 'win32' });
+    expect(ownershipDirectory(alias)).toBe(ownershipDirectory(state.paths));
+    Object.defineProperty(process, 'platform', { value: originalPlatform });
+    if (originalPlatform !== 'win32') return;
     acquirePipeOwnership(state.paths);
     const before = readFileSync(state.owner, 'utf8');
-    const alias = { to: state.paths.to.toUpperCase(), from: state.paths.from.toUpperCase() };
     acquirePipeOwnership(alias);
     expect(readFileSync(state.owner, 'utf8')).toBe(before);
     releasePipeOwnership(alias);

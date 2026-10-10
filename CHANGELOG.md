@@ -22,6 +22,8 @@ input/result shapes and environment variables.
 
 - Native request byte bounds, AutoDuck adjacency and process-sensitive profiling.
 - Startup/shutdown and uncertain reply recovery safeguards.
+- The pipe ownership lock no longer depends on TEMP/TMPDIR, and concurrent
+  reclamation of a stale lock can no longer leave an incomplete lock behind.
 - Bounded measurement work and protocol-version compatibility.
 - Windows paths such as `C:\new\` no longer turn into line breaks inside Audacity;
   relative paths are sent absolute and text Audacity would alter is refused.

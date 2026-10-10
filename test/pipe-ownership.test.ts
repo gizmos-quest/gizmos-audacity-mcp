@@ -1,20 +1,10 @@
-import { createHash, randomUUID } from 'node:crypto';
+import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir, userInfo } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { acquirePipeOwnership, releasePipeOwnership } from '../src/pipe-ownership.js';
+import { acquirePipeOwnership, ownershipDirectory as lock, releasePipeOwnership } from '../src/pipe-ownership.js';
 
 const paths = () => ({ to: randomUUID(), from: randomUUID() });
-function lock(paths: { to: string; from: string }): string {
-  // Mirrors the module: Windows pipe names ignore case, POSIX FIFO paths are made absolute.
-  const normalize = (path: string) => (process.platform === 'win32' ? path.toLowerCase() : resolve(path));
-  const hash = createHash('sha256')
-    .update(JSON.stringify([userInfo().username, normalize(paths.to), normalize(paths.from)]))
-    .digest('hex')
-    .slice(0, 24);
-  return join(tmpdir(), `gizmos-audacity-owner-${hash}`);
-}
 afterEach(() => {
   releasePipeOwnership();
   vi.restoreAllMocks();

@@ -114,8 +114,9 @@ A disposable Node helper bounds blocked I/O; its termination completes before
 another reader starts. Audacity is never terminated by the server.
 Paired endpoint overrides accept only named pipes/absolute FIFOs and reject
 ordinary files or POSIX symlinks. Native opens do not create/truncate files.
-An ownership lock coordinates this server's entry points; it cannot coordinate
-unrelated clients or manual UI edits.
+A per-user ownership lock coordinates this server's entry points whatever
+TEMP/TMPDIR a launcher sets (the account's local temp on Windows, /tmp
+elsewhere); it cannot coordinate unrelated clients or manual UI edits.
 
 Wire booleans are 1/0; True is read as false. Quotes, newlines and NUL cannot
 be safely escaped. Audacity's parameter parser turns `\n` into a newline and
