@@ -19,7 +19,7 @@ function sourceFiles(root: string, directory: string, pattern: RegExp): SourceFi
 
 const EFFECTS = ['libraries/lib-builtin-effects/', 'src/effects/'];
 
-export function extract(root: string): SourceCommand[] {
+function extract(root: string): SourceCommand[] {
   const cpp = [
     ...EFFECTS.flatMap((directory) => sourceFiles(root, directory.slice(0, -1), /\.(?:h|cpp)$/)),
     ...sourceFiles(root, 'src/commands', /\.(?:h|cpp)$/),

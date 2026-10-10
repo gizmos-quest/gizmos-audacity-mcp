@@ -16,7 +16,7 @@ type WorkerReply = { raw: string; idle?: true } | { error: string; code?: string
  * executed command writes all reply lines back to back, and each Windows client
  * gets its own pipe instance, so a lone LF and then silence ends the exchange
  * there. POSIX FIFOs can hold a stale LF from an earlier reply: no shortcut. */
-export const LONE_REPLY_MS = process.platform === 'win32' ? 2_000 : undefined;
+const LONE_REPLY_MS = process.platform === 'win32' ? 2_000 : undefined;
 
 async function openNativePipe(path: string, flags: 'w' | 'r'): Promise<FileHandle> {
   validatePipePaths({ to: path, from: path });

@@ -8,7 +8,7 @@ const FLT_MAX = 3.4028234663852886e38;
 const INT_MAX = 2_147_483_647;
 
 /** Words, "strings" and (lists) of header text; `;` comments end a line outside strings. */
-export function readItems(text: string): { items: string[]; complete: boolean } {
+function readItems(text: string): { items: string[]; complete: boolean } {
   const items: string[] = [];
   let i = 0;
   const skip = () => {

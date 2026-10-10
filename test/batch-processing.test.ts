@@ -1,69 +1,15 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { isAbsolute, join, relative, resolve } from 'node:path';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readFileSync, writeFileSync } from 'node:fs';
+import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { registerBatchTool } from '../src/batch.js';
 import type { Ops, TrackInfo, TrackRef } from '../src/ops.js';
 import { AudacityTimeout } from '../src/pipe.js';
 import type { ToolRegistrar } from '../src/tools.js';
+import { input, output, useBatchFiles } from './helpers/batch-fixture.js';
 
 vi.mock('../src/source-rate.js', () => ({ measureSourceRate: vi.fn(async () => 48_000) }));
 
-let directory: string;
-let input: string;
-let secondInput: string;
-let output: string;
-let _secondOutput: string;
-
-beforeEach(() => {
-  directory = mkdtempSync(join(tmpdir(), 'gizmos-audacity-batch-unit-'));
-  input = join(directory, 'input.wav');
-  secondInput = join(directory, 'second.wav');
-  output = join(directory, 'output.wav');
-  _secondOutput = join(directory, 'second-output.wav');
-  // File preflight does not decode audio; rendering belongs to live tests.
-  writeFileSync(input, 'first source fixture');
-  writeFileSync(secondInput, 'second source fixture');
-});
-
-afterEach(() => {
-  const descendant = relative(resolve(tmpdir()), resolve(directory));
-  if (
-    !descendant ||
-    descendant.startsWith('..') ||
-    isAbsolute(descendant) ||
-    !descendant.startsWith('gizmos-audacity-batch-unit-')
-  ) {
-    throw new Error('refusing to remove a batch fixture outside the expected temporary directory');
-  }
-  rmSync(directory, { recursive: true, force: true });
-});
-
-/** Exercise the same strict shape registration and handler validation as the server. */
-function _registeredBatch() {
-  const accesses: string[] = [];
-  const ops = new Proxy(
-    {},
-    {
-      get: (_target, key) => {
-        accesses.push(String(key));
-        throw new Error(`batch touched Ops.${String(key)} before preflight completed`);
-      },
-    },
-  ) as Ops;
-  let name: string | undefined;
-  let schema: z.ZodType | undefined;
-  let handler: ((args: unknown) => Promise<unknown>) | undefined;
-  const register: ToolRegistrar = (toolName, _description, shape, action) => {
-    if (name) throw new Error('batch registered more than one tool');
-    name = toolName;
-    schema = z.object(shape).strict();
-    handler = action as (args: unknown) => Promise<unknown>;
-  };
-  registerBatchTool(register, ops);
-  return { accesses, name, schema: schema!, call: async (args: unknown) => handler!(schema!.parse(args)) };
-}
+useBatchFiles();
 
 function processingBatch() {
   const tracks: TrackInfo[] = [{ name: 'Original', kind: 'wave', start: 2, end: 4, selected: 1, focused: 1 }];

@@ -73,7 +73,6 @@ export const PipelineSchema = z
   .strict()
   .refine(validRange, { message: 'end must be after start' });
 
-export type PipelineArgs = z.input<typeof PipelineSchema>;
 export interface PipelineStep {
   name: string;
   command: string;

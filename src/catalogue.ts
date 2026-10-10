@@ -33,7 +33,7 @@ function load<T>(name: string): T {
 }
 
 export const COMMANDS: CatalogueCommand[] = load('commands.json');
-export const MENUS: MenuItem[] = load('menus.json');
+const MENUS: MenuItem[] = load('menus.json');
 
 /** Commands handled by dedicated tools or unsafe for an agent (they act outside the project). */
 const RESERVED = new Set([

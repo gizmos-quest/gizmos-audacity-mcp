@@ -6,7 +6,7 @@ import type { WavFormat } from './types.js';
 // RIFF data cannot exceed 4 GiB. Optional ffmpeg decoding writes a temporary
 // WAV, bounded at that same limit, so hour-long podcast files remain measurable.
 export const MAX_DECODED_BYTES = 0xffff_ffff;
-export const MAX_AUDIO_SECONDS = 86_400;
+const MAX_AUDIO_SECONDS = 86_400;
 
 export class AnalysisBudgetError extends Error {}
 
