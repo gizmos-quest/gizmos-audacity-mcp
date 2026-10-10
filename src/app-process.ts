@@ -2,7 +2,7 @@ import { spawn } from 'node:child_process';
 import { accessSync, constants, existsSync, readdirSync, readlinkSync, realpathSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { powershell } from './app-helper.js';
-import { defaultPipePaths } from './pipe.js';
+import { defaultPipePaths, nativePipePaths, type PipePaths } from './pipe.js';
 
 export function audacityExe(): string {
   const explicit = process.env.AUDACITY_EXE;
@@ -151,6 +151,32 @@ export function assertExecutableMatches(
     throw new Error(
       `AUDACITY_EXE requests ${executable}, but Audacity PID ${other.pid} is running from ${other.executable ?? 'an unknown executable'}. Preserve and quit that installation before using this override.`,
     );
+}
+
+let qualifiedProcess: string | undefined;
+/** The AudacityPipe qualifier of the server: before each operation's first edit, the
+ * single process behind Audacity's own endpoint must be the configured executable at a
+ * supported version (checked once per process identity). Test relays have no process;
+ * an explicit override must still exist. */
+export async function qualifyAudacity(paths: PipePaths): Promise<void> {
+  const native = nativePipePaths();
+  const same = (a: string, b: string) =>
+    process.platform === 'win32' ? a.toLowerCase() === b.toLowerCase() : resolve(a) === resolve(b);
+  if (!same(paths.to, native.to) || !same(paths.from, native.from)) {
+    if (process.env.AUDACITY_EXE !== undefined) audacityExe();
+    return;
+  }
+  const executable = audacityExe();
+  const processes = await audacityProcesses();
+  if (processes.length !== 1)
+    throw new Error(`Editing needs exactly one running Audacity, found ${processes.length}; use audacity_launch.`);
+  assertExecutableMatches(executable, processes);
+  const { pid, started, fileVersion, productVersion } = processes[0]!;
+  const identity = JSON.stringify([pid, executable, started]);
+  if (identity === qualifiedProcess) return;
+  const recorded = fileVersion || productVersion;
+  assertSupportedVersion(recorded ? recorded.replaceAll(',', '.') : await executableVersion(executable));
+  qualifiedProcess = identity;
 }
 
 export async function preflightExecutableOverride(): Promise<void> {

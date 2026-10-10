@@ -30,6 +30,9 @@ input/result shapes and environment variables.
 - `doctor --fix` also records the module timestamp Audacity needs after updates.
 - Hour-long recordings are measurable; Linux/macOS process checks name real binaries.
 - Audacity 4 is refused with its reason and the 3.7.x install remedy.
+- Edits no longer reach an unqualified Audacity: before each tool call's first
+  edit, including fresh and quit saves, the running process must be the configured
+  executable at a supported version (cached per process).
 - Out-of-range parameters (for example Compressor `attackMs` above 200 or Amplify
   `Ratio` 0.003162) are refused before Audacity shows a blocking settings message;
   pipeline, batch and auto-duck ranges now match the native limits.

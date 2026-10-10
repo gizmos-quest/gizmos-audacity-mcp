@@ -23,6 +23,10 @@ export function defaultPipePaths(platform: NodeJS.Platform = process.platform): 
     validatePipePaths({ to, from }, platform);
     return { to, from };
   }
+  return nativePipePaths(platform);
+}
+/** Audacity's own endpoints: only these belong to a process whose installation can be qualified. */
+export function nativePipePaths(platform: NodeJS.Platform = process.platform): PipePaths {
   if (platform === 'win32') return { to: '\\\\.\\pipe\\ToSrvPipe', from: '\\\\.\\pipe\\FromSrvPipe' };
   const uid = userInfo().uid;
   return { to: `/tmp/audacity_script_pipe.to.${uid}`, from: `/tmp/audacity_script_pipe.from.${uid}` };
@@ -149,14 +153,23 @@ const exchange: PipeTransport = (paths, command, timeoutMs, nonce) => {
   });
 };
 
+export type PipeQualifier = (paths: PipePaths) => Promise<void>;
+
 export class AudacityPipe {
   private readonly queue = new SerialQueue();
   private uncertain = false;
+  private qualified = false;
   constructor(
     private readonly paths: PipePaths = defaultPipePaths(),
     private readonly defaultTimeoutMs = 120_000,
     private readonly transport: PipeTransport = exchange,
+    /** Checks the Audacity installation before each operation's first command other than a read. */
+    private readonly qualify?: PipeQualifier,
   ) {}
+  /** A new tool operation qualifies Audacity again before its first edit. */
+  newOperation(): void {
+    this.qualified = false;
+  }
   get needsRecovery(): boolean {
     return this.uncertain;
   }
@@ -236,6 +249,10 @@ export class AudacityPipe {
         throw new AudacityNeedsRecovery(
           'A previous command did not complete with a trustworthy reply; its outcome is unknown. Close blocking dialogs with audacity_dialogs, then use audacity_recover. Do not replay the edit blindly.',
         );
+      if (this.qualify && !this.qualified && !/^Get(?:Info|Preference):/.test(command)) {
+        await this.qualify(this.paths);
+        this.qualified = true;
+      }
       if (this.transport === exchange) acquirePipeOwnership(this.paths);
       try {
         return await this.transport(this.paths, command, timeoutMs);

@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { McpServer } from '@modelcontextprotocol/server';
 import { registerAnalysisTools } from './analysis.js';
+import { qualifyAudacity } from './app-process.js';
 import { registerBatchTool } from './batch.js';
 import { registerControlTools } from './controls.js';
 import { registerLabelTools } from './labels.js';
@@ -17,7 +18,7 @@ const { version } = JSON.parse(readFileSync(new URL('../package.json', import.me
   version: string;
 };
 
-export function buildServer(pipe = new AudacityPipe()): McpServer {
+export function buildServer(pipe = new AudacityPipe(undefined, undefined, undefined, qualifyAudacity)): McpServer {
   const ops = new Ops(pipe);
   const server = new McpServer(
     { name: 'gizmos-audacity-mcp', version },
@@ -29,7 +30,7 @@ export function buildServer(pipe = new AudacityPipe()): McpServer {
         'After an uncertain reply use dialogs and recover, inspect the project, and never replay an edit automatically.',
     },
   );
-  const tool = createToolRegistrar(server, new SerialQueue());
+  const tool = createToolRegistrar(server, new SerialQueue(), () => pipe.newOperation());
   registerLifecycleTools(tool, ops);
   registerCatalogueTools(tool, ops);
   registerEditingTools(tool, ops);

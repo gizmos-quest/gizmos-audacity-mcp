@@ -61,7 +61,11 @@ export function requestProgress(ctx: ServerContext): ToolProgress {
   };
 }
 
-export function createToolRegistrar(server: McpServer, operations: SerialQueue): ToolRegistrar {
+export function createToolRegistrar(
+  server: McpServer,
+  operations: SerialQueue,
+  beforeOperation: () => void = () => undefined,
+): ToolRegistrar {
   return (name, description, shape, handler, readOnly = false) => {
     const inputSchema = z.object(shape).strict();
     const schema = outputSchema(name);
@@ -85,6 +89,7 @@ export function createToolRegistrar(server: McpServer, operations: SerialQueue):
             : operations.run(() => {
                 // A request cancelled while it waited never starts; nothing was sent for it.
                 ctx.mcpReq.signal.throwIfAborted();
+                beforeOperation();
                 return invoke();
               }));
           return toolResult(value, schema);

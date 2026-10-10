@@ -10,8 +10,10 @@ Use English Audacity **3.7.x** with its shipped `mod-script-pipe` module.
 | 4.x | Not supported: Audacity 4 has no scripting interface (4.0 removed `mod-script-pipe`) |
 
 Check the executable's actual file version: a `3.7.*` installer pin can admit
-a later patch. `doctor` and `audacity_launch` refuse other versions and name
-the remedy: install 3.7.x and pin it, for example
+a later patch. `doctor`, `audacity_launch` and the first edit of every tool call
+(also before fresh or quit saves) refuse another version or a different running
+installation; reads, dialogs and recovery stay available. They name the remedy:
+install 3.7.x and pin it, for example
 `winget install --id Audacity.Audacity -e --version 3.7.8` then
 `winget pin add --id Audacity.Audacity -e --version 3.7.8`.
 
