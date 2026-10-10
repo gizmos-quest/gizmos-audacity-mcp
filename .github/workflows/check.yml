@@ -9,7 +9,8 @@ on:
 permissions:
   contents: read
 
-# A newer push supersedes a pull request's run; every commit on main keeps its own result.
+# A newer push cancels a pull request's run. A started run on main always finishes; GitHub
+# still replaces a main run that is waiting in this group with the newest push.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
