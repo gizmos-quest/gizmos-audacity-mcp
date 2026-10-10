@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 // @ts-expect-error E2E intentionally imports the generated, distributable runtime after npm run build.
 import { AudacityNeedsRecovery, AudacityPipe, AudacityTimeout } from '../../dist/pipe.js';
 import { recoveryReply, replayPipe, wire } from '../helpers/replay-pipe.js';
@@ -63,19 +63,33 @@ describe('real disposable helper recovery', () => {
   );
 
   it('bounds delayed I/O by terminating only its disposable helper', async () => {
-    // The reply would arrive after 30 s; the 400 ms budget must end the exchange well before.
-    const fake = await replayPipe(() => ({ bytes: wire('07-new-mono'), delayMs: 30_000 }));
-    const pipe = new AudacityPipe(fake.paths, 400);
-    const started = performance.now();
+    let sent!: () => void;
+    const requestSent = new Promise<void>((resolve) => {
+      sent = resolve;
+    });
+    const fake = await replayPipe(() => {
+      sent();
+      return { bytes: wire('07-new-mono'), delayMs: 60_000 };
+    });
+    const pipe = new AudacityPipe(fake.paths, 30_000);
+    // Wait for the real helper's write before advancing only timer APIs. Slow
+    // process startup must not turn a blocked-read test into a startup timeout.
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
     try {
-      await expect(pipe.send('Stop:')).rejects.toBeInstanceOf(AudacityTimeout);
-      expect(performance.now() - started).toBeLessThan(15_000);
+      const timedOut = expect(pipe.send('Stop:')).rejects.toBeInstanceOf(AudacityTimeout);
+      await Promise.race([requestSent, timedOut]);
+      await vi.advanceTimersByTimeAsync(30_000);
+      await timedOut;
       expect(pipe.needsRecovery).toBe(true);
       await expect(pipe.send('Stop:')).rejects.toBeInstanceOf(AudacityNeedsRecovery);
       expect(fake.commands.filter((command) => command === 'Stop:')).toHaveLength(1);
     } finally {
       pipe.release();
-      await fake.close();
+      try {
+        await fake.close();
+      } finally {
+        vi.useRealTimers();
+      }
     }
   });
 });
