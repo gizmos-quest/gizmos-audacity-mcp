@@ -14,6 +14,27 @@ describe('explicit operation selection', () => {
     expect(edits(fixture.calls)).toEqual(['Select: Mode=Set Track=0 TrackCount=3 Start=0 End=10']);
   });
 
+  it.each([
+    [{ start: 3 }, 'Select: Mode=Set Start=3 End=10 Track=0 TrackCount=2'],
+    [{ end: 6 }, 'Select: Mode=Set Start=0 End=6 Track=0 TrackCount=2'],
+  ])('fills an open time range from the project when no track is supplied: %j', async (scope, command) => {
+    const fixture = project([wave('Voice', 2, 4), wave('Bed', 0, 10)]);
+    await fixture.ops.select(scope);
+    expect(edits(fixture.calls)).toEqual([command]);
+  });
+
+  it('refuses to select in an empty project', async () => {
+    const fixture = project([]);
+    await expect(fixture.ops.select({})).rejects.toThrow('no tracks to select');
+    expect(edits(fixture.calls)).toEqual([]);
+  });
+
+  it('refuses a start after the end of the selected tracks', async () => {
+    const fixture = project([wave('Voice', 2, 4)]);
+    await expect(fixture.ops.select({ track: 0, start: 5 })).rejects.toThrow('within the selected tracks');
+    expect(edits(fixture.calls)).toEqual([]);
+  });
+
   it.each([{ trackCount: 2 }, { track: 0, start: 2, end: 1 }])(
     'refuses invalid scope before touching selection: %j',
     async (scope) => {

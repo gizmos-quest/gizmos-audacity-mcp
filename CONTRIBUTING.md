@@ -16,8 +16,8 @@ npm run check:package
 npm audit --audit-level=high
 ```
 
-Coverage includes all source modules and enforces 85% statements, 80% branches,
-85% functions and 90% lines. Do not exclude untested logic to reach thresholds.
+Coverage includes all source modules and enforces 95% statements, 91% branches,
+95% functions and 96% lines. Do not exclude untested logic to reach thresholds.
 Prefer domain modules of about 300 lines or less and meaningful tests around
 trust boundaries/native behavior. See [architecture](docs/architecture.md).
 

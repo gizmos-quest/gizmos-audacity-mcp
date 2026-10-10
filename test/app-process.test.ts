@@ -1,27 +1,32 @@
 import { EventEmitter } from 'node:events';
+import { join } from 'node:path';
 import { PassThrough } from 'node:stream';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ helper: vi.fn(), spawn: vi.fn(), readlink: vi.fn() }));
+const mocks = vi.hoisted(() => ({ helper: vi.fn(), spawn: vi.fn(), readlink: vi.fn(), readdir: vi.fn() }));
 vi.mock('../src/app-helper.js', () => ({ powershell: mocks.helper }));
 vi.mock('node:child_process', () => ({ spawn: mocks.spawn }));
 vi.mock('node:fs', async (original) => ({
   ...(await original<typeof import('node:fs')>()),
   readlinkSync: mocks.readlink,
+  readdirSync: mocks.readdir,
 }));
 
 import {
   assertSupportedVersion,
+  audacityExe,
   audacityProcesses,
   currentProcessIdentity,
   executableVersion,
   isRunning,
+  pipeExists,
   preflightExecutableOverride,
   startPosix,
 } from '../src/app-process.js';
 
 const originalPlatform = process.platform;
 afterEach(() => {
+  vi.useRealTimers();
   Object.defineProperty(process, 'platform', { value: originalPlatform });
   vi.unstubAllEnvs();
   vi.clearAllMocks();
@@ -151,5 +156,38 @@ describe('actual process evidence', () => {
     next.emit('spawn');
     await launched;
     expect(next.unref).toHaveBeenCalledOnce();
+  });
+  it('bounds process inspection output and time', async () => {
+    platform('linux');
+    const noisy = child();
+    mocks.spawn.mockReturnValue(noisy);
+    const flooded = audacityProcesses();
+    noisy.stdout.write('x'.repeat(1_000_001));
+    await expect(flooded).rejects.toThrow('exceeds 1 MB');
+    expect(noisy.kill).toHaveBeenCalled();
+    vi.useFakeTimers();
+    const silent = child();
+    mocks.spawn.mockReturnValue(silent);
+    const hung = audacityProcesses();
+    const assertion = expect(hung).rejects.toThrow('timed out');
+    await vi.advanceTimersByTimeAsync(10_000);
+    await assertion;
+    expect(silent.kill).toHaveBeenCalled();
+  });
+  it('finds the Windows script pipe in the named-pipe namespace and treats an unreadable namespace as absent', () => {
+    platform('win32');
+    mocks.readdir.mockReturnValueOnce(['FromSrvPipe', 'ToSrvPipe']);
+    expect(pipeExists()).toBe(true);
+    mocks.readdir.mockImplementationOnce(() => {
+      throw new Error('access denied');
+    });
+    expect(pipeExists()).toBe(false);
+  });
+  it('refuses a Windows executable override that is not an .exe', () => {
+    platform('win32');
+    vi.stubEnv('AUDACITY_EXE', join(process.cwd(), 'package.json'));
+    expect(() => audacityExe()).toThrow('must be a Windows executable (.exe)');
+    vi.stubEnv('AUDACITY_EXE', process.cwd());
+    expect(() => audacityExe()).toThrow('not an existing executable file');
   });
 });

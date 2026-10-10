@@ -1,7 +1,14 @@
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { parseFfmpegMeasurement, parseProbe, probeFile, runFfmpeg } from '../../src/analysis/executables.js';
+import {
+  ffmpegExecutable,
+  ffprobeExecutable,
+  parseFfmpegMeasurement,
+  parseProbe,
+  probeFile,
+  runFfmpeg,
+} from '../../src/analysis/executables.js';
 import { measureFile } from '../../src/analysis/measurement.js';
 
 import { temporary, wav } from '../helpers/audio-fixture.js';
@@ -145,5 +152,22 @@ describe('optional process backends and output parsers', () => {
     await expect(probeFile(file)).rejects.toThrow(/ffprobe unavailable/);
     await expect(probeFile(file, 0)).rejects.toThrow(/timeoutMs/);
     await expect(probeFile(await temporary())).rejects.toThrow(/not a file/);
+  });
+  it('refuses probe output that is not ffprobe JSON', async () => {
+    const file = join(await temporary(), 'audio.wav');
+    await writeFile(file, wav([0]));
+    // Node answers ffprobe's leading -v with its version string and exits 0.
+    vi.stubEnv('AUDACITY_FFPROBE', process.execPath);
+    await expect(probeFile(file)).rejects.toThrow(SyntaxError);
+  });
+  it('finds ffprobe next to a configured ffmpeg path, or on PATH', () => {
+    vi.stubEnv('AUDACITY_FFMPEG', join('tools', 'bin', 'ffmpeg.exe'));
+    expect(ffmpegExecutable()).toBe(join('tools', 'bin', 'ffmpeg.exe'));
+    expect(ffprobeExecutable()).toBe(join('tools', 'bin', 'ffprobe.exe'));
+    vi.stubEnv('AUDACITY_FFPROBE', 'custom-probe');
+    expect(ffprobeExecutable()).toBe('custom-probe');
+    vi.unstubAllEnvs();
+    vi.stubEnv('AUDACITY_FFMPEG', 'ffmpeg');
+    expect(ffprobeExecutable()).toBe('ffprobe');
   });
 });

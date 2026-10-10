@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { registerControlTools } from '../../src/controls.js';
 import { CommandFailed, type Ops } from '../../src/ops.js';
@@ -151,4 +151,33 @@ describe('recording modal preflight', () => {
       expect(ops.record).not.toHaveBeenCalled();
     },
   );
+});
+
+describe('transport arguments and timing', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it.each([
+    [{ action: 'play', start: 2, end: 1 }, 'end must be at least start'],
+    [{ action: 'play', duration: 1 }, 'duration is used only by record'],
+    [{ action: 'stop', newTrack: false }, 'newTrack is used only by record'],
+    [{ action: 'status', track: 0 }, 'scope is used only by play/record'],
+    [{ action: 'pause' }, 'no server-started playback'],
+  ])('refuses %j before any native call', async (args, error) => {
+    const { call, ops } = recordingFixture();
+    await expect(call(args)).rejects.toThrow(error);
+    expect(ops.run).not.toHaveBeenCalled();
+    expect(ops.record).not.toHaveBeenCalled();
+  });
+
+  it('stops a timed recording after its duration and reports the estimated position', async () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] });
+    const { call, ops } = recordingFixture();
+    const pending = call({ action: 'record', duration: 2 });
+    await vi.advanceTimersByTimeAsync(2_000);
+    expect(await pending).toMatchObject({ state: 'stopped', positionSeconds: 2.5 });
+    expect(ops.record).toHaveBeenCalledOnce();
+    expect(ops.run).toHaveBeenLastCalledWith('Stop');
+  });
 });

@@ -12,6 +12,8 @@ const fixtures = vi.hoisted(() => ({
   isRunning: vi.fn(),
   launch: vi.fn(),
   listWindows: vi.fn(),
+  entries: vi.fn(),
+  discard: vi.fn(),
 }));
 vi.mock('node:fs/promises', async (original) => ({
   ...(await original<typeof import('node:fs/promises')>()),
@@ -21,8 +23,8 @@ vi.mock('node:fs/promises', async (original) => ({
 vi.mock('../src/app.js', () => ({ launch: fixtures.launch }));
 vi.mock('../src/app-config.js', () => ({
   configPath: () => '/fixtures/audacity.cfg',
-  recoveryEntries: () => [],
-  discardStaleRecovery: vi.fn(),
+  recoveryEntries: fixtures.entries,
+  discardStaleRecovery: fixtures.discard,
 }));
 vi.mock('../src/app-process.js', () => ({ preflightExecutableOverride: vi.fn(), isRunning: fixtures.isRunning }));
 vi.mock('../src/app-windows.js', () => ({ listWindows: fixtures.listWindows }));
@@ -38,6 +40,10 @@ function controls() {
     command: vi.fn(async (_command: string, _params?: Record<string, unknown>) => ''),
     info: vi.fn(async () => ({ Start: 0, End: 1 })),
     resolveSelection: vi.fn(async () => ({ Mode: 'Set', Track: 0, TrackCount: 1, Start: 0, End: 1 })),
+    exportMix: vi.fn(async () => undefined),
+    requireNoiseProfile: vi.fn(() => {
+      throw new Error('NoiseReduction needs a profile captured by this server');
+    }),
   };
   const handlers = new Map<string, (args: unknown) => Promise<unknown>>();
   const register: ToolRegistrar = (name, _description, shape, handler) => {
@@ -54,6 +60,8 @@ beforeEach(() => {
   fixtures.isRunning.mockReset().mockResolvedValue(true);
   fixtures.launch.mockReset().mockResolvedValue({ started: true });
   fixtures.listWindows.mockReset().mockResolvedValue([]);
+  fixtures.entries.mockReset().mockReturnValue([]);
+  fixtures.discard.mockReset();
 });
 
 describe('saved macro edge cases', () => {
@@ -93,6 +101,52 @@ describe('saved macro edge cases', () => {
     expect(failure.message).toContain('macro stopped at FadeOut after 1 completed steps: native reply unavailable');
     expect(failure).toBeInstanceOf(AudacityTimeout);
     expect(ops.command).toHaveBeenCalledTimes(2);
+  });
+
+  it('lists every saved macro and reports one that does not parse as unsafe', async () => {
+    fixtures.readdir.mockResolvedValueOnce(['Good.txt', 'notes.md', 'Bad.txt']);
+    fixtures.readFile.mockImplementation(async (path: string) => (path.endsWith('Bad.txt') ? 'Repair:' : 'FadeOut:'));
+    const { call } = controls();
+    expect(await call('audacity_macros', { action: 'list' })).toMatchObject({
+      macros: [
+        { name: 'Bad', safe: false, reason: expect.stringContaining('unsafe') },
+        { name: 'Good', safe: true, steps: [{ command: 'FadeOut', params: {} }] },
+      ],
+    });
+  });
+
+  it('requires the name of an existing macro to apply', async () => {
+    const { call, ops } = controls();
+    await expect(call('audacity_macros', { action: 'apply' })).rejects.toThrow('requires name');
+    await expect(call('audacity_macros', { action: 'apply', name: 'Missing' })).rejects.toThrow('does not exist');
+    expect(ops.run).not.toHaveBeenCalled();
+  });
+
+  it('previews a macro without native calls and routes export and menu steps when applied', async () => {
+    fixtures.readFile.mockResolvedValue('SelectAll:\nExportWav:');
+    const { call, ops } = controls();
+    const steps = [
+      { command: 'SelectAll', params: {} },
+      { command: 'Export2', params: { Filename: 'out.wav', NumChannels: 2 } },
+    ];
+    expect(
+      await call('audacity_macros', { action: 'apply', name: 'Example', dryRun: true, outputTo: 'out.wav' }),
+    ).toEqual({ name: 'Example', dryRun: true, steps });
+    expect(ops.run).not.toHaveBeenCalled();
+    expect(await call('audacity_macros', { action: 'apply', name: 'Example', outputTo: 'out.wav' })).toEqual({
+      name: 'Example',
+      dryRun: false,
+      completed: 2,
+    });
+    expect(ops.run).toHaveBeenCalledExactlyOnceWith('SelectAll', {}, 600_000);
+    expect(ops.exportMix).toHaveBeenCalledExactlyOnceWith('out.wav', 2);
+  });
+
+  it('requires a captured noise profile before any step of a NoiseReduction macro', async () => {
+    fixtures.readFile.mockResolvedValue('FadeOut:\nNoiseReduction:');
+    const { call, ops } = controls();
+    await expect(call('audacity_macros', { action: 'apply', name: 'Example' })).rejects.toThrow('profile');
+    expect(ops.command).not.toHaveBeenCalled();
   });
 
   it('refuses a later silent regular-label command before an earlier macro edit', async () => {
@@ -175,5 +229,36 @@ describe('real reconnection requirement', () => {
     expect(ops.pipe.reconnect).not.toHaveBeenCalled();
     expect(ops.unknownApplication).not.toHaveBeenCalled();
     expect(ops.restoreImportPreferences).not.toHaveBeenCalled();
+  });
+
+  it('refuses to discard recovery entries while Audacity runs', async () => {
+    fixtures.entries.mockReturnValue(['example.aup3']);
+    const { call } = controls();
+    await expect(call('audacity_recover', { discardRecovery: true, reconnect: false })).rejects.toThrow(
+      'stop Audacity',
+    );
+    expect(fixtures.discard).not.toHaveBeenCalled();
+  });
+
+  it('discards stale entries while stopped and reports them without reconnecting', async () => {
+    fixtures.isRunning.mockResolvedValue(false);
+    fixtures.entries.mockReturnValue(['example.aup3']);
+    fixtures.discard.mockResolvedValue({ backup: 'audacity.cfg.bak', projects: ['example.aup3'] });
+    const { call, ops } = controls();
+    expect(await call('audacity_recover', { discardRecovery: true, reconnect: false })).toEqual({
+      running: false,
+      entries: ['example.aup3'],
+      windows: [],
+      discarded: { backup: 'audacity.cfg.bak', projects: ['example.aup3'] },
+      needsRecovery: true,
+    });
+    expect(ops.pipe.reconnect).not.toHaveBeenCalled();
+  });
+
+  it.skipIf(process.platform !== 'win32')('reconnects only after blocking dialogs are closed', async () => {
+    fixtures.listWindows.mockResolvedValue([{ title: 'Error', dialog: true, closed: false }]);
+    const { call, ops } = controls();
+    await expect(call('audacity_recover', {})).rejects.toThrow('closeDialogs=true');
+    expect(ops.pipe.reconnect).not.toHaveBeenCalled();
   });
 });

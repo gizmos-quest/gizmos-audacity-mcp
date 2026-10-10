@@ -1,7 +1,7 @@
 import { existsSync, writeFileSync } from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const fake = vi.hoisted(() => ({
@@ -168,6 +168,17 @@ describe('qualified launch', () => {
     await vi.runAllTimersAsync();
     await assertion;
   });
+  it.each([
+    [{ ok: false, body: 'Tracks refused', status: 'Failed!' }, undefined, 'Tracks refused'],
+    [{ ok: true, body: '{}', status: 'OK' }, undefined, 'no readable active project'],
+    [{ ok: true, body: '[]', status: 'OK' }, { ok: false, body: '', status: 'Failed!' }, 'Failed!'],
+  ])('refuses an attach whose readiness replies are %j then %j', async (tracks, commands, error) => {
+    vi.spyOn(AudacityPipe.prototype, 'send').mockImplementation(async (command) =>
+      command.includes('Commands') && commands ? commands : tracks,
+    );
+    await expect(launch(false)).rejects.toThrow(error);
+    expect(fake.visibility).not.toHaveBeenCalled();
+  });
   it.each(['{}', '[{"id":"GetInfo"}]'])('rejects missing English IDs %s', (body) =>
     expect(() => assertEnglishCommands(body)).toThrow(),
   );
@@ -224,5 +235,36 @@ describe('save-before-native-close quit', () => {
     const transport = vi.fn().mockResolvedValue({ ok: false, body: 'Native refusal', status: 'Failed!' });
     await expect(quit(new AudacityPipe({ to: 'to', from: 'from' }, 20, transport))).rejects.toThrow('Native refusal');
     expect(fake.close).not.toHaveBeenCalled();
+  });
+  it('discards a project only after Audacity exits, then removes its temporary save', async () => {
+    let saved = '';
+    const transport = vi.fn(async (_paths: unknown, command: string) => {
+      const target = /^SaveProject2: Filename="?([^"]+?)"?$/.exec(command)?.[1];
+      if (target) {
+        saved = target;
+        writeFileSync(target, 'saved');
+      }
+      return { ok: true, body: '', status: 'OK' };
+    });
+    fake.running.mockResolvedValue(false);
+    expect(await quit(new AudacityPipe({ to: 'to', from: 'from' }, 20, transport))).toEqual({});
+    expect(saved).toMatch(/gizmos-audacity-quit-/);
+    expect(existsSync(dirname(saved))).toBe(false);
+  });
+  it('retains the save and terminates nothing when Audacity outlives its project window', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'gizmos-lifecycle-test-'));
+    const target = join(dir, 'kept.aup3');
+    vi.useFakeTimers();
+    const transport = vi.fn().mockResolvedValue({ ok: true, body: '', status: 'OK' });
+    const failure = quit(new AudacityPipe({ to: 'to', from: 'from' }, 20, transport), target).then(
+      () => undefined,
+      (error: Error) => error,
+    );
+    await vi.runAllTimersAsync();
+    const message = (await failure)?.message;
+    expect(message).toMatch(/did not exit after project closure.*No process was terminated/);
+    expect(message).toContain(`retained for inspection: ${target}`);
+    vi.useRealTimers();
+    await rm(dir, { recursive: true, force: true });
   });
 });

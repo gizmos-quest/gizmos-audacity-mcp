@@ -1,92 +1,13 @@
 import { access } from 'node:fs/promises';
 import { join } from 'node:path';
-import { describe, expect, it, vi } from 'vitest';
-import { z } from 'zod';
-import { loudnessTarget } from '../../src/analysis/loudness.js';
+import { describe, expect, it } from 'vitest';
 import { measureScope } from '../../src/analysis/render.js';
-import { TARGETS } from '../../src/analysis/targets.js';
-import { registerAnalysisTools } from '../../src/analysis/tools.js';
 import type { TrackInfo } from '../../src/ops.js';
 import { AudacityTimeout } from '../../src/pipe.js';
-
-import { directories, measureBuffer, wav } from '../helpers/audio-fixture.js';
-
+import { directories } from '../helpers/audio-fixture.js';
 import { bed, fakeOps, label, voice } from '../helpers/render-fixture.js';
 
-describe('rendered measurement selection transactions and tool registration', () => {
-  it('returns the loudness dry-run plan without selecting or changing samples', async () => {
-    const { ops, mock } = fakeOps([voice]);
-    const measured = {
-      ...(await measureBuffer(wav([0.1]))),
-      integratedLufs: -20,
-      truePeakDbtp: -10,
-      scope: { tracks: [0], start: 2, end: 3 },
-    };
-    const measure = vi.fn<typeof measureScope>().mockResolvedValue(measured);
-    expect(await loudnessTarget(ops, { track: 'Voice', dryRun: true }, measure)).toMatchObject({
-      dryRun: true,
-      before: measured,
-      plan: { gainDb: 4 },
-      steps: [{ command: 'Amplify', scope: { track: 0, start: 2, end: 3 } }],
-    });
-    expect(measure).toHaveBeenCalledWith(ops, { track: 0, start: 2, end: 3 }, { backend: 'ffmpeg' });
-    expect(mock.select).not.toHaveBeenCalled();
-    expect(mock.command).not.toHaveBeenCalled();
-  });
-  it('applies the planned loudness gain and verifies both loudness and native sample peaks', async () => {
-    const { ops, mock } = fakeOps([voice]);
-    const before = { ...(await measureBuffer(wav([0.1]))), integratedLufs: -20, truePeakDbtp: -10, scope: {} };
-    const after = {
-      ...(await measureBuffer(wav([0.1 * 10 ** (4 / 20)]))),
-      integratedLufs: -16,
-      truePeakDbtp: -6,
-      scope: {},
-    };
-    const measure = vi.fn<typeof measureScope>().mockResolvedValueOnce(before).mockResolvedValueOnce(after);
-    expect(await loudnessTarget(ops, { track: 0 }, measure)).toMatchObject({
-      dryRun: false,
-      before,
-      after,
-      targetCheck: { status: 'met' },
-      samplePeakDbfs: after.peakDbfs,
-      clippedSamples: 0,
-    });
-    expect(mock.select).toHaveBeenCalledWith({ track: 0, start: 2, end: 3 });
-    expect(mock.command).toHaveBeenCalledWith('Amplify', { Ratio: 10 ** (4 / 20), AllowClipping: true }, 600_000);
-    expect(measure).toHaveBeenCalledTimes(2);
-  });
-  it('refuses missing loudness or label targeting before mutation', async () => {
-    const { ops, mock } = fakeOps([voice, label]);
-    const measure = vi.fn<typeof measureScope>().mockResolvedValue({ ...(await measureBuffer(wav([0.1]))), scope: {} });
-    await expect(loudnessTarget(ops, { track: 0 }, measure)).rejects.toThrow(/established integrated LUFS/);
-    await expect(loudnessTarget(ops, { track: 1 }, measure)).rejects.toThrow(/audio track/);
-    expect(mock.command).not.toHaveBeenCalled();
-    expect(mock.select).not.toHaveBeenCalled();
-  });
-  it('refuses a loudness gain outside native Amplify bounds before changing selection', async () => {
-    const { ops, mock } = fakeOps([voice]);
-    const measure = vi
-      .fn<typeof measureScope>()
-      .mockResolvedValue({ ...(await measureBuffer(wav([0.1]))), integratedLufs: 50, truePeakDbtp: 60, scope: {} });
-    await expect(loudnessTarget(ops, { track: 0 }, measure)).rejects.toThrow();
-    expect(mock.command).not.toHaveBeenCalled();
-    expect(mock.select).not.toHaveBeenCalled();
-  });
-  it('reports unknown when post-gain loudness cannot be established', async () => {
-    const { ops } = fakeOps([voice]);
-    const before = { ...(await measureBuffer(wav([0.1]))), integratedLufs: -20, truePeakDbtp: -10, scope: {} };
-    const after = { ...(await measureBuffer(wav([0.1]))), scope: {} };
-    const measure = vi.fn<typeof measureScope>().mockResolvedValueOnce(before).mockResolvedValueOnce(after);
-    expect(await loudnessTarget(ops, { track: 0 }, measure)).toMatchObject({ targetCheck: { status: 'unknown' } });
-  });
-  it('preserves Audacity gain errors and does not continue to verification', async () => {
-    const { ops, mock } = fakeOps([voice]);
-    const before = { ...(await measureBuffer(wav([0.1]))), integratedLufs: -20, truePeakDbtp: -10, scope: {} };
-    const measure = vi.fn<typeof measureScope>().mockResolvedValue(before);
-    mock.command.mockRejectedValue(new Error('Audacity Amplify error'));
-    await expect(loudnessTarget(ops, { track: 0 }, measure)).rejects.toThrow('Audacity Amplify error');
-    expect(measure).toHaveBeenCalledTimes(1);
-  });
+describe('rendered measurement selection transactions', () => {
   it('uses a track extent, preserves controls and restores original noncontiguous selection', async () => {
     const { ops, mock } = fakeOps([voice, bed, label]);
     const measured = await measureScope(ops, { track: 'Voice' }, { backend: 'wav' });
@@ -205,75 +126,4 @@ describe('rendered measurement selection transactions and tool registration', ()
     await expect(measureScope(ops, { currentSelection: true, track: 0 })).rejects.toThrow();
     expect(mock.tracks).not.toHaveBeenCalled();
   });
-  it('registers eight strictly typed analysis tools with useful descriptions', async () => {
-    const tools = new Map<
-      string,
-      { shape: z.ZodRawShape; handler: (args: never) => Promise<unknown>; description: string }
-    >();
-    const register: Parameters<typeof registerAnalysisTools>[0] = (name, description, shape, handler) => {
-      tools.set(name, { shape, handler: handler as (args: never) => Promise<unknown>, description });
-    };
-    const { ops } = fakeOps([voice]);
-    registerAnalysisTools(register, ops);
-    expect([...tools.keys()]).toEqual([
-      'audacity_loudness_target',
-      'audacity_silence',
-      'audacity_probe_file',
-      'audacity_measure',
-      'audacity_measure_file',
-      'audacity_compare_files',
-      'audacity_targets',
-      'audacity_contrast',
-    ]);
-    for (const { shape, description } of tools.values()) {
-      expect(description.length).toBeGreaterThan(80);
-      expect(z.object(shape).strict().safeParse({ arbitrary: 1 }).success).toBe(false);
-    }
-    const targetTool = tools.get('audacity_targets')!;
-    expect(await targetTool.handler({} as never)).toMatchObject({ presets: TARGETS });
-    const silence = tools.get('audacity_silence')!;
-    const args = z.object(silence.shape).strict().parse({ track: 0 });
-    expect(await silence.handler(args as never)).toMatchObject({
-      regions: [{ start: 2, end: 2.5, duration: 0.5 }],
-      count: 1,
-      truncated: false,
-    });
-    const invalidArgs = z.object(silence.shape).strict().parse({ file: 'source.wav', track: 0 });
-    await expect(silence.handler(invalidArgs as never)).rejects.toThrow(/file cannot be combined/);
-  });
-  it('validates both contrast ranges before contacting Audacity or changing selection', async () => {
-    const handlers = new Map<string, (args: unknown) => Promise<unknown>>();
-    const register: Parameters<typeof registerAnalysisTools>[0] = (name, _description, shape, handler) => {
-      handlers.set(name, (args) => handler(z.object(shape).strict().parse(args)));
-    };
-    const { ops, mock } = fakeOps([voice]);
-    registerAnalysisTools(register, ops);
-    await expect(
-      handlers.get('audacity_contrast')!({
-        foreground: { track: 0, start: 2, end: 3 },
-        background: { track: 0, start: 3, end: 2 },
-      }),
-    ).rejects.toThrow(/end must be after start/);
-    expect(mock.tracks).not.toHaveBeenCalled();
-    expect(mock.command).not.toHaveBeenCalled();
-  });
-  it.each([1, 2])(
-    'preflights nonexistent or non-audio background track %i before exporting the foreground',
-    async (track) => {
-      const handlers = new Map<string, (args: unknown) => Promise<unknown>>();
-      const register: Parameters<typeof registerAnalysisTools>[0] = (name, _description, shape, handler) => {
-        handlers.set(name, (args) => handler(z.object(shape).strict().parse(args)));
-      };
-      const { ops, mock } = fakeOps([voice, label]);
-      registerAnalysisTools(register, ops);
-      await expect(
-        handlers.get('audacity_contrast')!({
-          foreground: { track: 0, start: 2, end: 3 },
-          background: { track, start: 2, end: 3 },
-        }),
-      ).rejects.toThrow();
-      expect(mock.command).not.toHaveBeenCalled();
-      expect(mock.run).not.toHaveBeenCalled();
-    },
-  );
 });

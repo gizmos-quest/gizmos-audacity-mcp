@@ -15,6 +15,7 @@ export function project(
   const clips = structuredClone(initialClips);
   let selection = { track: 0, start: 0, end: 0 };
   let failure: { id: string; text: string } | undefined;
+  let imported: TrackInfo[] | undefined;
   const pipe = new AudacityPipe(
     { to: 'fixture.to', from: 'fixture.from' },
     100,
@@ -30,6 +31,23 @@ export function project(
         if (parameters.Type === 'Tracks') body = JSON.stringify(tracks);
         else if (parameters.Type === 'Labels') body = JSON.stringify(labelTracks);
         else if (parameters.Type === 'Clips') body = JSON.stringify(clips);
+      } else if (id === 'Import2') {
+        // Audacity names an imported track after its file; one container can add several tracks.
+        const added = imported ?? [
+          wave(
+            parameters
+              .Filename!.split('/')
+              .pop()!
+              .replace(/\.[^.]+$/, ''),
+            0,
+            1,
+          ),
+        ];
+        imported = undefined;
+        for (const track of added) {
+          if (track.kind === 'wave') clips.push({ track: tracks.length, start: track.start, end: track.end });
+          tracks.push({ ...track });
+        }
       } else if (id === 'NewLabelTrack') {
         const index = tracks.length;
         tracks.push({ name: 'Label Track', kind: 'label', start: 0, end: 0 });
@@ -88,6 +106,10 @@ export function project(
     calls,
     fail: (id: string, text: string) => {
       failure = { id, text };
+    },
+    /** The tracks the next Import2 adds instead of one audio track named after the file. */
+    importAs: (added: TrackInfo[]) => {
+      imported = added;
     },
   };
 }

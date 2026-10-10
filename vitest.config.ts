@@ -11,7 +11,8 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/**/*.ts'],
       reporter: ['text', 'json-summary', 'json'],
-      thresholds: { statements: 85, branches: 80, functions: 85, lines: 90 },
+      // Floors sit just below the measured totals (Windows and Linux); raise them as tests grow.
+      thresholds: { statements: 95, branches: 91, functions: 95, lines: 96 },
     },
   },
 });

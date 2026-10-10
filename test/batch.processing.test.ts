@@ -5,6 +5,7 @@ import { registerBatchTool } from '../src/batch.js';
 import type { Ops, TrackInfo, TrackRef } from '../src/ops.js';
 import { AudacityTimeout } from '../src/pipe.js';
 import type { ToolRegistrar } from '../src/tools.js';
+import { wav } from './helpers/audio-fixture.js';
 import { input, output, useBatchFiles } from './helpers/batch-fixture.js';
 
 vi.mock('../src/source-rate.js', () => ({ measureSourceRate: vi.fn(async () => 48_000) }));
@@ -123,5 +124,47 @@ describe('batch isolation and failure recovery', () => {
     await expect(call({ jobs: [{ file: input, output }], measure: false })).rejects.toThrow(
       /native processing rejected.*cleanup also failed: cleanup rejected.*Selection restoration also failed: restore rejected/,
     );
+  });
+
+  it('refuses a soloed project track before importing anything', async () => {
+    const { call, ops, tracks } = processingBatch();
+    tracks[0]!.solo = 1;
+    await expect(call({ jobs: [{ file: input, output }] })).rejects.toThrow('clear track solo');
+    expect(ops.importTrack).not.toHaveBeenCalled();
+  });
+
+  it('clears focus that moved to a project track when nothing was focused before', async () => {
+    const { call, ops, tracks } = processingBatch();
+    tracks[0]!.focused = 0;
+    ops.run.mockImplementation(async (command: string) => {
+      if (command === 'RemoveTracks') {
+        tracks.splice(1);
+        tracks[0]!.focused = 1;
+      }
+      return '';
+    });
+    await call({ jobs: [{ file: input, output }], measure: false });
+    expect(ops.command.mock.calls.slice(-4)).toEqual([
+      ['SelectTracks', { Track: 0, TrackCount: 1, Mode: 'Set' }],
+      ['SetTrackStatus', { Focused: false }],
+      ['SelectTracks', { Track: 0, TrackCount: 1, Mode: 'Add' }],
+      ['SelectTime', { Start: 2.5, End: 3, RelativeTo: 'ProjectStart' }],
+    ]);
+  });
+
+  it('reports the rendered input and the written output with their measured changes', async () => {
+    const { call, ops } = processingBatch();
+    let level = 0.5;
+    ops.command.mockImplementation(async (command: string, params: Record<string, unknown>) => {
+      if (command === 'Export2') writeFileSync(String(params.Filename), wav([level, -level, level, -level]));
+      if (command === 'High-passFilter') level = 0.25;
+      return '';
+    });
+    const report = (await call({ jobs: [{ file: input, output }] })) as { results: Record<string, unknown>[] };
+    expect(report.results[0]).toMatchObject({
+      before: { peak: 0.5 },
+      after: { peak: 0.25, file: expect.stringContaining('output.wav') },
+      delta: { peakDbfs: { change: expect.closeTo(-6.0206, 4) } },
+    });
   });
 });

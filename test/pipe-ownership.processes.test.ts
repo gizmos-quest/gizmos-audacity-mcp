@@ -1,6 +1,6 @@
 // Real processes against the ownership module: launchers with their own TEMP/TMPDIR,
 // and a delayed contender interleaved with a reclaimer at file-system barriers.
-import { type ChildProcess, spawn, spawnSync } from 'node:child_process';
+import { type ChildProcess, spawn } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -85,12 +85,11 @@ function directories() {
   scratch.push(lock);
   return { temp, endpoint, lock };
 }
+/** A lock left by a stopped owner. Its PID is above every OS's PID range: the PID of a process that
+ * just exited can be reused while other tests start processes, which would make the owner look alive. */
 function staleLock(lock: string): void {
-  const exited = spawnSync(process.execPath, ['-e', 'process.stdout.write(String(process.pid))'], {
-    encoding: 'utf8',
-  });
   mkdirSync(lock);
-  writeFileSync(join(lock, 'owner.json'), JSON.stringify({ pid: Number(exited.stdout), token: 'stale' }));
+  writeFileSync(join(lock, 'owner.json'), JSON.stringify({ pid: 2_147_483_644, token: 'stale' }));
 }
 
 // Each case starts several Node processes; hosted runners and coverage make that slow.

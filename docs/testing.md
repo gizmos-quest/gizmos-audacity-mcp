@@ -19,7 +19,7 @@ npm audit --audit-level=high
 | Tier | What it establishes |
 | --- | --- |
 | Unit + contracts | Strict schemas, byte budgets, orchestration, state guards, public tools/argument shapes, annotations and output compatibility |
-| Coverage | All `src/**/*.ts`, including unimported files; statements 85%, branches 80%, functions 85%, lines 90% release floors |
+| Coverage | All `src/**/*.ts`, including unimported files; enforced floors: statements 95%, branches 91%, functions 95%, lines 96% |
 | Built stdio E2E | Real production entry/helper and SDK boundary with recorded native bytes, fragmentation/delay/disconnect, uncertainty and recovery |
 | Package check | Allowlisted files, size/privacy checks and installed-tarball stdio startup; never publishes |
 | Live | Actual native project/lifecycle/effect behavior on the measured Audacity build |

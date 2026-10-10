@@ -59,3 +59,60 @@ describe('export and Audacity failures', () => {
     expect((error as Error).message).toContain('Amplification would cause clipping.');
   });
 });
+
+describe('typed import and envelopes', () => {
+  // Music Import guards and their restoration are covered in test/ops.import.test.ts.
+  const trackEdits = (calls: string[]) => edits(calls).filter((command) => !/Preference:/.test(command));
+
+  it('imports one audio track, names it and moves only its clip to the requested start', async () => {
+    const fixture = project([wave('Voice', 0, 2)], [], [{ track: 0, start: 0, end: 2 }]);
+    expect(await fixture.ops.importTrack('package.json', 'Music', 1.5)).toEqual({ track: 1, name: 'Music' });
+    expect(trackEdits(fixture.calls).slice(1)).toEqual([
+      'SelectTracks: Track=1 TrackCount=1 Mode=Set',
+      'SetTrack: Name=Music',
+      'Select: Track=1 TrackCount=1 Start=0 End=0.001 Mode=Set',
+      'SetClip: At=0 Start=1.5',
+    ]);
+    expect(trackEdits(fixture.calls)[0]).toMatch(/^Import2: Filename="?[^"]*package\.json"?$/);
+    expect(fixture.clips).toEqual([
+      { track: 0, start: 0, end: 2 },
+      { track: 1, start: 1.5, end: 2.5 },
+    ]);
+  });
+
+  it('keeps the native name and start when neither is requested', async () => {
+    const fixture = project([]);
+    expect(await fixture.ops.importTrack('package.json')).toEqual({ track: 0, name: 'package' });
+    expect(trackEdits(fixture.calls)).toHaveLength(1);
+  });
+
+  it.each([
+    [[], 'import added no track'],
+    [[wave('Left', 0, 1), wave('Right', 0, 1)], 'import added 2 tracks'],
+    [[label('Notes')], 'did not add an audio track'],
+  ])('refuses an import that added %j before naming or moving anything', async (added, error) => {
+    const fixture = project([wave('Voice')]);
+    fixture.importAs(added);
+    await expect(fixture.ops.importTrack('package.json', 'Music', 2)).rejects.toThrow(error);
+    expect(trackEdits(fixture.calls)).toEqual([expect.stringMatching(/^Import2: /)]);
+    expect(fixture.tracks).toHaveLength(1 + added.length);
+  });
+
+  it.each([
+    [true, ['SetEnvelope: Delete=1']],
+    [false, []],
+  ])('writes envelope points over the whole track (replace=%s)', async (replace, cleared) => {
+    const fixture = project([wave('Voice', 0, 4), wave('Bed', 0, 10)]);
+    const points = [
+      { time: 0, value: 1 },
+      { time: 2, value: 0.5 },
+    ];
+    expect(await fixture.ops.setEnvelope('Voice', points, replace)).toBe(2);
+    expect(edits(fixture.calls)).toEqual([
+      'Select: Track=0 TrackCount=1 Start=0 End=10 Mode=Set',
+      ...cleared,
+      'SetEnvelope: Time=0 Value=1',
+      'SetEnvelope: Time=2 Value=0.5',
+    ]);
+  });
+});
