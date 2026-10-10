@@ -33,19 +33,43 @@ describe('nonce recovery contract', () => {
     await expect(pipe.send('Amplify:')).rejects.toBeInstanceOf(AudacityNeedsRecovery);
     expect(transport).toHaveBeenCalledTimes(2);
   });
-  it.each(['', '{}', '[{}]', '[null]', '[{"name":"Voice"}]'])(
-    'retains latch after echo but invalid Tracks %s',
-    async (body) => {
-      const transport = vi.fn(async (_paths, _command, _timeout, nonce?: string) => ({
-        ok: true,
-        body: nonce ?? body,
-        status: 'OK',
-      }));
-      const pipe = new AudacityPipe({ to: 'to', from: 'from' }, 20, transport);
-      await expect(pipe.reconnect()).rejects.toBeInstanceOf(AudacityUnavailable);
-      expect(pipe.needsRecovery).toBe(true);
-    },
-  );
+  it.each([
+    '',
+    '{}',
+    '[{}]',
+    '[null]',
+    '[{"name":"Voice"}]',
+    '[{"name":"Voice","kind":"wave"}]',
+    '[{"name":"Voice","kind":"wave","start":"0","end":1}]',
+    '[{"name":"Voice","kind":"wave","start":0,"end":1,"selected":true}]',
+    '[{"name":"Voice","kind":"wave","start":0,"end":1e400}]',
+  ])('retains latch after echo but invalid Tracks %s', async (body) => {
+    const transport = vi.fn(async (_paths, _command, _timeout, nonce?: string) => ({
+      ok: true,
+      body: nonce ?? body,
+      status: 'OK',
+    }));
+    const pipe = new AudacityPipe({ to: 'to', from: 'from' }, 20, transport);
+    await expect(pipe.reconnect()).rejects.toBeInstanceOf(AudacityUnavailable);
+    expect(pipe.needsRecovery).toBe(true);
+    await expect(pipe.send('Amplify:')).rejects.toBeInstanceOf(AudacityNeedsRecovery);
+    expect(transport).toHaveBeenCalledTimes(2);
+  });
+  it('accepts audio extents and label tracks through the same state reader as normal operations', async () => {
+    const body = JSON.stringify([
+      { name: 'Voice', kind: 'wave', start: 0, end: 1, selected: 1 },
+      { name: 'Labels', kind: 'label', selected: 0 },
+    ]);
+    const transport = vi.fn(async (_paths, _command, _timeout, nonce?: string) => ({
+      ok: true,
+      body: nonce ?? body,
+      status: 'OK',
+    }));
+    const pipe = new AudacityPipe({ to: 'to', from: 'from' }, 20, transport);
+    expect((await pipe.reconnect()).body).toBe(body);
+    expect(pipe.needsRecovery).toBe(false);
+    expect((await pipe.send('Amplify:')).ok).toBe(true);
+  });
   it('clears synchronization only after its nonce and actual current Tracks, without replay', async () => {
     const transport = vi.fn(async (_paths, _command, _timeout, nonce?: string) => ({
       ok: true,

@@ -53,3 +53,8 @@ First public release of `@gizmos-quest/audacity-mcp`.
   reopens the open project and accounts for every tool; enforced coverage; CI on
   GitHub-hosted runners only; CodeQL and OpenSSF Scorecard; and a manual release
   workflow with npm trusted publishing and provenance.
+
+### Fixed
+
+- Recovery keeps edits locked when the synchronized Tracks reply has invalid
+  audio extents or field types, using the same state validation as normal reads.

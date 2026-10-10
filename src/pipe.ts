@@ -6,6 +6,7 @@ import { randomUUID } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { userInfo } from 'node:os';
 import { fileURLToPath } from 'node:url';
+import { tracksInfo } from './audacity/info.js';
 import { assertCommandBudget, parseInfoJson } from './format.js';
 import { acquirePipeOwnership, releasePipeOwnership } from './pipe-ownership.js';
 import { validatePipePaths } from './pipe-paths.js';
@@ -212,16 +213,9 @@ export class AudacityPipe {
               true,
             );
           }
-          if (
-            !Array.isArray(tracks) ||
-            tracks.some(
-              (track: unknown) =>
-                !track ||
-                typeof track !== 'object' ||
-                typeof (track as Record<string, unknown>).name !== 'string' ||
-                typeof (track as Record<string, unknown>).kind !== 'string',
-            )
-          ) {
+          try {
+            tracksInfo(tracks);
+          } catch {
             throw new AudacityUnavailable(
               'Reconnect returned invalid Tracks state; the prior outcome remains unknown.',
               true,
