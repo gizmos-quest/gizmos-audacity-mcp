@@ -18,7 +18,7 @@ const NoiseProfile = z
 
 const ShortenPauses = z
   .object({
-    thresholdDb: z.number().finite().min(-80).max(-10).default(-40),
+    thresholdDb: z.number().finite().min(-80).max(-20).default(-40), // native TruncateSilence limit
     minimum: z.number().finite().min(0.01).max(60).default(0.5),
     truncateTo: z.number().finite().min(0).max(60).default(0.3),
   })
@@ -49,8 +49,9 @@ export const PipelineSchema = z
     compress: z.boolean().optional(),
     thresholdDb: z.number().finite().min(-60).max(0).optional(),
     ratio: z.number().finite().min(1).max(20).optional(),
-    attackMs: z.number().finite().min(0).max(1000).optional(),
-    releaseMs: z.number().finite().min(1).max(10_000).optional(),
+    // Native Compressor limits (catalogue/parameters.json); others open a modal.
+    attackMs: z.number().finite().min(0).max(200).optional(),
+    releaseMs: z.number().finite().min(1).max(1000).optional(),
     bassDb: z.number().finite().min(-20).max(20).optional(),
     trebleDb: z.number().finite().min(-20).max(20).optional(),
     loudness: z

@@ -82,6 +82,21 @@ preservation. Captures sanitize installed plugin IDs and absolute path defaults.
 Review new native values against the exact pinned build; add adjacent evidence
 comments and regressions before expanding the safe surface.
 
+Source facts are pinned to the upstream tag `Audacity-3.7.8` (commit
+`6120ce413cf8abd4cca7f9470915f0ff0a0d2ded`); code comments cite `file:line` there.
+`catalogue/parameters.json` holds the parameter keys, types, defaults, limits and
+choices of every built-in effect, scripting command and bundled Nyquist plug-in,
+read from that tag. CI has no Audacity source, so regenerate it by hand:
+
+```sh
+git clone --depth 1 --branch Audacity-3.7.8 https://github.com/audacity/audacity.git ../audacity
+npm run parameters -- ../audacity
+```
+
+The script refuses a modified checkout, an unknown declaration shape and a
+catalogue command without source declarations. `test/source-parameters.test.ts`
+compares the result with the live catalogue and lists every accepted difference.
+
 Keep README/tool reference/capability table consistent with `tools/list`. Check
 direct dependency freshness with `npm view <package> version`; use matching
 Vitest and `@vitest/coverage-v8`. Public source/test modules should remain about

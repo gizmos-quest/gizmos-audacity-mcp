@@ -1,7 +1,11 @@
 # Effect requirements
 
-Use `audacity_describe` for bundled exact parameter names and enums. Catalogue
-numeric bounds are supplemented by reviewed native source/context checks.
+Use `audacity_describe` for bundled exact parameter names, enums and limits.
+Limits come from the pinned Audacity source (`catalogue/parameters.json`): outside
+them a built-in effect or command opens a blocking "Could not load settings"
+message and a Nyquist plug-in silently keeps its saved control. Nyquist defaults
+shown by Audacity are placeholders (0, empty or the first choice); an omitted
+Nyquist control keeps its saved value, so pass every control you rely on.
 Use `audacity_effect` to select an explicit track/range; omit times to use its
 extent. Save a project backup before applying sample processing.
 

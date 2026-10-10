@@ -30,6 +30,7 @@ for (const required of [
   'dist/pipe-worker.js',
   'catalogue/commands.json',
   'catalogue/menus.json',
+  'catalogue/parameters.json',
   'LICENSE',
   'NOTICE.md',
   'README.md',

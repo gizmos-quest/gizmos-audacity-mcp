@@ -4,6 +4,8 @@ import { parseMacro } from '../src/controls.js';
 import { Ops } from '../src/ops.js';
 import { AudacityPipe } from '../src/pipe.js';
 
+const FLT_MAX = 3.4028234663852886e38;
+
 describe('pinned numeric control limits', () => {
   it.each([
     ['NotchFilter', { Q: 0.09 }],
@@ -51,22 +53,25 @@ describe('pinned numeric control limits', () => {
     expect(transport).not.toHaveBeenCalled();
   });
 
-  it('accepts the declared inclusive control boundaries without inventing nil upper limits', () => {
-    expect(commandSchema('NotchFilter').parse({ FREQUENCY: 1e100, Q: 0.1 })).toEqual({ FREQUENCY: 1e100, Q: 0.1 });
+  it('accepts declared inclusive boundaries, and the FLT_MAX that Nyquist reads for nil limits', () => {
+    expect(commandSchema('NotchFilter').parse({ FREQUENCY: FLT_MAX, Q: 0.1 })).toEqual({ FREQUENCY: FLT_MAX, Q: 0.1 });
     expect(commandSchema('ShelfFilter').parse({ HZ: 10_000, GAIN: 72 })).toEqual({ HZ: 10_000, GAIN: 72 });
     expect(commandSchema('SampleDataExport').parse({ NUMBER: 1_000_000 })).toEqual({ NUMBER: 1_000_000 });
-    expect(commandSchema('RhythmTrack').parse({ BARS: 0, OFFSET: 1e100 })).toEqual({ BARS: 0, OFFSET: 1e100 });
+    expect(commandSchema('RhythmTrack').parse({ BARS: 0, OFFSET: FLT_MAX })).toEqual({ BARS: 0, OFFSET: FLT_MAX });
+    // NyquistBase.cpp reads a nil float-text/time limit as FLT_MAX; a larger value is ignored natively.
+    expect(() => commandSchema('NotchFilter').parse({ FREQUENCY: 1e100 })).toThrow();
+    expect(() => commandSchema('RhythmTrack').parse({ OFFSET: 1e100 })).toThrow();
   });
 
-  it('reports reviewed bounds through command discovery', () => {
+  it('reports source-derived bounds through command discovery', () => {
     expect(describeCommand('NotchFilter')?.params?.find((param) => param.key === 'Q')).toMatchObject({
       minimum: 0.1,
       maximum: 1000,
     });
     const frequency = describeCommand('High-passFilter')?.params?.find((param) => param.key === 'FREQUENCY');
     expect(frequency?.minimum).toBe(0);
-    expect(frequency?.maximum).toBeUndefined();
-    expect(describeCommand('AdjustableFade')?.params?.find((param) => param.key === 'GAIN0')?.minimum).toBeUndefined();
+    expect(frequency?.maximum).toBe(FLT_MAX);
+    expect(describeCommand('AdjustableFade')?.params?.find((param) => param.key === 'GAIN0')?.minimum).toBe(-FLT_MAX);
   });
 
   it.each([
@@ -117,8 +122,11 @@ describe('pinned numeric control limits', () => {
     expect(() => parseMacro('Amplify:Ratio=0.5\nAmplify:Ratio=3 AllowClipping=0')).toThrow(
       'ignores AllowClipping=false',
     );
-    expect(commandSchema('Amplify').parse({ Ratio: 0.003162 })).toEqual({ Ratio: 0.003162 });
-    expect(commandSchema('Amplify').parse({ Ratio: 316.227766 })).toEqual({ Ratio: 316.227766 });
+    // AmplifyBase.h declares float limits; cast to the double member they are
+    // 0.0031620000954717398 and 316.2277526855469, so the decimal spellings fail natively.
+    for (const Ratio of [0.003162, 316.227766]) expect(() => commandSchema('Amplify').parse({ Ratio })).toThrow();
+    for (const Ratio of [Math.fround(0.003162), Math.fround(316.227766)])
+      expect(commandSchema('Amplify').parse({ Ratio })).toEqual({ Ratio });
     expect(transport).not.toHaveBeenCalled();
   });
 });

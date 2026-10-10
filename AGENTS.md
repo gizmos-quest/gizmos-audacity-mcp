@@ -23,6 +23,11 @@ Check package freshness with `npm view <package> version`. Do not claim skipped
 or incomplete checks passed. [Testing](docs/testing.md) explains preservation,
 recorded fixtures, architecture/platform evidence and teardown.
 
+Native source facts are pinned to the upstream tag `Audacity-3.7.8` (commit
+`6120ce4`); comments cite `file:line` at that tag. Clone it beside the checkout
+(`git clone --depth 1 --branch Audacity-3.7.8 https://github.com/audacity/audacity.git ../audacity`)
+and regenerate parameter limits with `npm run parameters -- ../audacity`.
+
 ## Architecture
 
 - `main.ts` / `server.ts`: CLI/stdio entry and MCP assembly.

@@ -9,12 +9,13 @@ export const AutoDuckSchema = z
     voice: Track,
     start: Seconds.optional(),
     end: Seconds.optional(),
-    duckDb: z.number().finite().min(-60).max(0).default(-12),
+    // Native AutoDuck limits (catalogue/parameters.json); others open a modal.
+    duckDb: z.number().finite().min(-24).max(0).default(-12),
     thresholdDb: z.number().finite().min(-100).max(0).default(-30),
-    fadeDown: z.number().finite().min(0).max(10).default(0.5),
-    fadeUp: z.number().finite().min(0).max(10).default(0.5),
-    innerFadeDown: z.number().finite().min(0).max(10).default(0),
-    innerFadeUp: z.number().finite().min(0).max(10).default(0),
+    fadeDown: z.number().finite().min(0).max(3).default(0.5),
+    fadeUp: z.number().finite().min(0).max(3).default(0.5),
+    innerFadeDown: z.number().finite().min(0).max(3).default(0),
+    innerFadeUp: z.number().finite().min(0).max(3).default(0),
     maximumPause: z.number().finite().min(0).max(60).default(1),
     dryRun: z.boolean().default(false),
   })

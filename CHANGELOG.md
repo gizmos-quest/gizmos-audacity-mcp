@@ -12,6 +12,8 @@ input/result shapes and environment variables.
 - Setup doctor, strict native safeguards and compatible MCP data reports.
 - Recorded-byte stdio E2E, enforced coverage, hosted-only CI and manual release.
 - Public setup, safety and contributor documentation.
+- Parameter limits for every built-in effect, scripting command and bundled
+  Nyquist plug-in, generated from the Audacity 3.7.8 source (`npm run parameters`).
 
 ### Fixed
 
@@ -25,3 +27,6 @@ input/result shapes and environment variables.
 - `doctor --fix` also records the module timestamp Audacity needs after updates.
 - Hour-long recordings are measurable; Linux/macOS process checks name real binaries.
 - Audacity 4 is refused with its reason and the 3.7.x install remedy.
+- Out-of-range parameters (for example Compressor `attackMs` above 200 or Amplify
+  `Ratio` 0.003162) are refused before Audacity shows a blocking settings message;
+  pipeline, batch and auto-duck ranges now match the native limits.

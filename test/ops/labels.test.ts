@@ -187,6 +187,19 @@ describe('flat label insertion', () => {
     expect(fixture.calls).toEqual([]);
   });
 
+  it('refuses labels beyond the native SetLabel index range before any edit', async () => {
+    // SetLabelCommand.cpp declares Label 0..10000 across all label tracks.
+    const existing = Array.from({ length: 10_000 }, (_, i): LabelTuple => [i, i, `old ${i}`]);
+    const fixture = project([label('Cues')], [[0, existing]]);
+    await expect(
+      fixture.ops.setLabels([
+        { start: 1, text: 'one' },
+        { start: 2, text: 'two' },
+      ]),
+    ).rejects.toThrow('at most 10001 labels');
+    expect(edits(fixture.calls)).toEqual([]);
+  });
+
   it('refuses an empty label-track name before creating a track', async () => {
     const fixture = project([wave('Audio')]);
     await expect(fixture.ops.setLabels([{ start: 0, text: 'valid' }], '')).rejects.toThrow();

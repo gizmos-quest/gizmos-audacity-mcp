@@ -1,9 +1,13 @@
 import { z } from 'zod';
-import { SafeString } from '../catalogue.js';
+import { describeCommand, SafeString } from '../catalogue.js';
 import { catalogueCommand } from '../format.js';
 import type { Ops } from '../ops.js';
 
 const Seconds = z.number().finite().min(0).max(86400);
+// SetLabel's flat index is declared 0..10000 (Audacity-3.7.8
+// src/commands/SetLabelCommand.cpp:46); a larger index would open the
+// "Could not load settings" message instead of editing a label.
+const MAX_LABEL = describeCommand('SetLabel')!.params!.find((param) => param.key === 'Label')!.maximum!;
 const LabelsInput = z
   .array(
     z
@@ -23,10 +27,10 @@ export function preflightLabels(
   SafeString.min(1).parse(trackName);
   catalogueCommand('SetTrack', { Name: trackName });
   // A later oversized label must be refused before creating or adding labels.
-  // Reserve a conservative index width because insertion changes flat indices.
+  // Reserve the widest valid index because insertion changes flat indices.
   for (const label of labels)
     catalogueCommand('SetLabel', {
-      Label: Number.MAX_SAFE_INTEGER,
+      Label: MAX_LABEL,
       Text: label.text,
       Start: label.start,
       End: label.end ?? label.start,
@@ -41,6 +45,9 @@ export async function setLabels(
   trackName = 'Labels',
 ): Promise<number> {
   const labels = preflightLabels(unsorted, trackName);
+  const existing = ((await ops.info('Labels')) as [number, unknown[]][]).reduce((n, [, list]) => n + list.length, 0);
+  if (existing + labels.length > MAX_LABEL + 1)
+    throw new Error(`Audacity's SetLabel addresses at most ${MAX_LABEL + 1} labels per project`);
   const tracks = await ops.tracks();
   const matchingTracks = tracks.flatMap((t, i) => (t.kind === 'label' && t.name === trackName ? [i] : []));
   if (matchingTracks.length > 1) throw new Error(`multiple label tracks named ${trackName}; rename them uniquely`);

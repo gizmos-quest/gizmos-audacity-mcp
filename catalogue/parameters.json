@@ -1,0 +1,3181 @@
+{
+ "source": {
+  "repository": "https://github.com/audacity/audacity",
+  "tag": "Audacity-3.7.8",
+  "commit": "6120ce413cf8abd4cca7f9470915f0ff0a0d2ded"
+ },
+ "commands": [
+  {
+   "id": "AdjustableFade",
+   "kind": "nyquist",
+   "file": "plug-ins/adjustable-fade.ny",
+   "params": [
+    {
+     "key": "TYPE",
+     "type": "enum",
+     "default": "Up",
+     "choices": [
+      "Up",
+      "Down",
+      "SCurveUp",
+      "SCurveDown"
+     ]
+    },
+    {
+     "key": "CURVE",
+     "type": "double",
+     "default": 0,
+     "min": -100,
+     "max": 100
+    },
+    {
+     "key": "UNITS",
+     "type": "enum",
+     "default": "Percent",
+     "choices": [
+      "Percent",
+      "dB"
+     ]
+    },
+    {
+     "key": "GAIN0",
+     "type": "double",
+     "default": 0,
+     "min": -3.4028234663852886e+38,
+     "max": 3.4028234663852886e+38
+    },
+    {
+     "key": "GAIN1",
+     "type": "double",
+     "default": 100,
+     "min": -3.4028234663852886e+38,
+     "max": 3.4028234663852886e+38
+    },
+    {
+     "key": "PRESET",
+     "type": "enum",
+     "default": "None",
+     "choices": [
+      "None",
+      "LinearIn",
+      "LinearOut",
+      "ExponentialIn",
+      "ExponentialOut",
+      "LogarithmicIn",
+      "LogarithmicOut",
+      "RoundedIn",
+      "RoundedOut",
+      "CosineIn",
+      "CosineOut",
+      "SCurveIn",
+      "SCurveOut"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "Amplify",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/AmplifyBase.cpp",
+   "params": [
+    {
+     "key": "Ratio",
+     "type": "double",
+     "default": 0.8999999761581421,
+     "min": 0.0031620000954717398,
+     "max": 316.2277526855469
+    }
+   ]
+  },
+  {
+   "id": "AutoDuck",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/AutoDuckBase.cpp",
+   "params": [
+    {
+     "key": "DuckAmountDb",
+     "type": "double",
+     "default": -12,
+     "min": -24,
+     "max": 0
+    },
+    {
+     "key": "InnerFadeDownLen",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 3
+    },
+    {
+     "key": "InnerFadeUpLen",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 3
+    },
+    {
+     "key": "OuterFadeDownLen",
+     "type": "double",
+     "default": 0.5,
+     "min": 0,
+     "max": 3
+    },
+    {
+     "key": "OuterFadeUpLen",
+     "type": "double",
+     "default": 0.5,
+     "min": 0,
+     "max": 3
+    },
+    {
+     "key": "ThresholdDb",
+     "type": "double",
+     "default": -30,
+     "min": -100,
+     "max": 0
+    },
+    {
+     "key": "MaximumPause",
+     "type": "double",
+     "default": 1,
+     "min": 0,
+     "max": 1.7976931348623157e+308
+    }
+   ]
+  },
+  {
+   "id": "BassAndTreble",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/BassTrebleBase.cpp",
+   "params": [
+    {
+     "key": "Bass",
+     "type": "double",
+     "default": 0,
+     "min": -30,
+     "max": 30
+    },
+    {
+     "key": "Treble",
+     "type": "double",
+     "default": 0,
+     "min": -30,
+     "max": 30
+    },
+    {
+     "key": "Gain",
+     "type": "double",
+     "default": 0,
+     "min": -30,
+     "max": 30
+    },
+    {
+     "key": "Link Sliders",
+     "type": "bool",
+     "default": false
+    }
+   ]
+  },
+  {
+   "id": "BeatFinder",
+   "kind": "nyquist",
+   "file": "plug-ins/beat.ny",
+   "params": [
+    {
+     "key": "THRESVAL",
+     "type": "int",
+     "default": 65,
+     "min": 5,
+     "max": 100
+    }
+   ]
+  },
+  {
+   "id": "ChangePitch",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/ChangePitchBase.cpp",
+   "params": [
+    {
+     "key": "Percentage",
+     "type": "double",
+     "default": 0,
+     "min": -99,
+     "max": 3000
+    },
+    {
+     "key": "SBSMS",
+     "type": "bool",
+     "default": false
+    }
+   ]
+  },
+  {
+   "id": "ChangeSpeedAndPitch",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/ChangeSpeedBase.cpp",
+   "params": [
+    {
+     "key": "Percentage",
+     "type": "double",
+     "default": 0,
+     "min": -99,
+     "max": 4900
+    }
+   ]
+  },
+  {
+   "id": "ChangeTempo",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/ChangeTempoBase.cpp",
+   "params": [
+    {
+     "key": "Percentage",
+     "type": "double",
+     "default": 0,
+     "min": -95,
+     "max": 3000
+    },
+    {
+     "key": "SBSMS",
+     "type": "bool",
+     "default": false
+    }
+   ]
+  },
+  {
+   "id": "Chirp",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/ToneGenBase.cpp",
+   "params": [
+    {
+     "key": "StartFreq",
+     "type": "double",
+     "default": 440,
+     "min": 1,
+     "max": 1.7976931348623157e+308
+    },
+    {
+     "key": "EndFreq",
+     "type": "double",
+     "default": 1320,
+     "min": 1,
+     "max": 1.7976931348623157e+308
+    },
+    {
+     "key": "StartAmp",
+     "type": "double",
+     "default": 0.8,
+     "min": 0,
+     "max": 1
+    },
+    {
+     "key": "EndAmp",
+     "type": "double",
+     "default": 0.1,
+     "min": 0,
+     "max": 1
+    },
+    {
+     "key": "Waveform",
+     "type": "enum",
+     "default": "Sine",
+     "choices": [
+      "Sine",
+      "Square",
+      "Sawtooth",
+      "Square, no alias",
+      "Triangle"
+     ]
+    },
+    {
+     "key": "Interpolation",
+     "type": "enum",
+     "default": "Linear",
+     "choices": [
+      "Linear",
+      "Logarithmic"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "ClassicFilters",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/ScienFilterBase.cpp",
+   "params": [
+    {
+     "key": "FilterType",
+     "type": "enum",
+     "default": "Butterworth",
+     "choices": [
+      "Butterworth",
+      "Chebyshev Type I",
+      "Chebyshev Type II"
+     ]
+    },
+    {
+     "key": "FilterSubtype",
+     "type": "enum",
+     "default": "Lowpass",
+     "choices": [
+      "Lowpass",
+      "Highpass"
+     ]
+    },
+    {
+     "key": "Order",
+     "type": "int",
+     "default": 1,
+     "min": 1,
+     "max": 10
+    },
+    {
+     "key": "Cutoff",
+     "type": "float",
+     "default": 1000,
+     "min": 1,
+     "max": 3.4028234663852886e+38
+    },
+    {
+     "key": "PassbandRipple",
+     "type": "float",
+     "default": 1,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "key": "StopbandRipple",
+     "type": "float",
+     "default": 30,
+     "min": 0,
+     "max": 100
+    }
+   ]
+  },
+  {
+   "id": "ClearLog",
+   "kind": "command",
+   "file": "src/commands/OpenSaveCommands.cpp",
+   "params": []
+  },
+  {
+   "id": "ClickRemoval",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/ClickRemovalBase.cpp",
+   "params": [
+    {
+     "key": "Threshold",
+     "type": "int",
+     "default": 200,
+     "min": 0,
+     "max": 900
+    },
+    {
+     "key": "Width",
+     "type": "int",
+     "default": 20,
+     "min": 0,
+     "max": 40
+    }
+   ]
+  },
+  {
+   "id": "ClipFix",
+   "kind": "nyquist",
+   "file": "plug-ins/clipfix.ny",
+   "params": [
+    {
+     "key": "THRESHOLD",
+     "type": "double",
+     "default": 95,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "key": "GAIN",
+     "type": "double",
+     "default": -9,
+     "min": -30,
+     "max": 0
+    }
+   ]
+  },
+  {
+   "id": "Comment",
+   "kind": "command",
+   "file": "src/commands/HelpCommand.cpp",
+   "params": [
+    {
+     "key": "_",
+     "type": "string",
+     "default": ""
+    }
+   ]
+  },
+  {
+   "id": "CompareAudio",
+   "kind": "command",
+   "file": "src/commands/CompareAudioCommand.cpp",
+   "params": [
+    {
+     "key": "Threshold",
+     "type": "float",
+     "default": 0,
+     "min": 0,
+     "max": 0.009999999776482582
+    }
+   ]
+  },
+  {
+   "id": "Compressor",
+   "kind": "effect",
+   "file": "src/effects/Compressor.cpp",
+   "params": [
+    {
+     "key": "thresholdDb",
+     "type": "double",
+     "default": -10,
+     "min": -600,
+     "max": 0
+    },
+    {
+     "key": "makeupGainDb",
+     "type": "double",
+     "default": 0,
+     "min": -300,
+     "max": 300
+    },
+    {
+     "key": "kneeWidthDb",
+     "type": "double",
+     "default": 5,
+     "min": 0,
+     "max": 300
+    },
+    {
+     "key": "compressionRatio",
+     "type": "double",
+     "default": 10,
+     "min": 1,
+     "max": 100
+    },
+    {
+     "key": "lookaheadMs",
+     "type": "double",
+     "default": 1,
+     "min": 0,
+     "max": 1000
+    },
+    {
+     "key": "attackMs",
+     "type": "double",
+     "default": 30,
+     "min": 0,
+     "max": 200
+    },
+    {
+     "key": "releaseMs",
+     "type": "double",
+     "default": 150,
+     "min": 0,
+     "max": 1000
+    },
+    {
+     "key": "showInput",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 1
+    },
+    {
+     "key": "showOutput",
+     "type": "double",
+     "default": 1,
+     "min": 0,
+     "max": 1
+    },
+    {
+     "key": "showActual",
+     "type": "double",
+     "default": 1,
+     "min": 0,
+     "max": 1
+    },
+    {
+     "key": "showTarget",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "id": "CrossfadeClips",
+   "kind": "nyquist",
+   "file": "plug-ins/crossfadeclips.ny",
+   "params": []
+  },
+  {
+   "id": "CrossfadeTracks",
+   "kind": "nyquist",
+   "file": "plug-ins/crossfadetracks.ny",
+   "params": [
+    {
+     "key": "TYPE",
+     "type": "enum",
+     "default": "ConstantGain",
+     "choices": [
+      "ConstantGain",
+      "ConstantPower1",
+      "ConstantPower2",
+      "CustomCurve"
+     ]
+    },
+    {
+     "key": "CURVE",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 1
+    },
+    {
+     "key": "DIRECTION",
+     "type": "enum",
+     "default": "Automatic",
+     "choices": [
+      "Automatic",
+      "OutIn",
+      "InOut"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "Delay",
+   "kind": "nyquist",
+   "file": "plug-ins/delay.ny",
+   "params": [
+    {
+     "key": "DELAY-TYPE",
+     "type": "enum",
+     "default": "Regular",
+     "choices": [
+      "Regular",
+      "BouncingBall",
+      "ReverseBouncingBall"
+     ]
+    },
+    {
+     "key": "DGAIN",
+     "type": "double",
+     "default": -6,
+     "min": -30,
+     "max": 1
+    },
+    {
+     "key": "DELAY",
+     "type": "double",
+     "default": 0.3,
+     "min": 0,
+     "max": 5
+    },
+    {
+     "key": "PITCH-TYPE",
+     "type": "enum",
+     "default": "PitchTempo",
+     "choices": [
+      "PitchTempo",
+      "LQPitchShift",
+      "HQPitchShift"
+     ]
+    },
+    {
+     "key": "SHIFT",
+     "type": "double",
+     "default": 0,
+     "min": -2,
+     "max": 2
+    },
+    {
+     "key": "NUMBER",
+     "type": "int",
+     "default": 5,
+     "min": 1,
+     "max": 30
+    },
+    {
+     "key": "CONSTRAIN",
+     "type": "enum",
+     "default": "Yes",
+     "choices": [
+      "Yes",
+      "No"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "Demo",
+   "kind": "command",
+   "file": "src/commands/Demo.cpp",
+   "params": [
+    {
+     "key": "Delay",
+     "type": "float",
+     "default": 1,
+     "min": 0.0010000000474974513,
+     "max": 3.4028234663852886e+38
+    },
+    {
+     "key": "Decay",
+     "type": "float",
+     "default": 0.5,
+     "min": 0,
+     "max": 3.4028234663852886e+38
+    }
+   ]
+  },
+  {
+   "id": "Distortion",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/DistortionBase.cpp",
+   "params": [
+    {
+     "key": "Type",
+     "type": "enum",
+     "default": "Hard Clipping",
+     "choices": [
+      "Hard Clipping",
+      "Soft Clipping",
+      "Soft Overdrive",
+      "Medium Overdrive",
+      "Hard Overdrive",
+      "Cubic Curve (odd harmonics)",
+      "Even Harmonics",
+      "Expand and Compress",
+      "Leveller",
+      "Rectifier Distortion",
+      "Hard Limiter 1413"
+     ]
+    },
+    {
+     "key": "DC Block",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "key": "Threshold dB",
+     "type": "double",
+     "default": -6,
+     "min": -100,
+     "max": 0
+    },
+    {
+     "key": "Noise Floor",
+     "type": "double",
+     "default": -70,
+     "min": -80,
+     "max": -20
+    },
+    {
+     "key": "Parameter 1",
+     "type": "double",
+     "default": 50,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "key": "Parameter 2",
+     "type": "double",
+     "default": 50,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "key": "Repeats",
+     "type": "int",
+     "default": 1,
+     "min": 0,
+     "max": 5
+    }
+   ]
+  },
+  {
+   "id": "Drag",
+   "kind": "command",
+   "file": "src/commands/DragCommand.cpp",
+   "params": [
+    {
+     "key": "Id",
+     "type": "int",
+     "default": 11000,
+     "min": -100000,
+     "max": 1000000,
+     "optional": true
+    },
+    {
+     "key": "Window",
+     "type": "string",
+     "default": "Timeline",
+     "optional": true
+    },
+    {
+     "key": "FromX",
+     "type": "double",
+     "default": 200,
+     "min": 0,
+     "max": 1000000,
+     "optional": true
+    },
+    {
+     "key": "FromY",
+     "type": "double",
+     "default": 10,
+     "min": 0,
+     "max": 1000000,
+     "optional": true
+    },
+    {
+     "key": "ToX",
+     "type": "double",
+     "default": 400,
+     "min": 0,
+     "max": 1000000,
+     "optional": true
+    },
+    {
+     "key": "ToY",
+     "type": "double",
+     "default": 10,
+     "min": 0,
+     "max": 1000000,
+     "optional": true
+    },
+    {
+     "key": "RelativeTo",
+     "type": "enum",
+     "default": "Panel",
+     "choices": [
+      "Panel",
+      "App",
+      "Track0",
+      "Track1"
+     ],
+     "optional": true
+    }
+   ]
+  },
+  {
+   "id": "DtmfTones",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/DtmfBase.cpp",
+   "params": [
+    {
+     "key": "Sequence",
+     "type": "string",
+     "default": "audacity"
+    },
+    {
+     "key": "Duty Cycle",
+     "type": "double",
+     "default": 55,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "key": "Amplitude",
+     "type": "double",
+     "default": 0.8,
+     "min": 0.001,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "id": "Echo",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/EchoBase.cpp",
+   "params": [
+    {
+     "key": "Delay",
+     "type": "double",
+     "default": 1,
+     "min": 0.0010000000474974513,
+     "max": 3.4028234663852886e+38
+    },
+    {
+     "key": "Decay",
+     "type": "double",
+     "default": 0.5,
+     "min": 0,
+     "max": 3.4028234663852886e+38
+    }
+   ]
+  },
+  {
+   "id": "Equalization",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/EqualizationBase.cpp",
+   "params": [
+    {
+     "key": "FilterLength",
+     "type": "size_t",
+     "default": 8191,
+     "min": 21,
+     "max": 8191
+    },
+    {
+     "key": "InterpolateLin",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "key": "InterpolationMethod",
+     "type": "enum",
+     "default": "B-spline",
+     "choices": [
+      "B-spline",
+      "Cosine",
+      "Cubic"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "Export2",
+   "kind": "command",
+   "file": "src/commands/ImportExportCommands.cpp",
+   "params": [
+    {
+     "key": "Filename",
+     "type": "string"
+    },
+    {
+     "key": "NumChannels",
+     "type": "int",
+     "default": 1,
+     "min": 0,
+     "max": 100000
+    }
+   ]
+  },
+  {
+   "id": "FadeIn",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/Fade.cpp",
+   "params": []
+  },
+  {
+   "id": "FadeOut",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/Fade.cpp",
+   "params": []
+  },
+  {
+   "id": "FilterCurve",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/EqualizationBase.cpp",
+   "params": [
+    {
+     "key": "FilterLength",
+     "type": "size_t",
+     "default": 8191,
+     "min": 21,
+     "max": 8191
+    },
+    {
+     "key": "InterpolateLin",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "key": "InterpolationMethod",
+     "type": "enum",
+     "default": "B-spline",
+     "choices": [
+      "B-spline",
+      "Cosine",
+      "Cubic"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "FindClipping",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/FindClippingBase.cpp",
+   "params": [
+    {
+     "key": "Duty Cycle Start",
+     "type": "int",
+     "default": 3,
+     "min": 1,
+     "max": 2147483647
+    },
+    {
+     "key": "Duty Cycle End",
+     "type": "int",
+     "default": 3,
+     "min": 1,
+     "max": 2147483647
+    }
+   ]
+  },
+  {
+   "id": "GetInfo",
+   "kind": "command",
+   "file": "src/commands/GetInfoCommand.cpp",
+   "params": [
+    {
+     "key": "Type",
+     "type": "enum",
+     "default": "Commands",
+     "choices": [
+      "Commands",
+      "Menus",
+      "Preferences",
+      "Tracks",
+      "Clips",
+      "Envelopes",
+      "Labels",
+      "Boxes",
+      "Selection"
+     ]
+    },
+    {
+     "key": "Format",
+     "type": "enum",
+     "default": "JSON",
+     "choices": [
+      "JSON",
+      "LISP",
+      "Brief"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "GetPreference",
+   "kind": "command",
+   "file": "src/commands/PreferenceCommands.cpp",
+   "params": [
+    {
+     "key": "Name",
+     "type": "string",
+     "default": ""
+    }
+   ]
+  },
+  {
+   "id": "GetTrackInfo",
+   "kind": "command",
+   "file": "src/commands/GetTrackInfoCommand.cpp",
+   "params": [
+    {
+     "key": "Type",
+     "type": "enum",
+     "default": "Tracks",
+     "choices": [
+      "Tracks",
+      "Clips",
+      "Labels"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "GraphicEq",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/EqualizationBase.cpp",
+   "params": [
+    {
+     "key": "FilterLength",
+     "type": "size_t",
+     "default": 8191,
+     "min": 21,
+     "max": 8191
+    },
+    {
+     "key": "InterpolateLin",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "key": "InterpolationMethod",
+     "type": "enum",
+     "default": "B-spline",
+     "choices": [
+      "B-spline",
+      "Cosine",
+      "Cubic"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "Help",
+   "kind": "command",
+   "file": "src/commands/HelpCommand.cpp",
+   "params": [
+    {
+     "key": "Command",
+     "type": "string",
+     "default": "Help"
+    },
+    {
+     "key": "Format",
+     "type": "enum",
+     "default": "JSON",
+     "choices": [
+      "JSON",
+      "LISP",
+      "Brief"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "High-passFilter",
+   "kind": "nyquist",
+   "file": "plug-ins/highpass.ny",
+   "params": [
+    {
+     "key": "FREQUENCY",
+     "type": "double",
+     "default": 1000,
+     "min": 0,
+     "max": 3.4028234663852886e+38
+    },
+    {
+     "key": "ROLLOFF",
+     "type": "enum",
+     "default": "dB6",
+     "choices": [
+      "dB6",
+      "dB12",
+      "dB24",
+      "dB36",
+      "dB48"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "Import2",
+   "kind": "command",
+   "file": "src/commands/ImportExportCommands.cpp",
+   "params": [
+    {
+     "key": "Filename",
+     "type": "string",
+     "default": ""
+    }
+   ]
+  },
+  {
+   "id": "Invert",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/Invert.cpp",
+   "params": []
+  },
+  {
+   "id": "LabelSounds",
+   "kind": "nyquist",
+   "file": "plug-ins/label-sounds.ny",
+   "params": [
+    {
+     "key": "THRESHOLD",
+     "type": "double",
+     "default": -30,
+     "min": -100,
+     "max": 0
+    },
+    {
+     "key": "MEASUREMENT",
+     "type": "enum",
+     "default": "peak",
+     "choices": [
+      "peak",
+      "avg",
+      "rms"
+     ]
+    },
+    {
+     "key": "SIL-DUR",
+     "type": "double",
+     "default": 1,
+     "min": 0.01,
+     "max": 3600
+    },
+    {
+     "key": "SND-DUR",
+     "type": "double",
+     "default": 1,
+     "min": 0.01,
+     "max": 7200
+    },
+    {
+     "key": "TYPE",
+     "type": "enum",
+     "default": "around",
+     "choices": [
+      "before",
+      "after",
+      "around",
+      "between"
+     ]
+    },
+    {
+     "key": "PRE-OFFSET",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 3.4028234663852886e+38
+    },
+    {
+     "key": "POST-OFFSET",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 3.4028234663852886e+38
+    },
+    {
+     "key": "TEXT",
+     "type": "string",
+     "default": "Sound ##1"
+    }
+   ]
+  },
+  {
+   "id": "LegacyCompressor",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/LegacyCompressorBase.cpp",
+   "params": [
+    {
+     "key": "Threshold",
+     "type": "double",
+     "default": -12,
+     "min": -60,
+     "max": -1
+    },
+    {
+     "key": "NoiseFloor",
+     "type": "double",
+     "default": -40,
+     "min": -80,
+     "max": -20
+    },
+    {
+     "key": "Ratio",
+     "type": "double",
+     "default": 2,
+     "min": 1.1,
+     "max": 10
+    },
+    {
+     "key": "AttackTime",
+     "type": "double",
+     "default": 0.2,
+     "min": 0.1,
+     "max": 5
+    },
+    {
+     "key": "ReleaseTime",
+     "type": "double",
+     "default": 1,
+     "min": 1,
+     "max": 30
+    },
+    {
+     "key": "Normalize",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "key": "UsePeak",
+     "type": "bool",
+     "default": false
+    }
+   ]
+  },
+  {
+   "id": "LegacyLimiter",
+   "kind": "nyquist",
+   "file": "plug-ins/legacy-limiter.ny",
+   "params": [
+    {
+     "key": "TYPE",
+     "type": "enum",
+     "default": "SoftLimit",
+     "choices": [
+      "SoftLimit",
+      "HardLimit",
+      "SoftClip",
+      "HardClip"
+     ]
+    },
+    {
+     "key": "GAIN-L",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 10
+    },
+    {
+     "key": "GAIN-R",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 10
+    },
+    {
+     "key": "THRESH",
+     "type": "double",
+     "default": -3,
+     "min": -10,
+     "max": 0
+    },
+    {
+     "key": "HOLD",
+     "type": "double",
+     "default": 10,
+     "min": 1,
+     "max": 50
+    },
+    {
+     "key": "MAKEUP",
+     "type": "enum",
+     "default": "No",
+     "choices": [
+      "No",
+      "Yes"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "Limiter",
+   "kind": "effect",
+   "file": "src/effects/Limiter.cpp",
+   "params": [
+    {
+     "key": "thresholdDb",
+     "type": "double",
+     "default": -5,
+     "min": -300,
+     "max": 0
+    },
+    {
+     "key": "makeupTargetDb",
+     "type": "double",
+     "default": -1,
+     "min": -300,
+     "max": 0
+    },
+    {
+     "key": "kneeWidthDb",
+     "type": "double",
+     "default": 2,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "key": "lookaheadMs",
+     "type": "double",
+     "default": 1,
+     "min": 0,
+     "max": 50
+    },
+    {
+     "key": "releaseMs",
+     "type": "double",
+     "default": 20,
+     "min": 0,
+     "max": 1000
+    },
+    {
+     "key": "showInput",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 1
+    },
+    {
+     "key": "showOutput",
+     "type": "double",
+     "default": 1,
+     "min": 0,
+     "max": 1
+    },
+    {
+     "key": "showActual",
+     "type": "double",
+     "default": 1,
+     "min": 0,
+     "max": 1
+    },
+    {
+     "key": "showTarget",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "id": "LoudnessNormalization",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/LoudnessBase.cpp",
+   "params": [
+    {
+     "key": "StereoIndependent",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "key": "LUFSLevel",
+     "type": "double",
+     "default": -23,
+     "min": -145,
+     "max": 0
+    },
+    {
+     "key": "RMSLevel",
+     "type": "double",
+     "default": -20,
+     "min": -145,
+     "max": 0
+    },
+    {
+     "key": "DualMono",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "key": "NormalizeTo",
+     "type": "int",
+     "default": 0,
+     "min": 0,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "id": "Low-passFilter",
+   "kind": "nyquist",
+   "file": "plug-ins/lowpass.ny",
+   "params": [
+    {
+     "key": "FREQUENCY",
+     "type": "double",
+     "default": 1000,
+     "min": 0,
+     "max": 3.4028234663852886e+38
+    },
+    {
+     "key": "ROLLOFF",
+     "type": "enum",
+     "default": "dB6",
+     "choices": [
+      "dB6",
+      "dB12",
+      "dB24",
+      "dB36",
+      "dB48"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "MeasureRms",
+   "kind": "nyquist",
+   "file": "plug-ins/rms.ny",
+   "params": []
+  },
+  {
+   "id": "Message",
+   "kind": "command",
+   "file": "src/commands/MessageCommand.cpp",
+   "params": [
+    {
+     "key": "Text",
+     "type": "string",
+     "default": "Some message"
+    }
+   ]
+  },
+  {
+   "id": "Noise",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/NoiseBase.cpp",
+   "params": [
+    {
+     "key": "Type",
+     "type": "enum",
+     "default": "White",
+     "choices": [
+      "White",
+      "Pink",
+      "Brownian"
+     ]
+    },
+    {
+     "key": "Amplitude",
+     "type": "double",
+     "default": 0.8,
+     "min": 0,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "id": "NoiseGate",
+   "kind": "nyquist",
+   "file": "plug-ins/noisegate.ny",
+   "params": [
+    {
+     "key": "MODE",
+     "type": "enum",
+     "default": "Gate",
+     "choices": [
+      "Gate",
+      "Analyze"
+     ]
+    },
+    {
+     "key": "STEREO-LINK",
+     "type": "enum",
+     "default": "LinkStereo",
+     "choices": [
+      "LinkStereo",
+      "DoNotLink"
+     ]
+    },
+    {
+     "key": "THRESHOLD",
+     "type": "double",
+     "default": -40,
+     "min": -96,
+     "max": -6
+    },
+    {
+     "key": "GATE-FREQ",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 10
+    },
+    {
+     "key": "LEVEL-REDUCTION",
+     "type": "double",
+     "default": -24,
+     "min": -100,
+     "max": 0
+    },
+    {
+     "key": "ATTACK",
+     "type": "double",
+     "default": 10,
+     "min": 1,
+     "max": 1000
+    },
+    {
+     "key": "HOLD",
+     "type": "double",
+     "default": 50,
+     "min": 0,
+     "max": 2000
+    },
+    {
+     "key": "DECAY",
+     "type": "double",
+     "default": 100,
+     "min": 10,
+     "max": 4000
+    }
+   ]
+  },
+  {
+   "id": "NoiseReduction",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/NoiseReductionBase.cpp",
+   "params": []
+  },
+  {
+   "id": "Normalize",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/NormalizeBase.cpp",
+   "params": [
+    {
+     "key": "PeakLevel",
+     "type": "double",
+     "default": -1,
+     "min": -145,
+     "max": 0
+    },
+    {
+     "key": "ApplyVolume",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "key": "RemoveDcOffset",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "key": "StereoIndependent",
+     "type": "bool",
+     "default": false
+    }
+   ]
+  },
+  {
+   "id": "NotchFilter",
+   "kind": "nyquist",
+   "file": "plug-ins/notch.ny",
+   "params": [
+    {
+     "key": "FREQUENCY",
+     "type": "double",
+     "default": 60,
+     "min": 0,
+     "max": 3.4028234663852886e+38
+    },
+    {
+     "key": "Q",
+     "type": "double",
+     "default": 1,
+     "min": 0.1,
+     "max": 1000
+    }
+   ]
+  },
+  {
+   "id": "NyquistPluginInstaller",
+   "kind": "nyquist",
+   "file": "plug-ins/nyquist-plug-in-installer.ny",
+   "params": [
+    {
+     "key": "FILES",
+     "type": "string",
+     "default": "~/Desktop/"
+    },
+    {
+     "key": "OVERWRITE",
+     "type": "enum",
+     "default": "Disallow",
+     "choices": [
+      "Disallow",
+      "Allow"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "OpenProject2",
+   "kind": "command",
+   "file": "src/commands/OpenSaveCommands.cpp",
+   "params": [
+    {
+     "key": "Filename",
+     "type": "string",
+     "default": "test.aup3"
+    },
+    {
+     "key": "AddToHistory",
+     "type": "bool",
+     "default": false,
+     "optional": true
+    }
+   ]
+  },
+  {
+   "id": "Paulstretch",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/PaulstretchBase.cpp",
+   "params": [
+    {
+     "key": "Stretch Factor",
+     "type": "float",
+     "default": 10,
+     "min": 1,
+     "max": 3.4028234663852886e+38
+    },
+    {
+     "key": "Time Resolution",
+     "type": "float",
+     "default": 0.25,
+     "min": 0.0009899999713525176,
+     "max": 3.4028234663852886e+38
+    }
+   ]
+  },
+  {
+   "id": "Phaser",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/PhaserBase.cpp",
+   "params": [
+    {
+     "key": "Stages",
+     "type": "int",
+     "default": 2,
+     "min": 2,
+     "max": 24
+    },
+    {
+     "key": "DryWet",
+     "type": "int",
+     "default": 128,
+     "min": 0,
+     "max": 255
+    },
+    {
+     "key": "Freq",
+     "type": "double",
+     "default": 0.4,
+     "min": 0.001,
+     "max": 4
+    },
+    {
+     "key": "Phase",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 360
+    },
+    {
+     "key": "Depth",
+     "type": "int",
+     "default": 100,
+     "min": 0,
+     "max": 255
+    },
+    {
+     "key": "Feedback",
+     "type": "int",
+     "default": 0,
+     "min": -100,
+     "max": 100
+    },
+    {
+     "key": "Gain",
+     "type": "double",
+     "default": -6,
+     "min": -30,
+     "max": 30
+    }
+   ]
+  },
+  {
+   "id": "Pluck",
+   "kind": "nyquist",
+   "file": "plug-ins/pluck.ny",
+   "params": [
+    {
+     "key": "PITCH",
+     "type": "int",
+     "default": 60,
+     "min": 1,
+     "max": 120
+    },
+    {
+     "key": "FADE",
+     "type": "enum",
+     "default": "Abrupt",
+     "choices": [
+      "Abrupt",
+      "Gradual"
+     ]
+    },
+    {
+     "key": "DUR",
+     "type": "double",
+     "default": 1,
+     "min": 0,
+     "max": 60
+    }
+   ]
+  },
+  {
+   "id": "RegularIntervalLabels",
+   "kind": "nyquist",
+   "file": "plug-ins/equalabel.ny",
+   "params": [
+    {
+     "key": "MODE",
+     "type": "enum",
+     "default": "Both",
+     "choices": [
+      "Both",
+      "Number",
+      "Interval"
+     ]
+    },
+    {
+     "key": "TOTALNUM",
+     "type": "int",
+     "default": 10,
+     "min": 1,
+     "max": 1000
+    },
+    {
+     "key": "INTERVAL",
+     "type": "double",
+     "default": 10,
+     "min": 0.001,
+     "max": 3600
+    },
+    {
+     "key": "REGION",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 3600
+    },
+    {
+     "key": "ADJUST",
+     "type": "enum",
+     "default": "No",
+     "choices": [
+      "No",
+      "Yes"
+     ]
+    },
+    {
+     "key": "LABELTEXT",
+     "type": "string",
+     "default": "Label"
+    },
+    {
+     "key": "ZEROS",
+     "type": "enum",
+     "default": "TwoBefore",
+     "choices": [
+      "TextOnly",
+      "OneBefore",
+      "TwoBefore",
+      "ThreeBefore",
+      "OneAfter",
+      "TwoAfter",
+      "ThreeAfter"
+     ]
+    },
+    {
+     "key": "FIRSTNUM",
+     "type": "int",
+     "default": 1,
+     "min": 0,
+     "max": 2147483647
+    },
+    {
+     "key": "VERBOSE",
+     "type": "enum",
+     "default": "Details",
+     "choices": [
+      "Details",
+      "Warnings",
+      "None"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "Repair",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/Repair.cpp",
+   "params": []
+  },
+  {
+   "id": "Repeat",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/RepeatBase.cpp",
+   "params": [
+    {
+     "key": "Count",
+     "type": "int",
+     "default": 1,
+     "min": 1,
+     "max": 2147483647
+    }
+   ]
+  },
+  {
+   "id": "Reverb",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/ReverbBase.cpp",
+   "params": [
+    {
+     "key": "RoomSize",
+     "type": "double",
+     "default": 75,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "key": "Delay",
+     "type": "double",
+     "default": 10,
+     "min": 0,
+     "max": 200
+    },
+    {
+     "key": "Reverberance",
+     "type": "double",
+     "default": 50,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "key": "HfDamping",
+     "type": "double",
+     "default": 50,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "key": "ToneLow",
+     "type": "double",
+     "default": 100,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "key": "ToneHigh",
+     "type": "double",
+     "default": 100,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "key": "WetGain",
+     "type": "double",
+     "default": -1,
+     "min": -20,
+     "max": 10
+    },
+    {
+     "key": "DryGain",
+     "type": "double",
+     "default": -1,
+     "min": -20,
+     "max": 10
+    },
+    {
+     "key": "StereoWidth",
+     "type": "double",
+     "default": 100,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "key": "WetOnly",
+     "type": "bool",
+     "default": false
+    }
+   ]
+  },
+  {
+   "id": "Reverse",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/Reverse.cpp",
+   "params": []
+  },
+  {
+   "id": "RhythmTrack",
+   "kind": "nyquist",
+   "file": "plug-ins/rhythmtrack.ny",
+   "params": [
+    {
+     "key": "TEMPO",
+     "type": "double",
+     "default": 120,
+     "min": 30,
+     "max": 300
+    },
+    {
+     "key": "TIMESIG",
+     "type": "int",
+     "default": 4,
+     "min": 1,
+     "max": 20
+    },
+    {
+     "key": "SWING",
+     "type": "double",
+     "default": 0,
+     "min": -1,
+     "max": 1
+    },
+    {
+     "key": "BARS",
+     "type": "int",
+     "default": 16,
+     "min": 0,
+     "max": 1000
+    },
+    {
+     "key": "CLICK-TRACK-DUR",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 3.4028234663852886e+38
+    },
+    {
+     "key": "OFFSET",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 3.4028234663852886e+38
+    },
+    {
+     "key": "CLICK-TYPE",
+     "type": "enum",
+     "default": "Metronome",
+     "choices": [
+      "Metronome",
+      "Ping (short)",
+      "Ping (long)",
+      "Cowbell",
+      "ResonantNoise",
+      "NoiseClick",
+      "Drip (short)",
+      "Drip (long)"
+     ]
+    },
+    {
+     "key": "HIGH",
+     "type": "int",
+     "default": 84,
+     "min": 18,
+     "max": 116
+    },
+    {
+     "key": "LOW",
+     "type": "int",
+     "default": 80,
+     "min": 18,
+     "max": 116
+    }
+   ]
+  },
+  {
+   "id": "RissetDrum",
+   "kind": "nyquist",
+   "file": "plug-ins/rissetdrum.ny",
+   "params": [
+    {
+     "key": "FREQ",
+     "type": "double",
+     "default": 100,
+     "min": 50,
+     "max": 2000
+    },
+    {
+     "key": "DECAY",
+     "type": "double",
+     "default": 2,
+     "min": 0.1,
+     "max": 60
+    },
+    {
+     "key": "CF",
+     "type": "double",
+     "default": 500,
+     "min": 100,
+     "max": 5000
+    },
+    {
+     "key": "BW",
+     "type": "double",
+     "default": 400,
+     "min": 10,
+     "max": 1000
+    },
+    {
+     "key": "NOISE",
+     "type": "double",
+     "default": 25,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "key": "GAIN",
+     "type": "double",
+     "default": 0.8,
+     "min": 0,
+     "max": 1
+    }
+   ]
+  },
+  {
+   "id": "SampleDataExport",
+   "kind": "nyquist",
+   "file": "plug-ins/sample-data-export.ny",
+   "params": [
+    {
+     "key": "NUMBER",
+     "type": "int",
+     "default": 100,
+     "min": 1,
+     "max": 1000000
+    },
+    {
+     "key": "UNITS",
+     "type": "enum",
+     "default": "dB",
+     "choices": [
+      "dB",
+      "Linear"
+     ]
+    },
+    {
+     "key": "FILENAME",
+     "type": "string",
+     "default": "*default*/sample-data.txt"
+    },
+    {
+     "key": "FILEFORMAT",
+     "type": "enum",
+     "default": "None",
+     "choices": [
+      "None",
+      "Count",
+      "Time"
+     ]
+    },
+    {
+     "key": "HEADER",
+     "type": "enum",
+     "default": "None",
+     "choices": [
+      "None",
+      "Minimal",
+      "Standard",
+      "All"
+     ]
+    },
+    {
+     "key": "OPTEXT",
+     "type": "string",
+     "default": ""
+    },
+    {
+     "key": "CHANNEL-LAYOUT",
+     "type": "enum",
+     "default": "SameLine",
+     "choices": [
+      "SameLine",
+      "Alternate",
+      "LFirst"
+     ]
+    },
+    {
+     "key": "MESSAGES",
+     "type": "enum",
+     "default": "Yes",
+     "choices": [
+      "Yes",
+      "Errors",
+      "None"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SampleDataImport",
+   "kind": "nyquist",
+   "file": "plug-ins/sample-data-import.ny",
+   "params": [
+    {
+     "key": "FILENAME",
+     "type": "string",
+     "default": "*default*/sample-data.txt"
+    },
+    {
+     "key": "BAD-DATA",
+     "type": "enum",
+     "default": "ThrowError",
+     "choices": [
+      "ThrowError",
+      "ReadAsZero"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "SaveCopy",
+   "kind": "command",
+   "file": "src/commands/OpenSaveCommands.cpp",
+   "params": [
+    {
+     "key": "Filename",
+     "type": "string",
+     "default": "name.aup3"
+    }
+   ]
+  },
+  {
+   "id": "SaveLog",
+   "kind": "command",
+   "file": "src/commands/OpenSaveCommands.cpp",
+   "params": [
+    {
+     "key": "Filename",
+     "type": "string",
+     "default": "log.txt"
+    }
+   ]
+  },
+  {
+   "id": "SaveProject2",
+   "kind": "command",
+   "file": "src/commands/OpenSaveCommands.cpp",
+   "params": [
+    {
+     "key": "Filename",
+     "type": "string",
+     "default": "name.aup3"
+    },
+    {
+     "key": "AddToHistory",
+     "type": "bool",
+     "default": false
+    }
+   ]
+  },
+  {
+   "id": "Select",
+   "kind": "command",
+   "file": "src/commands/SelectCommand.cpp",
+   "params": [
+    {
+     "key": "Start",
+     "type": "double",
+     "default": 0,
+     "min": -100,
+     "max": 3.4028234663852886e+38,
+     "optional": true
+    },
+    {
+     "key": "End",
+     "type": "double",
+     "default": 0,
+     "min": -100,
+     "max": 3.4028234663852886e+38,
+     "optional": true
+    },
+    {
+     "key": "RelativeTo",
+     "type": "enum",
+     "default": "ProjectStart",
+     "choices": [
+      "ProjectStart",
+      "Project",
+      "ProjectEnd",
+      "SelectionStart",
+      "Selection",
+      "SelectionEnd"
+     ],
+     "optional": true
+    },
+    {
+     "key": "High",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 3.4028234663852886e+38,
+     "optional": true
+    },
+    {
+     "key": "Low",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 3.4028234663852886e+38,
+     "optional": true
+    },
+    {
+     "key": "Track",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 100,
+     "optional": true
+    },
+    {
+     "key": "TrackCount",
+     "type": "double",
+     "default": 1,
+     "min": 0,
+     "max": 100,
+     "optional": true
+    },
+    {
+     "key": "Mode",
+     "type": "enum",
+     "default": "Set",
+     "choices": [
+      "Set",
+      "Add",
+      "Remove"
+     ],
+     "optional": true
+    }
+   ]
+  },
+  {
+   "id": "SelectFrequencies",
+   "kind": "command",
+   "file": "src/commands/SelectCommand.cpp",
+   "params": [
+    {
+     "key": "High",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 3.4028234663852886e+38,
+     "optional": true
+    },
+    {
+     "key": "Low",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 3.4028234663852886e+38,
+     "optional": true
+    }
+   ]
+  },
+  {
+   "id": "SelectTime",
+   "kind": "command",
+   "file": "src/commands/SelectCommand.cpp",
+   "params": [
+    {
+     "key": "Start",
+     "type": "double",
+     "default": 0,
+     "min": -100,
+     "max": 3.4028234663852886e+38,
+     "optional": true
+    },
+    {
+     "key": "End",
+     "type": "double",
+     "default": 0,
+     "min": -100,
+     "max": 3.4028234663852886e+38,
+     "optional": true
+    },
+    {
+     "key": "RelativeTo",
+     "type": "enum",
+     "default": "ProjectStart",
+     "choices": [
+      "ProjectStart",
+      "Project",
+      "ProjectEnd",
+      "SelectionStart",
+      "Selection",
+      "SelectionEnd"
+     ],
+     "optional": true
+    }
+   ]
+  },
+  {
+   "id": "SelectTracks",
+   "kind": "command",
+   "file": "src/commands/SelectCommand.cpp",
+   "params": [
+    {
+     "key": "Track",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 100,
+     "optional": true
+    },
+    {
+     "key": "TrackCount",
+     "type": "double",
+     "default": 1,
+     "min": 0,
+     "max": 100,
+     "optional": true
+    },
+    {
+     "key": "Mode",
+     "type": "enum",
+     "default": "Set",
+     "choices": [
+      "Set",
+      "Add",
+      "Remove"
+     ],
+     "optional": true
+    }
+   ]
+  },
+  {
+   "id": "SetClip",
+   "kind": "command",
+   "file": "src/commands/SetClipCommand.cpp",
+   "params": [
+    {
+     "key": "At",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 100000,
+     "optional": true
+    },
+    {
+     "key": "Color",
+     "type": "enum",
+     "default": "Color0",
+     "choices": [
+      "Color0",
+      "Color1",
+      "Color2",
+      "Color3"
+     ],
+     "optional": true
+    },
+    {
+     "key": "Start",
+     "type": "double",
+     "default": 0,
+     "min": -5,
+     "max": 1000000,
+     "optional": true
+    },
+    {
+     "key": "Name",
+     "type": "string",
+     "default": "Unnamed",
+     "optional": true
+    }
+   ]
+  },
+  {
+   "id": "SetEnvelope",
+   "kind": "command",
+   "file": "src/commands/SetEnvelopeCommand.cpp",
+   "params": [
+    {
+     "key": "Time",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 100000,
+     "optional": true
+    },
+    {
+     "key": "Value",
+     "type": "double",
+     "default": 1,
+     "min": 0,
+     "max": 2,
+     "optional": true
+    },
+    {
+     "key": "Delete",
+     "type": "bool",
+     "default": false,
+     "optional": true
+    }
+   ]
+  },
+  {
+   "id": "SetLabel",
+   "kind": "command",
+   "file": "src/commands/SetLabelCommand.cpp",
+   "params": [
+    {
+     "key": "Label",
+     "type": "int",
+     "default": 0,
+     "min": 0,
+     "max": 10000
+    },
+    {
+     "key": "Text",
+     "type": "string",
+     "default": "empty",
+     "optional": true
+    },
+    {
+     "key": "Start",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 100000,
+     "optional": true
+    },
+    {
+     "key": "End",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 100000,
+     "optional": true
+    },
+    {
+     "key": "Selected",
+     "type": "bool",
+     "default": false,
+     "optional": true
+    }
+   ]
+  },
+  {
+   "id": "SetPreference",
+   "kind": "command",
+   "file": "src/commands/PreferenceCommands.cpp",
+   "params": [
+    {
+     "key": "Name",
+     "type": "string",
+     "default": ""
+    },
+    {
+     "key": "Value",
+     "type": "string",
+     "default": ""
+    },
+    {
+     "key": "Reload",
+     "type": "bool",
+     "default": false
+    }
+   ]
+  },
+  {
+   "id": "SetProject",
+   "kind": "command",
+   "file": "src/commands/SetProjectCommand.cpp",
+   "params": [
+    {
+     "key": "Name",
+     "type": "string",
+     "default": "Project",
+     "optional": true
+    },
+    {
+     "key": "Rate",
+     "type": "double",
+     "default": 44100,
+     "min": 1,
+     "max": 1000000,
+     "optional": true
+    },
+    {
+     "key": "X",
+     "type": "int",
+     "default": 10,
+     "min": 0,
+     "max": 2000,
+     "optional": true
+    },
+    {
+     "key": "Y",
+     "type": "int",
+     "default": 10,
+     "min": 0,
+     "max": 2000,
+     "optional": true
+    },
+    {
+     "key": "Width",
+     "type": "int",
+     "default": 1000,
+     "min": 200,
+     "max": 4000,
+     "optional": true
+    },
+    {
+     "key": "Height",
+     "type": "int",
+     "default": 900,
+     "min": 200,
+     "max": 4000,
+     "optional": true
+    }
+   ]
+  },
+  {
+   "id": "SetTrack",
+   "kind": "command",
+   "file": "src/commands/SetTrackInfoCommand.cpp",
+   "params": [
+    {
+     "key": "Name",
+     "type": "string",
+     "default": "Unnamed",
+     "optional": true
+    },
+    {
+     "key": "Selected",
+     "type": "bool",
+     "default": false,
+     "optional": true
+    },
+    {
+     "key": "Focused",
+     "type": "bool",
+     "default": false,
+     "optional": true
+    },
+    {
+     "key": "Mute",
+     "type": "bool",
+     "default": false,
+     "optional": true
+    },
+    {
+     "key": "Solo",
+     "type": "bool",
+     "default": false,
+     "optional": true
+    },
+    {
+     "key": "Volume",
+     "type": "double",
+     "default": 0,
+     "min": -36,
+     "max": 36,
+     "optional": true
+    },
+    {
+     "key": "Pan",
+     "type": "double",
+     "default": 0,
+     "min": -100,
+     "max": 100,
+     "optional": true
+    },
+    {
+     "key": "Height",
+     "type": "int",
+     "default": 120,
+     "min": 44,
+     "max": 2000,
+     "optional": true
+    },
+    {
+     "key": "Display",
+     "type": "enum",
+     "optional": true
+    },
+    {
+     "key": "Scale",
+     "type": "enum",
+     "default": "Linear",
+     "choices": [
+      "Linear",
+      "dB",
+      "LinearDB"
+     ],
+     "optional": true
+    },
+    {
+     "key": "Color",
+     "type": "enum",
+     "default": "Color0",
+     "choices": [
+      "Color0",
+      "Color1",
+      "Color2",
+      "Color3"
+     ],
+     "optional": true
+    },
+    {
+     "key": "VZoom",
+     "type": "enum",
+     "default": "Reset",
+     "choices": [
+      "Reset",
+      "Times2",
+      "HalfWave"
+     ],
+     "optional": true
+    },
+    {
+     "key": "VZoomHigh",
+     "type": "double",
+     "default": 1,
+     "min": -2,
+     "max": 2,
+     "optional": true
+    },
+    {
+     "key": "VZoomLow",
+     "type": "double",
+     "default": -1,
+     "min": -2,
+     "max": 2,
+     "optional": true
+    },
+    {
+     "key": "SpecPrefs",
+     "type": "bool",
+     "default": false,
+     "optional": true
+    },
+    {
+     "key": "SpectralSel",
+     "type": "bool",
+     "default": true,
+     "optional": true
+    },
+    {
+     "key": "SpecColor",
+     "type": "enum",
+     "optional": true
+    }
+   ]
+  },
+  {
+   "id": "SetTrackAudio",
+   "kind": "command",
+   "file": "src/commands/SetTrackInfoCommand.cpp",
+   "params": [
+    {
+     "key": "Mute",
+     "type": "bool",
+     "default": false,
+     "optional": true
+    },
+    {
+     "key": "Solo",
+     "type": "bool",
+     "default": false,
+     "optional": true
+    },
+    {
+     "key": "Volume",
+     "type": "double",
+     "default": 0,
+     "min": -36,
+     "max": 36,
+     "optional": true
+    },
+    {
+     "key": "Pan",
+     "type": "double",
+     "default": 0,
+     "min": -100,
+     "max": 100,
+     "optional": true
+    }
+   ]
+  },
+  {
+   "id": "SetTrackStatus",
+   "kind": "command",
+   "file": "src/commands/SetTrackInfoCommand.cpp",
+   "params": [
+    {
+     "key": "Name",
+     "type": "string",
+     "default": "Unnamed",
+     "optional": true
+    },
+    {
+     "key": "Selected",
+     "type": "bool",
+     "default": false,
+     "optional": true
+    },
+    {
+     "key": "Focused",
+     "type": "bool",
+     "default": false,
+     "optional": true
+    }
+   ]
+  },
+  {
+   "id": "SetTrackVisuals",
+   "kind": "command",
+   "file": "src/commands/SetTrackInfoCommand.cpp",
+   "params": [
+    {
+     "key": "Height",
+     "type": "int",
+     "default": 120,
+     "min": 44,
+     "max": 2000,
+     "optional": true
+    },
+    {
+     "key": "Display",
+     "type": "enum",
+     "optional": true
+    },
+    {
+     "key": "Scale",
+     "type": "enum",
+     "default": "Linear",
+     "choices": [
+      "Linear",
+      "dB",
+      "LinearDB"
+     ],
+     "optional": true
+    },
+    {
+     "key": "Color",
+     "type": "enum",
+     "default": "Color0",
+     "choices": [
+      "Color0",
+      "Color1",
+      "Color2",
+      "Color3"
+     ],
+     "optional": true
+    },
+    {
+     "key": "VZoom",
+     "type": "enum",
+     "default": "Reset",
+     "choices": [
+      "Reset",
+      "Times2",
+      "HalfWave"
+     ],
+     "optional": true
+    },
+    {
+     "key": "VZoomHigh",
+     "type": "double",
+     "default": 1,
+     "min": -2,
+     "max": 2,
+     "optional": true
+    },
+    {
+     "key": "VZoomLow",
+     "type": "double",
+     "default": -1,
+     "min": -2,
+     "max": 2,
+     "optional": true
+    },
+    {
+     "key": "SpecPrefs",
+     "type": "bool",
+     "default": false,
+     "optional": true
+    },
+    {
+     "key": "SpectralSel",
+     "type": "bool",
+     "default": true,
+     "optional": true
+    },
+    {
+     "key": "SpecColor",
+     "type": "enum",
+     "optional": true
+    }
+   ]
+  },
+  {
+   "id": "ShelfFilter",
+   "kind": "nyquist",
+   "file": "plug-ins/ShelfFilter.ny",
+   "params": [
+    {
+     "key": "TYPE",
+     "type": "enum",
+     "default": "Low",
+     "choices": [
+      "Low",
+      "High"
+     ]
+    },
+    {
+     "key": "HZ",
+     "type": "int",
+     "default": 1000,
+     "min": 10,
+     "max": 10000
+    },
+    {
+     "key": "GAIN",
+     "type": "int",
+     "default": -6,
+     "min": -72,
+     "max": 72
+    }
+   ]
+  },
+  {
+   "id": "Silence",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/SilenceBase.cpp",
+   "params": []
+  },
+  {
+   "id": "SlidingStretch",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/TimeScaleBase.cpp",
+   "params": [
+    {
+     "key": "RatePercentChangeStart",
+     "type": "double",
+     "default": 0,
+     "min": -90,
+     "max": 500
+    },
+    {
+     "key": "RatePercentChangeEnd",
+     "type": "double",
+     "default": 0,
+     "min": -90,
+     "max": 500
+    },
+    {
+     "key": "PitchHalfStepsStart",
+     "type": "double",
+     "default": 0,
+     "min": -12,
+     "max": 12
+    },
+    {
+     "key": "PitchHalfStepsEnd",
+     "type": "double",
+     "default": 0,
+     "min": -12,
+     "max": 12
+    },
+    {
+     "key": "PitchPercentChangeStart",
+     "type": "double",
+     "default": 0,
+     "min": -50,
+     "max": 100
+    },
+    {
+     "key": "PitchPercentChangeEnd",
+     "type": "double",
+     "default": 0,
+     "min": -50,
+     "max": 100
+    }
+   ]
+  },
+  {
+   "id": "SpectralDelete",
+   "kind": "nyquist",
+   "file": "plug-ins/spectral-delete.ny",
+   "params": []
+  },
+  {
+   "id": "SpectralEditMultiTool",
+   "kind": "nyquist",
+   "file": "plug-ins/SpectralEditMulti.ny",
+   "params": []
+  },
+  {
+   "id": "SpectralEditParametricEq",
+   "kind": "nyquist",
+   "file": "plug-ins/SpectralEditParametricEQ.ny",
+   "params": [
+    {
+     "key": "CONTROL-GAIN",
+     "type": "double",
+     "default": 0,
+     "min": -24,
+     "max": 24
+    }
+   ]
+  },
+  {
+   "id": "SpectralEditShelves",
+   "kind": "nyquist",
+   "file": "plug-ins/SpectralEditShelves.ny",
+   "params": [
+    {
+     "key": "CONTROL-GAIN",
+     "type": "double",
+     "default": 0,
+     "min": -24,
+     "max": 24
+    }
+   ]
+  },
+  {
+   "id": "StereoToMono",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/StereoToMono.cpp",
+   "params": []
+  },
+  {
+   "id": "StudioFadeOut",
+   "kind": "nyquist",
+   "file": "plug-ins/StudioFadeOut.ny",
+   "params": []
+  },
+  {
+   "id": "Tone",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/ToneGenBase.cpp",
+   "params": [
+    {
+     "key": "Frequency",
+     "type": "double",
+     "default": 440,
+     "min": 1,
+     "max": 1.7976931348623157e+308
+    },
+    {
+     "key": "Amplitude",
+     "type": "double",
+     "default": 0.8,
+     "min": 0,
+     "max": 1
+    },
+    {
+     "key": "Waveform",
+     "type": "enum",
+     "default": "Sine",
+     "choices": [
+      "Sine",
+      "Square",
+      "Sawtooth",
+      "Square, no alias",
+      "Triangle"
+     ]
+    },
+    {
+     "key": "Interpolation",
+     "type": "enum",
+     "default": "Linear",
+     "choices": [
+      "Linear",
+      "Logarithmic"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "Tremolo",
+   "kind": "nyquist",
+   "file": "plug-ins/tremolo.ny",
+   "params": [
+    {
+     "key": "WAVE",
+     "type": "enum",
+     "default": "Sine",
+     "choices": [
+      "Sine",
+      "Triangle",
+      "Sawtooth",
+      "InverseSawtooth",
+      "Square"
+     ]
+    },
+    {
+     "key": "PHASE",
+     "type": "int",
+     "default": 0,
+     "min": -180,
+     "max": 180
+    },
+    {
+     "key": "WET",
+     "type": "int",
+     "default": 40,
+     "min": 1,
+     "max": 100
+    },
+    {
+     "key": "LFO",
+     "type": "double",
+     "default": 4,
+     "min": 0.001,
+     "max": 1000
+    }
+   ]
+  },
+  {
+   "id": "TruncateSilence",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/TruncSilenceBase.cpp",
+   "params": [
+    {
+     "key": "Threshold",
+     "type": "double",
+     "default": -20,
+     "min": -80,
+     "max": -20
+    },
+    {
+     "key": "Action",
+     "type": "enum",
+     "default": "Truncate Detected Silence",
+     "choices": [
+      "Truncate Detected Silence",
+      "Compress Excess Silence"
+     ]
+    },
+    {
+     "key": "Minimum",
+     "type": "double",
+     "default": 0.5,
+     "min": 0.001,
+     "max": 10000
+    },
+    {
+     "key": "Truncate",
+     "type": "double",
+     "default": 0.5,
+     "min": 0,
+     "max": 10000
+    },
+    {
+     "key": "Compress",
+     "type": "double",
+     "default": 50,
+     "min": 0,
+     "max": 99.9
+    },
+    {
+     "key": "Independent",
+     "type": "bool",
+     "default": false
+    },
+    {
+     "key": "TruncateStart",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "key": "TruncateMiddle",
+     "type": "bool",
+     "default": true
+    },
+    {
+     "key": "TruncateEnd",
+     "type": "bool",
+     "default": true
+    }
+   ]
+  },
+  {
+   "id": "Vocoder",
+   "kind": "nyquist",
+   "file": "plug-ins/vocoder.ny",
+   "params": [
+    {
+     "key": "DST",
+     "type": "double",
+     "default": 20,
+     "min": 1,
+     "max": 120
+    },
+    {
+     "key": "MST",
+     "type": "enum",
+     "default": "BothChannels",
+     "choices": [
+      "BothChannels",
+      "RightOnly"
+     ]
+    },
+    {
+     "key": "BANDS",
+     "type": "int",
+     "default": 40,
+     "min": 10,
+     "max": 240
+    },
+    {
+     "key": "TRACK-VL",
+     "type": "double",
+     "default": 100,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "key": "NOISE-VL",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "key": "RADAR-VL",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "key": "RADAR-F",
+     "type": "double",
+     "default": 30,
+     "min": 1,
+     "max": 100
+    }
+   ]
+  },
+  {
+   "id": "Wahwah",
+   "kind": "effect",
+   "file": "libraries/lib-builtin-effects/WahWahBase.cpp",
+   "params": [
+    {
+     "key": "Freq",
+     "type": "double",
+     "default": 1.5,
+     "min": 0.1,
+     "max": 4
+    },
+    {
+     "key": "Phase",
+     "type": "double",
+     "default": 0,
+     "min": 0,
+     "max": 360
+    },
+    {
+     "key": "Depth",
+     "type": "int",
+     "default": 70,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "key": "Resonance",
+     "type": "double",
+     "default": 2.5,
+     "min": 0.1,
+     "max": 10
+    },
+    {
+     "key": "Offset",
+     "type": "int",
+     "default": 30,
+     "min": 0,
+     "max": 100
+    },
+    {
+     "key": "Gain",
+     "type": "double",
+     "default": -6,
+     "min": -30,
+     "max": 30
+    }
+   ]
+  }
+ ]
+}
