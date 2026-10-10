@@ -31,6 +31,79 @@ describe('label deletion preflight', () => {
     ]);
   });
 
+  it('refuses an unaddressable replacement track before removing any labels', async () => {
+    const original: LabelTuple[] = [
+      [0, 0, 'remove'],
+      [1, 1, 'keep'],
+    ];
+    const fixture = project(
+      [label('Cues'), ...Array.from({ length: 101 }, (_, i) => wave(`Audio ${i}`))],
+      [[0, original]],
+    );
+    await expect(labelHandler(fixture.ops)({ action: 'delete', index: 0 })).rejects.toThrow();
+    expect(edits(fixture.calls)).toEqual([]);
+    expect(fixture.tracks).toHaveLength(102);
+    expect(fixture.labelTracks).toEqual([[0, original]]);
+  });
+
+  it('refuses reconstruction with the native label naming dialog enabled before removing any labels', async () => {
+    const original: LabelTuple[] = [
+      [0, 0, 'remove'],
+      [1, 1, 'keep'],
+    ];
+    const fixture = project([label('Cues')], [[0, original]]);
+    fixture.labelDialog('1');
+    await expect(labelHandler(fixture.ops)({ action: 'delete', index: 0 })).rejects.toThrow('label naming dialog');
+    expect(edits(fixture.calls)).toEqual([]);
+    expect(fixture.tracks).toHaveLength(1);
+    expect(fixture.labelTracks).toEqual([[0, original]]);
+  });
+
+  it('refuses an unaddressable future label index before removing the original label track', async () => {
+    const original: LabelTuple[] = [
+      [0, 0, 'remove'],
+      [1, 1, 'keep'],
+    ];
+    const other: LabelTuple[] = Array.from({ length: 10001 }, (_, i) => [i, i, `Other ${i}`]);
+    const fixture = project(
+      [label('Cues'), label('Other')],
+      [
+        [0, original],
+        [1, other],
+      ],
+    );
+    await expect(labelHandler(fixture.ops)({ action: 'delete', index: 0 })).rejects.toThrow();
+    expect(edits(fixture.calls)).toEqual([]);
+    expect(fixture.tracks.map((track) => track.name)).toEqual(['Cues', 'Other']);
+    expect(fixture.labelTracks).toEqual([
+      [0, original],
+      [1, other],
+    ]);
+  });
+
+  it('reconstructs preserved labels at the largest supported native flat index', async () => {
+    const original: LabelTuple[] = [
+      [0, 0, 'remove'],
+      [1, 1, 'keep'],
+    ];
+    const other: LabelTuple[] = Array.from({ length: 10000 }, (_, i) => [i, i, `Other ${i}`]);
+    const fixture = project(
+      [label('Cues'), label('Other')],
+      [
+        [0, original],
+        [1, other],
+      ],
+    );
+    const result = (await labelHandler(fixture.ops)({ action: 'delete', index: 0 })) as { index: number }[];
+    expect(result).toHaveLength(10001);
+    expect(result.at(-1)).toMatchObject({ index: 10000, text: 'keep' });
+    expect(fixture.tracks.map((track) => track.name)).toEqual(['Other', 'Cues']);
+    expect(fixture.labelTracks).toEqual([
+      [0, other],
+      [1, original.slice(1)],
+    ]);
+  });
+
   it('refuses unrepresentable preserved label text before deleting any track', async () => {
     const fixture = project(
       [label('Cues')],

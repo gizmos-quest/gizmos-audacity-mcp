@@ -6,6 +6,24 @@ vi.mock('../../src/source-rate.js', () => ({ measureSourceRate: vi.fn(async () =
 import { expectNoMutation, mockOps, wave } from '../helpers/task-fixture.js';
 
 describe('audio generation', () => {
+  it('refuses an unaddressable new track before creating it', async () => {
+    const mocks = mockOps(Array.from({ length: 101 }, (_, i) => wave(`Audio ${i}`)));
+    await expect(generate(mocks.ops, { kind: 'tone' })).rejects.toThrow();
+    expectNoMutation(mocks);
+    expect(mocks.trackList).toHaveLength(101);
+  });
+
+  it('can generate on the last track index supported by native selection', async () => {
+    const mocks = mockOps(Array.from({ length: 100 }, (_, i) => wave(`Audio ${i}`)));
+    await generate(mocks.ops, { kind: 'tone' });
+    expect(mocks.select).toHaveBeenCalledExactlyOnceWith({ track: 100, start: 0, end: 1 });
+    expect(mocks.command).toHaveBeenCalledExactlyOnceWith(
+      'Tone',
+      { Waveform: 'Sine', Frequency: 440, Amplitude: 0.25 },
+      600_000,
+    );
+  });
+
   it('rejects channel overrides on existing tracks before reading or changing Audacity', async () => {
     const mocks = mockOps();
     await expect(generate(mocks.ops, { kind: 'tone', track: 0, channels: 2 })).rejects.toThrow(

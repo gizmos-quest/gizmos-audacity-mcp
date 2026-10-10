@@ -22,6 +22,9 @@ export async function importTrack(
   catalogueCommand('Import2', { Filename: file });
   catalogueCommand('SetClip', { At: 0, Start: start });
   const before = (await ops.tracks()).length;
+  // Prove follow-up selections can address the new track before importing it.
+  if (name !== undefined) catalogueCommand('SelectTracks', { Track: before, TrackCount: 1, Mode: 'Set' });
+  if (start !== 0) catalogueCommand('Select', { Track: before, TrackCount: 1, Start: 0, End: 0.001, Mode: 'Set' });
   await ops.run('Import2', { Filename: file }, 300_000);
   const after = await ops.tracks();
   if (after.length <= before) throw new Error(`import added no track: ${file}`);

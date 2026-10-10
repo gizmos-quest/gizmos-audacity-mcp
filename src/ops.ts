@@ -3,7 +3,7 @@
 
 import { currentProcessIdentity } from './app-process.js';
 import { tracksInfo } from './audacity/info.js';
-import { setLabels } from './audacity/labels.js';
+import { preflightLabelCreation, setLabels } from './audacity/labels.js';
 import { requireMenuState, STATEFUL_MENUS } from './audacity/menu-state.js';
 import { NoiseProfile } from './audacity/noise.js';
 import { preflightCommand } from './audacity/policy.js';
@@ -93,8 +93,8 @@ export class Ops {
     if (!MENU_IDS.includes(id))
       commandSchema(id).parse(Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined)));
     const command = formatCommand(id, params);
-    if (STATEFUL_MENUS.includes(id))
-      return requireMenuState(this, id).then(() => {
+    if (STATEFUL_MENUS.includes(id) || ['AddLabel', 'AddLabelPlaying'].includes(id))
+      return (STATEFUL_MENUS.includes(id) ? requireMenuState(this, id) : preflightLabelCreation(this)).then(() => {
         this.noise.invalidate(id, params);
         return this.raw(command, timeoutMs);
       });

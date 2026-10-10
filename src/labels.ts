@@ -3,7 +3,7 @@ import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
 import { labelsInfo } from './audacity/info.js';
-import { preflightLabels } from './audacity/labels.js';
+import { preflightLabelCreation, preflightLabels } from './audacity/labels.js';
 import { SafeString } from './catalogue.js';
 import { catalogueCommand } from './format.js';
 import type { Ops } from './ops.js';
@@ -173,16 +173,24 @@ export function registerLabelTools(tool: ToolRegistrar, ops: Ops): void {
       } else {
         const kept = current.filter((l) => l.track === target.track && l.index !== target.index);
         SafeString.min(1).parse(target.trackName);
-        if ((await ops.tracks()).filter((t) => t.kind === 'label' && t.name === target.trackName).length !== 1) {
+        const tracks = await ops.tracks();
+        if (tracks.filter((t) => t.kind === 'label' && t.name === target.trackName).length !== 1) {
           throw new Error('label deletion requires a unique label track name');
         }
         for (const label of kept) LabelInput.parse({ start: label.start, end: label.end, text: label.text });
         catalogueCommand('SetTrack', { Name: target.trackName });
-        if (kept.length)
+        // Reconstruction moves the track to the bottom; its future native
+        // selection must be valid before the original labels are removed.
+        catalogueCommand('SelectTracks', { Track: tracks.length - 1, TrackCount: 1, Mode: 'Set' });
+        if (kept.length) {
+          // One label is removed; prove the last reconstructed flat index is addressable too.
+          catalogueCommand('SetLabel', { Label: current.length - 2 });
           preflightLabels(
             kept.map(({ start, end, text }) => ({ start, end, text })),
             target.trackName,
           );
+          await preflightLabelCreation(ops);
+        }
         await ops.command('SelectTracks', { Track: target.track, TrackCount: 1, Mode: 'Set' });
         await ops.run('RemoveTracks');
         await ops.run('NewLabelTrack');

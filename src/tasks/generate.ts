@@ -125,6 +125,15 @@ export async function generate(ops: Ops, input: unknown): Promise<unknown> {
   if (args.track === undefined) {
     const channels = args.channels ?? 1;
     index = (await ops.tracks()).length;
+    // Native selection bounds Track at 100 (Audacity-3.7.8
+    // src/commands/SelectCommand.cpp:222). Prove the new track is addressable before adding it.
+    catalogueCommand('Select', {
+      Track: index,
+      TrackCount: 1,
+      Start: args.start,
+      End: args.start + args.duration,
+      Mode: 'Set',
+    });
     safeMenu(channels === 2 ? 'NewStereoTrack' : 'NewMonoTrack');
     await ops.run(channels === 2 ? 'NewStereoTrack' : 'NewMonoTrack');
   } else index = (await audioTrack(ops, args.track)).index;

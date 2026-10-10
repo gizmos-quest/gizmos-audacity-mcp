@@ -13,7 +13,7 @@ See [tools](tools.md), [native safety](safety.md) and [testing](testing.md).
 | Processing | Reviewed native effects, generation, pipeline dry-run, ducking, saved macro preflight | Modal commands reserved; AutoDuck needs physically adjacent audio control; no unconstrained Nyquist |
 | Noise reduction | Explicit same-track room-tone capture/reduction | One interval per fresh process; saved UI settings; ≥4096 source and rendered frames; manual replacement cannot be fully detected |
 | Import/export | Guarded audio/video sound import; WAV/FLAC/MP3/OGG mix/range export | Music Import prompts/tempo alignment suppressed; multi-track import remains inspectable; Opus/AIFF unsupported |
-| Labels | Safe point/region/regular markers, search/edit/delete, eight sidecar formats, region audio export | Delete rebuilds its label track at bottom; point subtitle ends inferred; new file destinations |
+| Labels | Safe point/region/regular markers, search/edit/delete, eight sidecar formats, region audio export | Naming dialogs must be disabled; delete rebuilds its label track at bottom; point subtitle ends inferred; new file destinations |
 | Measurement | Native WAV peak/RMS/DC/crest/clipping/silence; rendered/source comparison | Estimates advisory; 24 h duration cap and timeout budget; decoded WAV up to 4 GiB |
 | Loudness/metadata | Optional ffmpeg LUFS/LRA/true peak/decode, ffprobe metadata, headroom-capped gain | External executables installed by user; missing metrics unknown; no delivery certification |
 | Batch | Preflighted temporary-track pipelines, reports, retained completed outputs | No noiseProfile; pause shortening requires empty project; existing solo refused; uncertain state retained |

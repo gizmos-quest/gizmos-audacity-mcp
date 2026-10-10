@@ -14,8 +14,9 @@ export function project(
   const labelTracks = structuredClone(initialLabels);
   const clips = structuredClone(initialClips);
   let selection = { track: 0, start: 0, end: 0 };
-  let failure: { id: string; text: string } | undefined;
+  let failure: { id: string; text: string; status: string } | undefined;
   let imported: TrackInfo[] | undefined;
+  let labelDialogPreference: string | undefined;
   const pipe = new AudacityPipe(
     { to: 'fixture.to', from: 'fixture.from' },
     100,
@@ -25,9 +26,13 @@ export function project(
       const parameters: Record<string, string> = {};
       const token = /([A-Za-z_][A-Za-z0-9_-]*)=(?:"([^"]*)"|([^\s]+))/g;
       for (const match of command.matchAll(token)) parameters[match[1]!] = match[2] ?? match[3]!;
-      if (failure?.id === id) return { ok: false, body: failure.text, status: 'Failed!' };
+      if (failure?.id === id) return { ok: false, body: failure.text, status: failure.status };
       let body = '';
-      if (id === 'GetInfo') {
+      if (id === 'GetPreference') {
+        if (parameters.Name === '/GUI/DialogForNameNewLabel' && labelDialogPreference !== undefined)
+          return { ok: true, body: labelDialogPreference, status: 'OK' };
+        return { ok: false, body: '', status: 'Failed!' }; // The native absent-preference reply.
+      } else if (id === 'GetInfo') {
         if (parameters.Type === 'Tracks') body = JSON.stringify(tracks);
         else if (parameters.Type === 'Labels') body = JSON.stringify(labelTracks);
         else if (parameters.Type === 'Clips') body = JSON.stringify(clips);
@@ -56,6 +61,9 @@ export function project(
         // Native SetTrack visits the current track selection; unknown Track
         // parameters must never make this fixture mask selection mistakes.
         tracks[selection.track]!.name = parameters.Name!;
+      } else if (id === 'SetTrackStatus' && parameters.Focused !== undefined) {
+        for (const [index, track] of tracks.entries())
+          track.focused = Number(parameters.Focused === '1' && index === selection.track);
       } else if (id === 'SelectTracks') {
         selection.track = Number(parameters.Track);
       } else if (id === 'Select') {
@@ -84,7 +92,12 @@ export function project(
           clip.end = clip.start + duration;
         }
       } else if (id === 'AddLabel') {
-        const labels = labelTracks.find(([index]) => index === selection.track)![1];
+        // Native AddLabel finds a label track at/after focus, independently of selection.
+        const focused = Math.max(
+          0,
+          tracks.findIndex((track) => track.focused),
+        );
+        const labels = labelTracks.find(([index]) => index >= focused)![1];
         const before = labels.findIndex(([start]) => start >= selection.start);
         // Tied labels can precede existing ones, so insertion cannot assume an append index.
         labels.splice(before < 0 ? labels.length : before, 0, [selection.start, selection.end, '']);
@@ -104,16 +117,19 @@ export function project(
     labelTracks,
     clips,
     calls,
-    fail: (id: string, text: string) => {
-      failure = { id, text };
+    fail: (id: string, text: string, status = 'Failed!') => {
+      failure = { id, text, status };
     },
     /** The tracks the next Import2 adds instead of one audio track named after the file. */
     importAs: (added: TrackInfo[]) => {
       imported = added;
+    },
+    labelDialog: (value: string | undefined) => {
+      labelDialogPreference = value;
     },
   };
 }
 
 export const wave = (name: string, start = 0, end = 10): TrackInfo => ({ name, kind: 'wave', start, end });
 export const label = (name: string): TrackInfo => ({ name, kind: 'label', start: 0, end: 0 });
-export const edits = (calls: string[]) => calls.filter((command) => !command.startsWith('GetInfo:'));
+export const edits = (calls: string[]) => calls.filter((command) => !/^Get(?:Info|Preference):/.test(command));

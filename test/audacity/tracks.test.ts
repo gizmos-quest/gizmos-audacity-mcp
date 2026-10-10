@@ -87,6 +87,25 @@ describe('typed import and envelopes', () => {
   });
 
   it.each([
+    { name: 'Music', start: 0 },
+    { name: undefined, start: 2 },
+  ])(
+    'refuses an unaddressable imported track before importing when later edits are requested %j',
+    async ({ name, start }) => {
+      const fixture = project(Array.from({ length: 101 }, (_, i) => wave(`Track ${i}`)));
+      await expect(fixture.ops.importTrack('package.json', name, start)).rejects.toThrow();
+      expect(edits(fixture.calls)).toEqual([]);
+      expect(fixture.tracks).toHaveLength(101);
+    },
+  );
+
+  it('can name and place an imported track at the maximum catalogue index', async () => {
+    const fixture = project(Array.from({ length: 100 }, (_, i) => wave(`Track ${i}`)));
+    expect(await fixture.ops.importTrack('package.json', 'Music', 2)).toEqual({ track: 100, name: 'Music' });
+    expect(fixture.clips).toContainEqual({ track: 100, start: 2, end: 3 });
+  });
+
+  it.each([
     [[], 'import added no track'],
     [[wave('Left', 0, 1), wave('Right', 0, 1)], 'import added 2 tracks'],
     [[label('Notes')], 'did not add an audio track'],

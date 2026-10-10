@@ -2,6 +2,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { z } from 'zod';
 import { configPath } from '../app-config.js';
+import { preflightLabelCreation } from '../audacity/labels.js';
 import { preflightCommand } from '../audacity/policy.js';
 import { COMMAND_IDS, describeCommand, MENU_IDS, SafeString } from '../catalogue.js';
 import { requireEffectSelection } from '../effects/context.js';
@@ -127,6 +128,8 @@ export function registerMacroTool(tool: ToolRegistrar, ops: Ops): void {
       if (!file) throw new Error('macro name does not exist; use list');
       const steps = parseMacro(await readFile(join(directory, file), 'utf8'), outputTo);
       if (dryRun) return { name, dryRun, steps };
+      if (steps.some((step) => ['AddLabel', 'AddLabelPlaying'].includes(step.command)))
+        await preflightLabelCreation(ops);
       await preflightMacroEffects(ops, steps);
       if (steps.some((step) => step.command === 'NoiseReduction')) ops.requireNoiseProfile();
       let completed = 0;

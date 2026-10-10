@@ -18,6 +18,24 @@ const LabelsInput = z
   )
   .min(1);
 
+/** AddLabel opens a naming dialog when this preference is enabled
+ * (Audacity-3.7.8 src/menus/LabelMenus.cpp:65-73). Never enter that modal path.
+ * The pinned live label suite verifies 0/1 readback and refusal without a dialog. */
+export async function preflightLabelCreation(ops: Ops): Promise<void> {
+  const command = catalogueCommand('GetPreference', { Name: '/GUI/DialogForNameNewLabel' });
+  const reply = await ops.pipe.send(command);
+  if (!reply.ok) {
+    // Only the absent preference's empty Failed reply establishes the native
+    // default false (:67); an unreadable or failed query proves nothing.
+    if (reply.status === 'Failed!' && !reply.body) return;
+    throw new Error(`Audacity rejected "${command}": ${reply.body || reply.status}`);
+  }
+  if (reply.body !== '0')
+    throw new Error(
+      'Adding labels requires /GUI/DialogForNameNewLabel=0; disable the label naming dialog in Preferences > Tracks > Track Behaviors before continuing',
+    );
+}
+
 export function preflightLabels(
   unsorted: { start: number; end?: number; text: string }[],
   trackName = 'Labels',
@@ -52,13 +70,16 @@ export async function setLabels(
   const tracks = await ops.tracks();
   const matchingTracks = tracks.flatMap((t, i) => (t.kind === 'label' && t.name === trackName ? [i] : []));
   if (matchingTracks.length > 1) throw new Error(`multiple label tracks named ${trackName}; rename them uniquely`);
-  let labelTrack = matchingTracks[0] ?? -1;
-  if (labelTrack < 0) {
-    await ops.run('NewLabelTrack');
-    labelTrack = tracks.length;
-    await ops.run('SelectTracks', { Track: labelTrack, TrackCount: 1, Mode: 'Set' });
-    await ops.run('SetTrack', { Name: trackName });
-  }
+  const labelTrack = matchingTracks[0] ?? tracks.length;
+  const selection = { Track: labelTrack, TrackCount: 1, Mode: 'Set' };
+  catalogueCommand('SelectTracks', selection); // Prove the target is addressable before creating it.
+  await preflightLabelCreation(ops);
+  if (!matchingTracks.length) await ops.run('NewLabelTrack');
+  await ops.run('SelectTracks', selection);
+  if (!matchingTracks.length) await ops.run('SetTrack', { Name: trackName });
+  // AddLabel chooses a label track at/after focus, not from selected flags
+  // (Audacity-3.7.8 src/menus/LabelMenus.cpp:76-86). Select does not move focus.
+  await ops.run('SetTrackStatus', { Focused: true });
   for (const label of labels) {
     const end = label.end ?? label.start;
     const before = labelsInfo(await ops.info('Labels'));

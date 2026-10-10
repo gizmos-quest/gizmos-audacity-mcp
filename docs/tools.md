@@ -74,6 +74,8 @@ are required; batch excludes profiling. See [effect requirements](effects.md).
 Formats: TSV, JSON, SRT, VTT, timestamp chapters, CUE, Podlove and ffmetadata.
 Point subtitle ends use the next marker or project end. Label deletion rebuilds
 only its track at the bottom, preserving overlaps; indices then reflect new order.
+Adding labels requires the label naming dialog to be disabled in Preferences →
+Tracks → Track Behaviors. Required replacement selections are checked before deletion.
 File/region outputs refuse existing destinations.
 
 ## Measurement and controls

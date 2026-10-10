@@ -183,6 +183,7 @@ export async function trackEdit(ops: Ops, input: unknown): Promise<unknown> {
   if (args.action === 'add_mono' || args.action === 'add_stereo' || args.action === 'add_label') {
     if (args.name !== undefined) catalogueCommand('SetTrack', { Name: args.name });
     const before = (await ops.tracks()).length;
+    if (args.name !== undefined) catalogueCommand('SelectTracks', { Track: before, TrackCount: 1, Mode: 'Set' });
     const command = { add_mono: 'NewMonoTrack', add_stereo: 'NewStereoTrack', add_label: 'NewLabelTrack' }[args.action];
     safeMenu(command);
     await ops.run(command);

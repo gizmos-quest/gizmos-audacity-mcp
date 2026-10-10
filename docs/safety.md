@@ -27,6 +27,9 @@ Track references are zero-based indices or unique names. SetTrack,
 SetTrackStatus, SetTrackAudio, SetTrackVisuals, SetClip and SetEnvelope act on
 selected tracks. Audacity silently ignores their unlisted Track/TrackCount/
 Channel/ChannelCount keys; the server rejects them and typed tools select first.
+Native selection addresses track indices 0..100. Workflows that create/import
+tracks or rebuild label tracks validate their required later selections before
+mutation, so known selection-limit failures preserve the original project.
 
 | Control | Input / readback |
 | --- | --- |
@@ -41,6 +44,10 @@ can create silent clips. Pipeline extents recalculate after timing edits.
 Exports select tracks/time explicitly: AddLabel can leave text focus, where
 SelectAll selects label text instead of audio. Empty project-info rate is null;
 the default-rate preference is not evidence of the current rendered rate.
+Label insertion explicitly focuses its target track. AddLabel and AddLabelPlaying
+are refused while the label naming dialog preference is enabled or unreadable;
+disable it in Preferences → Tracks → Track Behaviors before adding labels.
+Label deletion also checks that every remaining flat label index can be rebuilt.
 
 ## Imports, recording and macros
 
@@ -148,6 +155,7 @@ so only a handler's own checks remain.
 | Preflight | Every effect and generator, including the Silence menu item that dispatch resolves to the generator (`BatchCommands.cpp:579-592`) | A selected non-time track and a non-empty time range (`BatchCommands.cpp:543-551`) |
 | Preflight | Undo, Redo | The native menu label must name a step (`EditMenus.cpp:181-191, 210-220`) |
 | Preflight | NewTimeTrack | Refused while a time track exists: a new flat one would take over timing (`TimeTrackMenuItems.cpp:27-42`, `TimeTrack.cpp:360-367`) |
+| Preflight | AddLabel, AddLabelPlaying, typed label creation | Naming dialogs must be disabled; typed insertion focuses its target (`LabelMenus.cpp:65-86`) |
 | Preflight | Import2, typed import, batch inputs | An existing audio file, music-import prompts off; `.aup3`, `.aup`, `.lof` refused (`ProjectFileManager.cpp:1539-1546, 1588-1598`) |
 | Preflight | Export2 | A `.wav`, `.flac`, `.mp3` or `.ogg` file in an existing folder; an existing path must be a regular file |
 | Preflight | Project open/save, preferences, recording | Typed tools only, as described above |

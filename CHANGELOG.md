@@ -58,3 +58,8 @@ First public release of `@gizmos-quest/audacity-mcp`.
 
 - Recovery keeps edits locked when the synchronized Tracks reply has invalid
   audio extents or field types, using the same state validation as normal reads.
+- Label insertion targets the named track even when another track has focus,
+  and refuses preference-controlled naming dialogs before creating labels.
+- Generation, named track creation/import and label reconstruction validate
+  required later track selections and label indices before mutation, preserving
+  the original project when the result would exceed a native index limit.

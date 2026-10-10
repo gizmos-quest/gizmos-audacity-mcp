@@ -2,6 +2,79 @@ import { describe, expect, it } from 'vitest';
 import { edits, type LabelTuple, label, project, wave } from '../helpers/project-fixture.js';
 
 describe('flat label insertion', () => {
+  it('targets an existing later label track despite focus on an earlier track', async () => {
+    const fixture = project(
+      [{ ...wave('Audio'), focused: 1 }, label('Earlier'), label('Later')],
+      [
+        [1, [[0, 0, 'keep']]],
+        [2, []],
+      ],
+    );
+    await fixture.ops.setLabels([{ start: 1, text: 'later cue' }], 'Later');
+    expect(fixture.labelTracks).toEqual([
+      [1, [[0, 0, 'keep']]],
+      [2, [[1, 1, 'later cue']]],
+    ]);
+    await fixture.ops.setLabels([{ start: 2, text: 'earlier cue' }], 'Earlier');
+    expect(fixture.labelTracks).toEqual([
+      [
+        1,
+        [
+          [0, 0, 'keep'],
+          [2, 2, 'earlier cue'],
+        ],
+      ],
+      [2, [[1, 1, 'later cue']]],
+    ]);
+  });
+
+  it.each(['1', '', 'unknown'])(
+    'refuses the dialog preference %j before creating or changing labels',
+    async (value) => {
+      const fixture = project([wave('Audio')]);
+      fixture.labelDialog(value);
+      await expect(fixture.ops.setLabels([{ start: 0, text: 'cue' }])).rejects.toThrow(/DialogForNameNewLabel/);
+      expect(edits(fixture.calls)).toEqual([]);
+      expect(fixture.tracks).toHaveLength(1);
+    },
+  );
+
+  it.each(['AddLabel', 'AddLabelPlaying'])('refuses generic %s with label dialogs enabled', async (command) => {
+    const fixture = project([label('Cues')], [[0, []]]);
+    fixture.labelDialog('1');
+    await expect(fixture.ops.run(command)).rejects.toThrow(/DialogForNameNewLabel/);
+    expect(edits(fixture.calls)).toEqual([]);
+    expect(fixture.labelTracks).toEqual([[0, []]]);
+  });
+
+  it('preserves nonempty native preference failure text before adding labels', async () => {
+    const fixture = project([wave('Audio')]);
+    fixture.fail('GetPreference', 'native preference failure');
+    await expect(fixture.ops.setLabels([{ start: 0, text: 'cue' }])).rejects.toThrow('native preference failure');
+    expect(edits(fixture.calls)).toEqual([]);
+  });
+
+  it('does not assume an absent preference from an unknown empty failure status', async () => {
+    const fixture = project([wave('Audio')]);
+    fixture.fail('GetPreference', '', 'Unexpected');
+    await expect(fixture.ops.setLabels([{ start: 0, text: 'cue' }])).rejects.toThrow('Unexpected');
+    expect(edits(fixture.calls)).toEqual([]);
+  });
+
+  it('accepts an explicitly disabled label dialog preference', async () => {
+    const fixture = project([label('Cues')], [[0, []]]);
+    fixture.labelDialog('0');
+    await fixture.ops.setLabels([{ start: 0, text: 'cue' }], 'Cues');
+    expect(fixture.labelTracks).toEqual([[0, [[0, 0, 'cue']]]]);
+  });
+
+  it('refuses an unaddressable new label track before creating it', async () => {
+    const fixture = project(Array.from({ length: 101 }, (_, index) => wave(`Audio ${index}`)));
+    await expect(fixture.ops.setLabels([{ start: 0, text: 'cue' }])).rejects.toThrow(/100/);
+    expect(edits(fixture.calls)).toEqual([]);
+    expect(fixture.tracks).toHaveLength(101);
+  });
+
   it('preserves existing labels in every track while inserting earlier, middle, tied and later labels', async () => {
     const fixture = project(
       [wave('Audio'), label('Opening'), wave('Bed'), label('Cues'), label('Ending')],

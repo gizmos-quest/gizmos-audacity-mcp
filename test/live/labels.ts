@@ -1,9 +1,92 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
-import { type Label, type LiveContext, type Measurement, testTimeout } from './session.js';
+import { formatCommand } from '../../src/format.js';
+import { AudacityPipe } from '../../src/pipe.js';
+import { type Label, type LiveContext, type Measurement, testTimeout, type Windows } from './session.js';
 
 export function registerLabels(context: LiveContext) {
-  const { call, refuse, importVoice, output } = context;
+  const { call, refuse, tracks, importVoice, output } = context;
+  it(
+    'adds labels to an existing named track independently of earlier track focus',
+    async () => {
+      await importVoice();
+      for (const trackName of ['Earlier', 'Later'])
+        await call('audacity_labels_set', { trackName, labels: [{ start: 0, text: `Keep ${trackName}` }] });
+      await call('audacity_select', { track: 'Voice' });
+      await call('audacity_command', { command: 'SetTrackStatus', params: { Focused: true } });
+      await call('audacity_labels_set', { trackName: 'Later', labels: [{ start: 1, text: 'Later cue' }] });
+      await call('audacity_labels_set', { trackName: 'Earlier', labels: [{ start: 1, text: 'Earlier cue' }] });
+      for (const trackName of ['Earlier', 'Later'])
+        expect(
+          (await call<Label[]>('audacity_labels', { action: 'list', trackName })).map((label) => label.text),
+        ).toEqual([`Keep ${trackName}`, `${trackName} cue`]);
+      expect((await call<Windows>('audacity_dialogs')).windows.filter((window) => window.dialog)).toEqual([]);
+    },
+    testTimeout,
+  );
+
+  it(
+    'refuses label naming dialogs before edits and restores the native preference',
+    async () => {
+      await importVoice();
+      const name = '/GUI/DialogForNameNewLabel';
+      const pipe = new AudacityPipe(undefined, 10_000);
+      let original: string | undefined;
+      let handoffFailed = false;
+      const configure = async (value: string, capture = false) => {
+        // Only one client owns the pipe, including these test-only preference writes.
+        await context.closeClient();
+        try {
+          if (capture) {
+            const previous = await pipe.send(formatCommand('GetPreference', { Name: name }));
+            if (previous.ok && ['0', '1'].includes(previous.body)) original = previous.body;
+            else if (!previous.ok && previous.status === 'Failed!' && previous.body === '') original = '0';
+            else throw new Error('Cannot establish the original label naming preference; no preference was changed');
+          }
+          expect(
+            (await pipe.send(formatCommand('SetPreference', { Name: name, Value: value, Reload: false }))).ok,
+          ).toBe(true);
+          expect(await pipe.send(formatCommand('GetPreference', { Name: name }))).toMatchObject({
+            ok: true,
+            body: value,
+            status: 'OK',
+          });
+        } finally {
+          if (pipe.needsRecovery) {
+            // Preserve uncertainty on this same pipe across handoffs. Only a
+            // correlated barrier permits restoration or a new SDK client; a
+            // failed barrier leaves the client disconnected for inspection.
+            handoffFailed = true;
+            expect((await pipe.reconnect()).ok).toBe(true);
+            expect(pipe.needsRecovery).toBe(false);
+            handoffFailed = false;
+          }
+          pipe.release();
+          await context.connectClient();
+        }
+      };
+      try {
+        await configure('1', true);
+        const previousTracks = await tracks();
+        const previousSelection = await call('audacity_info', { type: 'Selection' });
+        for (const command of ['AddLabel', 'AddLabelPlaying'])
+          await expect(refuse('audacity_menu', { command })).rejects.toThrow(/DialogForNameNewLabel/);
+        await expect(
+          refuse('audacity_labels_set', { trackName: 'Refused', labels: [{ start: 0, text: 'Refused' }] }),
+        ).rejects.toThrow(/DialogForNameNewLabel/);
+        expect(await tracks()).toEqual(previousTracks);
+        expect(await call('audacity_info', { type: 'Selection' })).toEqual(previousSelection);
+        expect(await call('audacity_info', { type: 'Labels' })).toEqual([]);
+        expect((await call<Windows>('audacity_dialogs')).windows.filter((window) => window.dialog)).toEqual([]);
+      } finally {
+        // An absent entry is restored as its explicit native false default;
+        // Audacity's scripting API has no operation to remove a preference.
+        if (original !== undefined && !handoffFailed) await configure(original);
+      }
+    },
+    testTimeout,
+  );
+
   it(
     'finds/edits/deletes overlapping labels and preserves other label tracks',
     async () => {

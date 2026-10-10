@@ -7,6 +7,16 @@ vi.mock('../../src/source-rate.js', () => ({ measureSourceRate: vi.fn(async () =
 import { expectNoMutation, mockOps, wave } from '../helpers/task-fixture.js';
 
 describe('track creation, mixing, removal and alignment', () => {
+  it.each(['add_mono', 'add_stereo', 'add_label'])(
+    'refuses an unaddressable named %s track before creating it',
+    async (action) => {
+      const mocks = mockOps(Array.from({ length: 101 }, (_, i) => wave(`Audio ${i}`)));
+      await expect(trackEdit(mocks.ops, { action, name: 'New track' })).rejects.toThrow();
+      expectNoMutation(mocks);
+      expect(mocks.trackList).toHaveLength(101);
+    },
+  );
+
   it.each([
     ['add_mono', 'NewMonoTrack'],
     ['add_stereo', 'NewStereoTrack'],
