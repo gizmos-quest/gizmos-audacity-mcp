@@ -74,6 +74,8 @@ export function formatLabels(
       .join('\n')}\n`;
   if (regions.some((l) => l.end <= l.start))
     throw new Error(`${format} needs a positive end for the last point label; supply projectEnd`);
+  if (regions.some((l) => Math.round(l.end * 1000) <= Math.round(l.start * 1000)))
+    throw new Error(`${format} needs a positive region after millisecond timestamp rounding`);
   if (format === 'ffmetadata') {
     const escapeTitle = (s: string) => s.replace(/[\\=;#]/g, '\\$&');
     return `;FFMETADATA1\n${regions.map((l) => `[CHAPTER]\nTIMEBASE=1/1000\nSTART=${Math.round(l.start * 1000)}\nEND=${Math.round(l.end * 1000)}\ntitle=${escapeTitle(l.text)}`).join('\n')}\n`;

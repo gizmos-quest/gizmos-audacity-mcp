@@ -72,7 +72,8 @@ are required; batch excludes profiling. See [effect requirements](effects.md).
 | `audacity_label_regions_export` | directory/trackName/format/channels; numbered audio files for positive-duration mix regions |
 
 Formats: TSV, JSON, SRT, VTT, timestamp chapters, CUE, Podlove and ffmetadata.
-Point subtitle ends use the next marker or project end. Label deletion rebuilds
+Point subtitle ends use the next marker or project end. SRT, VTT and ffmetadata
+require positive durations after millisecond rounding. Label deletion rebuilds
 only its track at the bottom, preserving overlaps; indices then reflect new order.
 Adding labels requires the label naming dialog to be disabled in Preferences →
 Tracks → Track Behaviors. Required replacement selections are checked before deletion.

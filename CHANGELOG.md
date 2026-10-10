@@ -63,3 +63,5 @@ First public release of `@gizmos-quest/audacity-mcp`.
 - Generation, named track creation/import and label reconstruction validate
   required later track selections and label indices before mutation, preserving
   the original project when the result would exceed a native index limit.
+- SRT, VTT and ffmetadata exports refuse regions that collapse to zero duration
+  after millisecond rounding; TSV and JSON retain their original precision.

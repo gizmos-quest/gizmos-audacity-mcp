@@ -33,4 +33,25 @@ describe('label file contracts', () => {
     expect(formatLabels([{ start: 0, end: 1, text: 'A=B;#C' }], 'ffmetadata', 2)).toContain('title=A\\=B\\;\\#C');
     expect(() => formatLabels([{ start: 1, text: 'end' }], 'srt', 1)).toThrow('positive end');
   });
+
+  it.each(['srt', 'vtt', 'ffmetadata'] as const)(
+    'refuses %s regions whose exported timestamps collapse to the same millisecond',
+    (format) => {
+      expect(() => formatLabels([{ start: 1, end: 1.0001, text: 'Tiny' }], format, 2)).toThrow('timestamp rounding');
+    },
+  );
+
+  it.each([
+    ['srt', '00:00:01,000 --> 00:00:01,001'],
+    ['vtt', '00:00:01.000 --> 00:00:01.001'],
+    ['ffmetadata', 'START=1000\nEND=1001'],
+  ] as const)('exports a positive rounded %s range across a millisecond boundary', (format, expected) => {
+    expect(formatLabels([{ start: 1.0004, end: 1.0006, text: 'Tiny' }], format, 2)).toContain(expected);
+  });
+
+  it('retains submillisecond range precision in native TSV and JSON labels', () => {
+    const labels = [{ start: 1, end: 1.0001, text: 'Tiny' }];
+    expect(formatLabels(labels, 'tsv', 2)).toBe('1\t1.0001\tTiny\n');
+    expect(JSON.parse(formatLabels(labels, 'json', 2))).toEqual(labels);
+  });
 });
