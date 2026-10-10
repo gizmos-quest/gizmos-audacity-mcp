@@ -95,5 +95,7 @@ File/region outputs refuse existing destinations.
 Measurement reports distinguish sample peak/RMS from optional LUFS/LRA/true peak.
 Unavailable metrics are null with reasons. Object reports expose the same object
 as JSON text and structured content; legacy arrays and strings remain text-only.
-Pipelines and batches report completed-stage progress when the client supplies
-a progress token. Tools' annotations conservatively describe mixed-action tools.
+Pipelines and batches report strictly increasing completed-stage progress when
+the client supplies a progress token. A call cancelled while it waits for another
+operation never starts; a command already sent is never cancelled or replayed.
+Tools' annotations conservatively describe mixed-action tools.
