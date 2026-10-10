@@ -15,6 +15,13 @@ function run(command, args, allowFailure = false) {
   return result;
 }
 const git = (...args) => run('git', args).stdout.trim();
+const bot = [
+  '-c',
+  'user.name=github-actions[bot]',
+  '-c',
+  'user.email=41898282+github-actions[bot]@users.noreply.github.com',
+];
+const upstream = 'gizmos-quest/gizmos-audacity-mcp';
 const npm = (args, allowFailure = false) => {
   assert(npmCli, 'invoke this release script with npm run release:prepare or npm run release:publish');
   return run(process.execPath, [npmCli, ...args], allowFailure);
@@ -46,6 +53,7 @@ function hostedDispatch() {
   assert.equal(process.env.GITHUB_ACTIONS, 'true', 'releases run only through the hosted workflow');
   assert.equal(process.env.GITHUB_EVENT_NAME, 'workflow_dispatch');
   assert.equal(process.env.GITHUB_REF, 'refs/heads/main', 'dispatch the release workflow on main');
+  assert.equal(process.env.GITHUB_REPOSITORY, upstream, `releases run only in ${upstream}, never in a fork`);
 }
 
 export function prepare() {
@@ -61,16 +69,22 @@ export function prepare() {
     git('show', '-s', '--format=%cs', base),
   );
   const tag = `v${version}`;
-  const head = git('rev-parse', 'origin/main');
-  let committed = false;
-  if (head === base && git('log', '-1', '--format=%s', head) === `chore(release): ${tag}`) committed = true;
-  if (head !== base) {
-    assert.equal(git('log', '-1', '--format=%s', head), `chore(release): ${tag}`, 'main moved; dispatch a new release');
-    assert.equal(git('rev-parse', `${head}^`), base, 'release must be the direct child of its dispatch commit');
-    assert.equal(JSON.parse(git('show', `${head}:package.json`)).version, version);
-    committed = true;
+  // Resume from the release commit on main, or from the tag an interrupted attempt
+  // pushed for its published release before landing it on a main that had moved.
+  const release =
+    run('git', ['rev-parse', '--verify', '--quiet', `refs/tags/${tag}^{commit}`], true).stdout.trim() ||
+    git('rev-parse', 'origin/main');
+  const committed = release !== base || git('log', '-1', '--format=%s', base) === `chore(release): ${tag}`;
+  if (release !== base) {
+    assert.equal(
+      git('log', '-1', '--format=%s', release),
+      `chore(release): ${tag}`,
+      'main moved; dispatch a new release',
+    );
+    assert.equal(git('rev-parse', `${release}^`), base, 'release must be the direct child of its dispatch commit');
+    assert.equal(JSON.parse(git('show', `${release}:package.json`)).version, version);
   }
-  git('checkout', '--detach', head);
+  git('checkout', '--detach', release);
   if (!committed) {
     npm(['version', version, '--no-git-tag-version', '--allow-same-version', '--ignore-scripts']);
     const manifest = readJson('server.json');
@@ -83,6 +97,19 @@ export function prepare() {
   mkdirSync(join(root, '.release'), { recursive: true });
   writeJson('.release/state.json', { base, version, date, tag, committed, name: original.name });
   console.log(`Prepared ${original.name}@${version}; existing release commit: ${committed}.`);
+}
+
+/** Main must contain the published release commit. A push to main after the pre-publish
+ * check cannot be undone: merge the tagged release commit into the newer main instead. */
+function land(commit, state) {
+  if (run('git', ['push', 'origin', `${commit}:refs/heads/main`], true).status === 0) return;
+  git('fetch', 'origin', 'main');
+  if (run('git', ['merge-base', '--is-ancestor', commit, 'origin/main'], true).status === 0) return;
+  const forward = run('git', ['merge-base', '--is-ancestor', state.base, 'origin/main'], true).status === 0;
+  assert(forward, `main no longer contains ${state.base}; merge ${state.tag} into main by hand, then rerun`);
+  git('checkout', '--detach', 'origin/main');
+  git(...bot, 'merge', '--no-ff', '-m', `chore(release): merge ${state.tag}`, commit);
+  git('push', 'origin', 'HEAD:main');
 }
 
 export function publish() {
@@ -103,6 +130,13 @@ export function publish() {
     );
   else {
     assert(/\bE404\b/.test(published.stderr), published.stderr || 'npm lookup failed');
+    if (!state.committed) {
+      // The gates ran for minutes: re-check main and the tag right before the irreversible step.
+      git('fetch', 'origin', 'main', '--tags');
+      assert.equal(git('rev-parse', 'origin/main'), state.base, 'main moved during the gates; dispatch a new release');
+      const tagged = run('git', ['rev-parse', '--verify', '--quiet', `refs/tags/${state.tag}`], true);
+      assert.notEqual(tagged.status, 0, `tag ${state.tag} appeared during the gates; inspect it before releasing`);
+    }
     npm(['publish', join('.release', packed.filename), '--access', 'public', '--provenance']);
     assert.equal(
       JSON.parse(npm(['view', `${state.name}@${state.version}`, 'dist.integrity', '--json']).stdout),
@@ -111,45 +145,18 @@ export function publish() {
   }
   // Registry publication is irreversible. Git changes happen only after npm verifies the exact tarball.
   if (!state.committed) {
-    git('fetch', 'origin', 'main');
-    assert.equal(
-      git('rev-parse', 'origin/main'),
-      state.base,
-      'main moved after publication; rerun after reviewing the published version',
-    );
     git('add', 'package.json', 'package-lock.json', 'server.json', 'CHANGELOG.md');
-    git(
-      '-c',
-      'user.name=github-actions[bot]',
-      '-c',
-      'user.email=41898282+github-actions[bot]@users.noreply.github.com',
-      'commit',
-      '--allow-empty',
-      '-m',
-      `chore(release): ${state.tag}`,
-    );
-    git('push', 'origin', 'HEAD:main');
+    git(...bot, 'commit', '--allow-empty', '-m', `chore(release): ${state.tag}`);
   }
   const commit = git('rev-parse', 'HEAD');
   const existingTag = run('git', ['rev-parse', '--verify', `refs/tags/${state.tag}^{commit}`], true);
   if (existingTag.status === 0)
     assert.equal(existingTag.stdout.trim(), commit, 'existing release tag points elsewhere');
-  else {
-    git(
-      '-c',
-      'user.name=github-actions[bot]',
-      '-c',
-      'user.email=41898282+github-actions[bot]@users.noreply.github.com',
-      'tag',
-      '-a',
-      state.tag,
-      '-m',
-      state.tag,
-    );
-  }
-  // A prior attempt can stop after creating a local tag but before pushing it.
-  // An identical remote tag makes this a no-op; Git refuses a conflicting remote tag.
+  else git(...bot, 'tag', '-a', state.tag, '-m', state.tag);
+  // The tag anchors the published snapshot first, so a rerun of this dispatch can resume
+  // from it. An identical remote tag makes this a no-op; Git refuses a conflicting one.
   git('push', 'origin', `refs/tags/${state.tag}`);
+  land(commit, state);
   const release = run('gh', ['release', 'view', state.tag, '--json', 'tagName'], true);
   if (release.status !== 0) {
     const source = readFileSync(join(root, 'CHANGELOG.md'), 'utf8');

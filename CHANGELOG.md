@@ -25,6 +25,9 @@ input/result shapes and environment variables.
 - The pipe ownership lock no longer depends on TEMP/TMPDIR, and concurrent
   reclamation of a stale lock can no longer leave an incomplete lock behind.
 - Bounded measurement work and protocol-version compatibility.
+- The release workflow runs only in the upstream repository, re-checks main and
+  the tag right before npm publication, and lands a release published just before
+  main moved by merging its tagged commit; a rerun resumes from the tag.
 - Windows paths such as `C:\new\` no longer turn into line breaks inside Audacity;
   relative paths are sent absolute and text Audacity would alter is refused.
 - A projectless or still-starting Audacity is reported within seconds, and

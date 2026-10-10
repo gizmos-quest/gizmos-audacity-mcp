@@ -31,9 +31,14 @@ checks/publishes the exact package, then writes `chore(release): vX.Y.Z`, tag an
 GitHub release. Package, lockfile, registry manifest and changelog versions stay
 in sync. Agents do not manually tag or publish from their worktree.
 
-Rerun the same failed dispatch when needed. Existing npm versions must match
-the exact tarball integrity; mismatches, moved main and conflicting tags stop
-the workflow for inspection. A publish cannot be rolled back by resetting Git.
+The job runs only in `gizmos-quest/gizmos-audacity-mcp`, never in a fork. Main
+and the release tag are checked again right before `npm publish`: a main that
+moved during the gates stops the run before publication. If main moves after
+publication, the job pushes the tag of the published release commit first and
+merges that commit into the newer main; when the merge needs a person, merge the
+tag by hand and rerun the same dispatch, which resumes from the tag. Existing npm
+versions must match the exact tarball integrity; mismatches and conflicting tags
+stop the workflow for inspection. A publish cannot be rolled back by resetting Git.
 Registry publication remains separate: review the current official MCP Registry
 requirements before submitting `server.json`. No MCPB is prepared because the
 bundled client runtime's Node 24 requirement has not been qualified.
