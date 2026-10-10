@@ -46,9 +46,13 @@ export function toolFailure(error: unknown): CallToolResult {
 
 export function requestProgress(ctx: ServerContext): ToolProgress {
   const token = ctx.mcpReq._meta?.progressToken;
+  let sent = -1;
   return async (progress, total, message) => {
     ctx.mcpReq.signal.throwIfAborted();
-    if (typeof token === 'string' || typeof token === 'number') {
+    // MCP progress must increase with every notification; a stage start that
+    // repeats the previous completion count is not sent again.
+    if ((typeof token === 'string' || typeof token === 'number') && progress > sent) {
+      sent = progress;
       await ctx.mcpReq.notify({
         method: 'notifications/progress',
         params: { progressToken: token, progress, total, message },
@@ -78,7 +82,11 @@ export function createToolRegistrar(server: McpServer, operations: SerialQueue):
           // waits on a blocking dialog. They do not exchange pipe commands.
           const value = await (['audacity_dialogs', 'audacity_window'].includes(name)
             ? invoke()
-            : operations.run(invoke));
+            : operations.run(() => {
+                // A request cancelled while it waited never starts; nothing was sent for it.
+                ctx.mcpReq.signal.throwIfAborted();
+                return invoke();
+              }));
           return toolResult(value, schema);
         } catch (error) {
           return toolFailure(error);

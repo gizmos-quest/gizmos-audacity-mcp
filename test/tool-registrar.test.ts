@@ -150,6 +150,22 @@ describe('metadata and progress', () => {
       params: { progressToken: token, progress: 1, total: 3, message: 'Completed stage' },
     });
   });
+  it('sends strictly increasing progress while still checking cancellation at every stage', async () => {
+    const controller = new AbortController();
+    const { ctx, notify } = context('task', controller.signal);
+    const progress = requestProgress(ctx);
+    for (const [value, message] of [
+      [0, 'Start one'],
+      [1, 'Completed one'],
+      [1, 'Start two'],
+      [2, 'Completed two'],
+    ] as const)
+      await progress(value, 2, message);
+    const sent = notify.mock.calls as unknown as [{ params: { progress: number } }][];
+    expect(sent.map(([note]) => note.params.progress)).toEqual([0, 1, 2]);
+    controller.abort(new Error('cancelled'));
+    await expect(progress(2, 2, 'Repeated')).rejects.toThrow('cancelled');
+  });
   it.each([undefined, false, {}])('does not invent a progress token %j', async (token) => {
     const { ctx, notify } = context(token);
     await requestProgress(ctx)(0, 3, 'Starting');
@@ -212,6 +228,24 @@ describe('shared registrar boundary', () => {
     await first;
     await second;
     expect(events).toEqual(['effect', 'dialogs', 'select']);
+  });
+  it('never starts a queued operation whose request was cancelled while it waited', async () => {
+    const { tool, call } = session();
+    let release!: () => void;
+    const blocked = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const second = vi.fn(async () => 'sent');
+    tool('audacity_effect', 'Apply', {}, async () => blocked);
+    tool('audacity_menu', 'Menu', {}, second);
+    const first = call('audacity_effect');
+    const controller = new AbortController();
+    const queued = call('audacity_menu', {}, context(undefined, controller.signal).ctx);
+    controller.abort(new Error('user cancelled queued edit'));
+    release();
+    await first;
+    expect(await queued).toMatchObject({ isError: true, content: [{ text: 'user cancelled queued edit' }] });
+    expect(second).not.toHaveBeenCalled();
   });
   it('returns handler failures as MCP tool errors without losing text', async () => {
     const { tool, call } = session();
