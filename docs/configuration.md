@@ -35,13 +35,15 @@ left untouched. It finds the module beside the executable, in a macOS bundle, in
 Linux library directories such as `/usr/lib/audacity/modules`, or at the path
 Audacity recorded; without the module file doctor reports a failure and `--fix`
 changes nothing. It does not install Audacity or rewrite plugin/language settings.
+Doctor exits with status 1 when a required check fails; the update-notice and
+ffmpeg checks are advisory.
 
 | Variable | Purpose |
 | --- | --- |
-| `AUDACITY_EXE` | Explicit installed/portable executable. Invalid overrides fail; lifecycle actions refuse a different running installation. |
-| `AUDACITY_CONFIG` | Config file to inspect. **Does not redirect Audacity's settings.** Use the application's real config or Portable Settings. |
+| `AUDACITY_EXE` | Explicit installed/portable executable. Invalid overrides fail; lifecycle actions refuse a different running installation. Default: `C:\Program Files\Audacity\Audacity.exe`, `/usr/bin/audacity` or `/Applications/Audacity.app/Contents/MacOS/Wrapper`. |
+| `AUDACITY_CONFIG` | The `audacity.cfg` that doctor checks and fixes and that recovery entries and saved macros (`Macros/` beside it) are read from. **Does not redirect Audacity's settings.** Default: `Portable Settings` beside `AUDACITY_EXE`, else the user's Audacity config folder (`%APPDATA%\audacity`, `~/Library/Application Support/audacity`, `$XDG_CONFIG_HOME/audacity` or `~/.config/audacity`). |
 | `AUDACITY_FFMPEG` | Optional ffmpeg executable; otherwise discovered on PATH. |
-| `AUDACITY_FFPROBE` | Optional ffprobe executable; otherwise discovered on PATH. |
+| `AUDACITY_FFPROBE` | Optional ffprobe executable; otherwise the `ffprobe` beside a path-valued `AUDACITY_FFMPEG`, else PATH. |
 | `AUDACITY_PIPE_TO` / `AUDACITY_PIPE_FROM` | Advanced paired endpoints for isolated relay tests; both must be supplied. Windows named pipes or absolute POSIX FIFOs only; ordinary use needs neither. |
 
 Windows uses one fixed named-pipe pair. macOS/Linux use the current user's

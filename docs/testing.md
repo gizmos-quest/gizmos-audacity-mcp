@@ -12,7 +12,7 @@ npm test
 npm run build
 npm run test:e2e
 npm run check:package
-npm pack --dry-run
+npm run check:workflows
 npm audit --audit-level=high
 ```
 
@@ -23,6 +23,13 @@ npm audit --audit-level=high
 | Built stdio E2E | Real production entry/helper and SDK boundary with recorded native bytes, fragmentation/delay/disconnect, uncertainty and recovery |
 | Package check | Allowlisted files, size/privacy checks and installed-tarball stdio startup; never publishes |
 | Live | Actual native project/lifecycle/effect behavior on the measured Audacity build |
+
+Unit tests mirror the source tree: `test/<path>/<module>.test.ts` covers
+`src/<path>/<module>.ts` (or `scripts/`), and `<module>.<aspect>.test.ts` splits a
+large module by behavior. Cross-module suites are `server.contract.test.ts`
+(`tools/list` snapshot and argument shapes), `server.docs.test.ts`,
+`safety-regressions.test.ts` and `tasks/contracts.test.ts`. Shared fakes live in
+`test/helpers/`; `test/e2e/` and `test/live/` hold the other tiers.
 
 CI uses only GitHub-hosted Ubuntu, Windows and macOS runners with Node 24 and
 current. Every job is bounded, permissions are explicit and actions are pinned
@@ -36,7 +43,8 @@ The small corpus in `test/fixtures/audacity-3.7.8/` contains raw request/respons
 bytes from exact English 3.7.8 using synthetic audio. The manifest records
 version/architecture, command/capture method and SHA-256 per file. Replay tests
 may fragment, delay or disconnect those bytes; such scheduling transforms are
-test fault injection, not claims about native DSP.
+test fault injection, not claims about native DSP. `test/pipe.exchange.test.ts`
+runs the production helper exchange against the same replay pipes in unit tests.
 
 New recordings must use neutral names, omit personal paths/default preferences,
 and retain exact framing/UTF-8 bytes. Check provenance and privacy before adding
@@ -50,11 +58,14 @@ npm run build
 npm run test:live
 ```
 
-The script explicitly opts in with `AUDACITY_LIVE=1` and drives the built server
-over stdio against hidden Audacity. Verify the **actual executable/file version**
-before mutation; the reference build is **3.7.8 ARM64 and x64**, and 3.7.9 is
-verified. Admit another patch level only after its source diff against
-`Audacity-3.7.8` and a live run, rather than silently broadening the catalogue.
+`vitest.live.config.ts` is the explicit opt-in (it sets `AUDACITY_LIVE=1`); the
+suite runs on Windows and drives the built server over stdio against hidden
+Audacity. It verifies the
+**actual executable/file version** before mutation: 3.7.8.0 by default, or the
+value of `AUDACITY_LIVE_VERSION` (`3.7.9.0` is the only other accepted one). The
+reference build is **3.7.8 ARM64 and x64**, and 3.7.9 is verified. Admit another
+patch level only after its source diff against `Audacity-3.7.8` and a live run,
+rather than silently broadening the catalogue.
 Use English UI/registry and disable cloud/musehub modules in the isolated config.
 Forward explicit `AUDACITY_*` overrides through the SDK's restricted environment.
 `AUDACITY_CONFIG` only selects inspection; Audacity itself must use that config,
@@ -97,7 +108,7 @@ npm run parameters -- ../audacity
 ```
 
 The script refuses a modified checkout, an unknown declaration shape and a
-catalogue command without source declarations. `test/source-parameters.test.ts`
+catalogue command without source declarations. `test/scripts/source-parameters.test.ts`
 compares the result with the live catalogue and lists every accepted difference.
 
 Keep README/tool reference/capability table consistent with `tools/list`. Check

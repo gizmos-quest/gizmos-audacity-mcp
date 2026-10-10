@@ -1,58 +1,55 @@
 # Changelog
 
-Changes follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
-[Semantic Versioning](https://semver.org/). The public API includes tool names,
-input/result shapes and environment variables.
+All notable changes are documented here, following
+[Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and
+[Semantic Versioning](https://semver.org/). The public API covers tool names,
+input and result shapes, and environment variables.
 
 ## [Unreleased]
 
+First public release of `@gizmos-quest/audacity-mcp`.
+
 ### Added
 
-- Initial public-release preparation for `@gizmos-quest/audacity-mcp` 0.1.0.
-- Setup doctor, strict native safeguards and compatible MCP data reports.
-- Recorded-byte stdio E2E, enforced coverage, hosted-only CI and manual release.
-- Live-test teardown discards only a preserved session and reopens the original
-  project with its visibility; a failed setup leaves Audacity untouched.
-- Public setup, safety and contributor documentation.
-- Support policy: Audacity 3.7.x with 3.7.8 as reference build and 3.7.9
-  verified; Audacity 4 has no scripting interface. Doctor and launch name it, and
-  doctor advises turning off update checks, whose notices are modal.
-- Parameter limits for every built-in effect, scripting command and bundled
-  Nyquist plug-in, generated from the Audacity 3.7.8 source (`npm run parameters`).
-
-### Fixed
-
-- Native request byte bounds, AutoDuck adjacency and process-sensitive profiling.
-- Startup/shutdown and uncertain reply recovery safeguards.
-- The pipe ownership lock no longer depends on TEMP/TMPDIR, and concurrent
-  reclamation of a stale lock can no longer leave an incomplete lock behind.
-- Bounded measurement work and protocol-version compatibility.
-- A tool call cancelled while it waits for another operation never starts, and
-  progress notifications strictly increase.
-- The release workflow runs only in the upstream repository, re-checks main and
-  the tag right before npm publication, and lands a release published just before
-  main moved by merging its tagged commit; a rerun resumes from the tag.
-- Windows paths such as `C:\new\` no longer turn into line breaks inside Audacity;
-  relative paths are sent absolute and text Audacity would alter is refused.
-- A projectless or still-starting Audacity is reported within seconds, and
-  launch waits until the project exists (for example after plugin scans).
-- `doctor --fix` also records the module timestamp Audacity needs after updates.
-- Doctor finds mod-script-pipe in Linux library directories such as
-  `/usr/lib/audacity/modules` and at the path Audacity recorded; without the module
-  file it reports a failure instead of a fix Audacity would ignore.
-- Hour-long recordings are measurable; Linux/macOS process checks name real binaries.
-- Audacity 4 is refused with its reason and the 3.7.x install remedy.
-- Edits no longer reach an unqualified Audacity: before each tool call's first
-  edit, including fresh and quit saves, the running process must be the configured
-  executable at a supported version (cached per process).
-- Out-of-range parameters (for example Compressor `attackMs` above 200 or Amplify
-  `Ratio` 0.003162) are refused before Audacity shows a blocking settings message;
-  pipeline, batch and auto-duck ranges now match the native limits.
+- 45 MCP tools over stdio for Audacity 3.7.x through `mod-script-pipe`: session
+  and window control, discovery, editing and mixing, effects and reviewed
+  pipelines, auto-duck, batch processing, labels and label files, measurement,
+  transport, history, saved macros and two writable preferences.
+- Strict inputs checked against the bundled English Audacity 3.7.8 catalogue and
+  against parameter limits generated from the 3.7.8 source
+  (`npm run parameters`), so out-of-range values (for example Compressor
+  `attackMs` above 200) are refused before Audacity shows a blocking message.
+- Support policy: 3.7.8 is the reference build and 3.7.9 is verified. `doctor`,
+  `audacity_launch` and the first edit of every tool call, including fresh and
+  quit saves, refuse other patch levels, Audacity 4 (it has no scripting
+  interface) and a running Audacity other than the configured executable.
+- `doctor` checks version, process owner, module enablement and the module
+  timestamp Audacity needs after updates, pipe, English command IDs, update
+  checks and ffmpeg. `doctor --fix` enables the module while Audacity is
+  stopped, after a config backup, and finds it in Windows, macOS and Linux
+  layouts.
 - Modal paths found in the Audacity 3.7.8 source are refused before dispatch:
-  effects without a selected track or time range, Undo/Redo without native
-  history, project imports, and selection- or rate-dependent dialogs in
-  Paulstretch, Echo, equalization, Classic Filters, TruncateSilence and
-  FindClipping. Paste, ZeroCross, RescanDevices and DTMF generation are reserved.
-- Typed and batch imports refuse project and list files before any pipe I/O; Echo
-  needs 1 to 16777216 history samples at each source rate; the Silence menu item
-  gets the generator selection guard and a second time track is refused.
+  effects and generators (including the Silence menu item) without a selected
+  track and time range, Undo/Redo without native history, a second time track,
+  project and list imports on every route, and selection- or rate-dependent
+  dialogs in Echo, Paulstretch, equalization, Classic Filters, TruncateSilence
+  and FindClipping. Paste, ZeroCross, RescanDevices and DTMF generation are
+  reserved.
+- Text reaches Audacity unchanged: Windows paths are sent absolute with forward
+  slashes (a folder such as `C:\new` stays intact), and text Audacity's parser
+  would alter is refused.
+- Explicit uncertain outcomes: a timeout or lost reply locks edits until
+  `audacity_recover` synchronizes through a nonce barrier, and edits are never
+  replayed. A projectless or still-starting Audacity is reported within
+  seconds. One per-user lock, independent of TEMP/TMPDIR, keeps a single
+  controller per pipe.
+- Structured content with output schemas for data reports, alongside unchanged
+  JSON text; strictly increasing progress for pipelines and batches; a call
+  cancelled while it waits for another operation never starts.
+- Measurement streams audio in constant memory, so hour-long recordings are
+  measurable, under a 24-hour duration cap and a time budget; optional ffmpeg
+  adds LUFS, LRA and true peak.
+- Recorded-byte stdio end-to-end tests; a live suite that preserves and then
+  reopens the open project and accounts for every tool; enforced coverage; CI on
+  GitHub-hosted runners only; CodeQL; and a manual release workflow with npm
+  trusted publishing.

@@ -3,7 +3,7 @@
 Local MCP tools for editing, processing and measuring audio in Audacity.
 
 [![Node 24.21+](https://img.shields.io/badge/Node-24.21%2B-339933)](https://nodejs.org/)
-[![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![MIT](https://img.shields.io/badge/license-MIT-blue)](https://github.com/gizmos-quest/gizmos-audacity-mcp/blob/main/LICENSE)
 
 **45 typed tools · Audacity 3.7.x · Node 24.21+ · stdio**
 
@@ -33,10 +33,10 @@ The upcoming npm package is **`@gizmos-quest/audacity-mcp`**. These `npx`
 commands become available after the first publication. For a source checkout,
 run `npm ci`, then `npm run build`; use `node dist/main.js` as the server command.
 
-1. Install Audacity 3.7.8. In **Preferences → Modules**, enable
-   `mod-script-pipe`, select the English UI and restart Audacity. Turn off
-   **Preferences → Application → Check for updates**: update notices are modal
-   and block scripting until closed.
+1. Install Audacity 3.7.8. Enable `mod-script-pipe` in **Preferences →
+   Modules**, choose English in **Preferences → Interface**, and turn off
+   **Preferences → Application → Check for updates** (update notices are modal
+   and block scripting until closed). Restart Audacity.
 2. Check setup:
 
    ```sh
@@ -140,5 +140,5 @@ arguments and units; the [capability matrix](https://github.com/gizmos-quest/giz
 · [Testing](https://github.com/gizmos-quest/gizmos-audacity-mcp/blob/main/docs/testing.md) · [Architecture](https://github.com/gizmos-quest/gizmos-audacity-mcp/blob/main/docs/architecture.md)
 · [Contributing](https://github.com/gizmos-quest/gizmos-audacity-mcp/blob/main/CONTRIBUTING.md) · [Security](https://github.com/gizmos-quest/gizmos-audacity-mcp/blob/main/SECURITY.md)
 
-MIT licensed. Research and source attribution are in [NOTICE.md](NOTICE.md).
+MIT licensed. Research and source attribution are in [NOTICE.md](https://github.com/gizmos-quest/gizmos-audacity-mcp/blob/main/NOTICE.md).
 Audacity is a trademark of Muse Group; this project is unaffiliated.

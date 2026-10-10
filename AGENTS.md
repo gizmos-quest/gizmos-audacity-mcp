@@ -15,13 +15,15 @@ npm test
 npm run build
 npm run test:e2e
 npm run check:package
+npm run check:workflows
 npm audit --audit-level=high
 ```
 
-Native changes also need `npm run test:live` on exact English Audacity 3.7.8.
-Check package freshness with `npm view <package> version`. Do not claim skipped
-or incomplete checks passed. [Testing](docs/testing.md) explains preservation,
-recorded fixtures, architecture/platform evidence and teardown.
+Lint fails on Biome warnings as well as errors. Native changes also need
+`npm run test:live` on exact English Audacity 3.7.8. Check package freshness
+with `npm view <package> version`. Do not claim skipped or incomplete checks
+passed. [Testing](docs/testing.md) explains preservation, recorded fixtures,
+architecture/platform evidence and teardown.
 
 Native source facts are pinned to the upstream tag `Audacity-3.7.8` (commit
 `6120ce4`); comments cite `file:line` at that tag. Clone it beside the checkout
@@ -31,17 +33,20 @@ and regenerate parameter limits with `npm run parameters -- ../audacity`.
 ## Architecture
 
 - `main.ts` / `server.ts`: CLI/stdio entry and MCP assembly.
-- `tools.ts` / `tool-*.ts`: strict registrations, metadata, reports/progress.
+- `tools.ts` / `tool-*.ts`: strict registrations, metadata, reports/progress;
+  `tool-input.ts` holds the shared input schemas, `errors.ts` the error helpers.
 - `pipe.ts` / `pipe-worker.ts` / `format.ts`: byte framing, bounded transport.
 - `app.ts` and platform modules: discovery, config, native window lifecycle.
 - `catalogue.ts` / `effects/`: safe catalogue and native effect policy.
-- `ops.ts` / `audacity/`: stateful native operations and selection transactions.
+- `ops.ts` / `audacity/`: stateful native operations, validated GetInfo readers
+  and selection transactions.
 - `tasks/`, `analysis/`, `controls/`, labels and batch: domain workflows.
 
 Use TypeScript, Node 24.21+, official MCP SDK v2 (`@modelcontextprotocol/server`)
 and zod. No extra runtime dependency without a measured need. Keep source/tests
 about 300 lines or less; generated catalogue JSON and lockfile are exceptions.
-Prefer the smallest domain change over speculative abstractions.
+Prefer the smallest domain change over speculative abstractions. Tests mirror
+`src/` as `test/<path>/<module>.test.ts`; shared fakes live in `test/helpers/`.
 
 ## Invariants
 
@@ -78,8 +83,8 @@ Prefer the smallest domain change over speculative abstractions.
 - GitHub Actions uses hosted runners only, full-SHA actions, explicit permissions
   and positive job timeouts. Preserve this repository's runner restrictions.
 
-Keep public source/comments/docs/commits English. Use Conventional Commits and
-include required author attribution. Attribute copied/adapted source by exact
-file/commit/license in NOTICE and retain applicable notices/license text. Never
-add personal machine paths, private project details or credential material.
-LICENSE copyright and Git author identities must stay unchanged.
+Keep public source/comments/docs/commits English and use Conventional Commits.
+Attribute copied/adapted source by exact file/commit/license in NOTICE and retain
+applicable notices/license text. Never add personal machine paths, private
+project details or credential material. LICENSE copyright and Git author
+identities must stay unchanged.

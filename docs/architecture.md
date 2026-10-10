@@ -18,11 +18,11 @@ flowchart LR
 | Area | Location |
 | --- | --- |
 | Entry, doctor, server assembly | `src/main.ts`, `src/doctor.ts`, `src/server.ts` |
-| Tool boundaries and metadata | `src/tools.ts`, `src/tool-*.ts` |
+| Tool boundaries, metadata, shared input schemas and error helpers | `src/tools.ts`, `src/tool-*.ts`, `src/errors.ts` |
 | Native process/window/config lifecycle | `src/app.ts`, `src/app-*.ts` |
 | Pipe transport, ownership and byte codec | `src/pipe.ts`, `src/pipe-*.ts`, `src/format.ts` |
 | Catalogue and native effect policy | `src/catalogue.ts`, `src/catalogue-bounds.ts`, `src/effects/`, `catalogue/` |
-| Selection, tracks, imports, noise state | `src/ops.ts`, `src/audacity/` |
+| GetInfo readers, selection, tracks, imports, noise state | `src/ops.ts`, `src/audacity/` |
 | Plans and editing tasks | `src/tasks/`, `src/batch.ts` |
 | Analysis and rendered transactions | `src/analysis/`, `src/source-rate.ts` |
 | Labels, transport, macros/preferences | `src/labels.ts`, `src/controls.ts`, `src/controls/` |

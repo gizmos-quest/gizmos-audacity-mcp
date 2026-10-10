@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { Client, InMemoryTransport } from '@modelcontextprotocol/client';
@@ -61,7 +61,9 @@ describe('public MCP compatibility contract', () => {
           annotations,
         }))
         .sort((a, b) => a.name.localeCompare(b.name));
-      expect(actual).toEqual(JSON.parse(readFileSync(new URL('./fixtures/tools.json', import.meta.url), 'utf8')));
+      // One tool per line keeps reviews readable; regenerate with `npx vitest run test/server.contract.test.ts -u`.
+      const snapshot = `[\n${actual.map((tool) => JSON.stringify(tool)).join(',\n')}\n]\n`;
+      await expect(snapshot).toMatchFileSnapshot('./fixtures/tools.json');
       expect(tools.find((tool) => tool.name === 'audacity_import')?.inputSchema.properties).toHaveProperty(
         'start.default',
         0,

@@ -18,7 +18,7 @@ export function registerCatalogueTools(tool: ToolRegistrar, ops: Ops): void {
 
   tool(
     'audacity_info',
-    'Read project state: Tracks, Clips, Envelopes (points as t/y), Labels, Boxes, Commands (full catalogue with parameters) or Menus.',
+    'Read native state: Tracks, Clips, Envelopes (points as t/y), Labels, Boxes, Selection, Preferences, Commands (full catalogue with parameters) or Menus.',
     {
       type: z.enum([
         'Tracks',

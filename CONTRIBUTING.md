@@ -13,17 +13,21 @@ npm test
 npm run build
 npm run test:e2e
 npm run check:package
+npm run check:workflows
 npm audit --audit-level=high
 ```
 
 Coverage includes all source modules and enforces 95% statements, 91% branches,
 95% functions and 96% lines. Do not exclude untested logic to reach thresholds.
-Prefer domain modules of about 300 lines or less and meaningful tests around
-trust boundaries/native behavior. See [architecture](docs/architecture.md).
+Lint fails on warnings. Prefer domain modules of about 300 lines or less and
+meaningful tests around trust boundaries/native behavior; tests mirror `src/`
+(`test/<path>/<module>.test.ts`). See [architecture](docs/architecture.md).
 
 When adding a tool, provide strict root/nested schemas, truthful annotations,
-title, useful result schema, contract tests and concise docs. Preserve existing
-tool names/argument shapes and `dist/main.js` stdio startup. Array/string result
+title, useful result schema, contract tests and concise docs, then regenerate the
+`tools/list` snapshot with `npx vitest run test/server.contract.test.ts -u` and
+review its diff. Preserve existing tool names/argument shapes and `dist/main.js`
+stdio startup. Array/string result
 compatibility matters when adding structured content. Keep the [tool reference](docs/tools.md)
 and [capability matrix](docs/feature-matrix.md) consistent with registrations.
 
