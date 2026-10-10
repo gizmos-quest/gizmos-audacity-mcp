@@ -16,7 +16,7 @@ import { join } from 'node:path';
 const env = process.env;
 const signal = (name) => fs.writeFileSync(join(env.BARRIERS, name), '');
 const wait = (name) => {
-  const end = Date.now() + 20000;
+  const end = Date.now() + 90000;
   while (!fs.existsSync(join(env.BARRIERS, name))) {
     if (Date.now() > end) throw new Error('barrier timeout ' + name);
     Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 10);
@@ -93,6 +93,7 @@ function staleLock(lock: string): void {
   writeFileSync(join(lock, 'owner.json'), JSON.stringify({ pid: Number(exited.stdout), token: 'stale' }));
 }
 
+// Each case starts several Node processes; hosted runners and coverage make that slow.
 describe('endpoint ownership across processes', () => {
   it('keeps one owner when launchers set different temporary directories', async () => {
     const { temp, endpoint } = directories();
@@ -109,38 +110,42 @@ describe('endpoint ownership across processes', () => {
     owner.release();
     await owner.exited;
     expect(await start(endpoint, second).result).toEqual({ owned: true });
-  });
+  }, 120_000);
 
   it.each([
     ['while the stale lock is retired', 'retired', 'being reclaimed'],
     ['after the reclaimer owns the endpoint', 'owned', 'owner changed during reclamation'],
-  ])('refuses a delayed contender %s and never leaves an incomplete lock', async (_, resumeAt, refusal) => {
-    const { temp, endpoint, lock } = directories();
-    const barriers = join(temp, 'barriers');
-    mkdirSync(barriers);
-    staleLock(lock);
-    const late = start(endpoint, temp, { BARRIERS: barriers, PAUSE_AFTER_PROBE: resumeAt });
-    while (!existsSync(join(barriers, 'observed'))) await new Promise((resolve) => setTimeout(resolve, 10));
-    const reclaimer = start(endpoint, temp, {
-      BARRIERS: barriers,
-      ...(resumeAt === 'retired' ? { PAUSE_AFTER_RETIRE: 'late-done' } : {}),
-    });
-    if (resumeAt === 'owned') {
+  ])(
+    'refuses a delayed contender %s and never leaves an incomplete lock',
+    async (_, resumeAt, refusal) => {
+      const { temp, endpoint, lock } = directories();
+      const barriers = join(temp, 'barriers');
+      mkdirSync(barriers);
+      staleLock(lock);
+      const late = start(endpoint, temp, { BARRIERS: barriers, PAUSE_AFTER_PROBE: resumeAt });
+      while (!existsSync(join(barriers, 'observed'))) await new Promise((resolve) => setTimeout(resolve, 10));
+      const reclaimer = start(endpoint, temp, {
+        BARRIERS: barriers,
+        ...(resumeAt === 'retired' ? { PAUSE_AFTER_RETIRE: 'late-done' } : {}),
+      });
+      if (resumeAt === 'owned') {
+        expect(await reclaimer.result).toEqual({ owned: true });
+        writeFileSync(join(barriers, 'owned'), '');
+      }
+      expect(await late.result).toMatchObject({ owned: false, error: expect.stringContaining(refusal) });
+      writeFileSync(join(barriers, 'late-done'), '');
       expect(await reclaimer.result).toEqual({ owned: true });
-      writeFileSync(join(barriers, 'owned'), '');
-    }
-    expect(await late.result).toMatchObject({ owned: false, error: expect.stringContaining(refusal) });
-    writeFileSync(join(barriers, 'late-done'), '');
-    expect(await reclaimer.result).toEqual({ owned: true });
-    expect(readdirSync(lock)).toEqual(['owner.json']);
-    expect(JSON.parse(readFileSync(join(lock, 'owner.json'), 'utf8')).token).not.toBe('stale');
-    expect(await start(endpoint, temp).result).toMatchObject({
-      owned: false,
-      error: expect.stringContaining('owned by'),
-    });
-    reclaimer.release();
-    await reclaimer.exited;
-    expect(existsSync(lock)).toBe(false);
-    expect(await start(endpoint, temp).result).toEqual({ owned: true });
-  });
+      expect(readdirSync(lock)).toEqual(['owner.json']);
+      expect(JSON.parse(readFileSync(join(lock, 'owner.json'), 'utf8')).token).not.toBe('stale');
+      expect(await start(endpoint, temp).result).toMatchObject({
+        owned: false,
+        error: expect.stringContaining('owned by'),
+      });
+      reclaimer.release();
+      await reclaimer.exited;
+      expect(existsSync(lock)).toBe(false);
+      expect(await start(endpoint, temp).result).toEqual({ owned: true });
+    },
+    120_000,
+  );
 });

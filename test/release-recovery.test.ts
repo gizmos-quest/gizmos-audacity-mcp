@@ -144,6 +144,7 @@ const origin = (...args: string[]) => run(join(root, 'origin.git'), ...args);
 const contains = (ancestor: string) =>
   spawnSync('git', ['merge-base', '--is-ancestor', ancestor, 'main'], { cwd: join(root, 'origin.git') }).status === 0;
 
+// Dozens of real git processes per case: generous limits for slow hosted runners.
 describe('release script in a disposable repository', () => {
   it('prepares files the following lint gate accepts and lands a normal release', async () => {
     const base = repository();
@@ -160,7 +161,7 @@ describe('release script in a disposable repository', () => {
     expect(origin('rev-parse', 'main')).toBe(release);
     expect(origin('rev-parse', `${release}^`)).toBe(base);
     expect([...registry.keys(), ...releases]).toEqual([`${name}@0.1.1`, 'v0.1.1']);
-  });
+  }, 60_000);
 
   it('merges a release published just before main moved, then resumes an interrupted landing', async () => {
     const base = repository();
@@ -181,7 +182,7 @@ describe('release script in a disposable repository', () => {
     expect(contains(release)).toBe(true);
     expect(origin('log', '-1', '--format=%s', 'main')).toBe('chore(release): merge v0.1.1');
     expect([...registry.keys(), ...releases]).toEqual([`${name}@0.1.1`, 'v0.1.1']);
-  });
+  }, 60_000);
 
   it('refuses before publication when main moved during the gates', async () => {
     const base = repository();
@@ -193,5 +194,5 @@ describe('release script in a disposable repository', () => {
     expect(
       spawnSync('git', ['rev-parse', '--verify', '--quiet', 'v0.1.1'], { cwd: join(root, 'origin.git') }).status,
     ).toBe(1);
-  });
+  }, 60_000);
 });

@@ -34,6 +34,8 @@ describe('single pipe session owner', () => {
     const endpoint = paths();
     const dir = lock(endpoint);
     mkdirSync(dir);
+    // A lock with files but no owner record (a POSIX rename would replace an empty one).
+    writeFileSync(join(dir, 'reclaim'), 'interrupted reclaimer');
     const file = join(dir, 'owner.json');
     try {
       expect(() => acquirePipeOwnership(endpoint)).toThrow('incomplete');
