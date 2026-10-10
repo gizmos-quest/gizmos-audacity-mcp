@@ -24,9 +24,11 @@ export class CommandFailed extends Error {
   }
 }
 
+/** One GetInfo track (validated in audacity/info.ts). Flags are 0/1. */
 export interface TrackInfo {
   name: string;
   kind: string;
+  /** Reported for audio tracks only: label and time tracks have no extent, so check `kind` first. */
   start: number;
   end: number;
   volume?: number;
