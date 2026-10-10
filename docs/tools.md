@@ -29,7 +29,7 @@ is the authoritative machine-readable input/output schema.
 | `audacity_export` | `file`, `channels` (2), optional start/end; whole rendered mix to WAV/FLAC/MP3/OGG |
 | `audacity_project` | `action:open/save`, `file`; empty-project open, new `.aup3` save only |
 | `audacity_track_set` | `track`; name/gainDb/pan/mute/solo. Gain dB, pan -1..1 |
-| `audacity_track_edit` | `action`: add/remove/mix/alignment; explicit track/count/time, optional new name |
+| `audacity_track_edit` | `action`: add/remove/mix/alignment; explicit track/count/time, optional name for add actions. `mix_new` retains audible originals; mute them before exporting the new mix |
 | `audacity_clip_move` | `track`, `at`, new `start`; shared boundary picks the clip starting there |
 | `audacity_clip_set` | `track`, interior `at`, name/color/gainDb; relative sample gain -50..36 dB |
 | `audacity_edit` | `action`: split/split_new/trim/duplicate/delete/split_delete/cut/split_cut/copy/silence/join/disjoin; scope |
@@ -48,7 +48,7 @@ delete can close gaps. Export explicitly clears label-edit focus through selecti
 | `audacity_effect` | `effect`, `params:{}`, optional track/count/time; exact bundled catalogue and native context preflight |
 | `audacity_noise_profile` | `track`, start/end; one pure room-tone interval in a known fresh process |
 | `audacity_pipeline` | `track`, preset/options, `dryRun`; cleanup/voice/podcast/interview/audiobook/vocal/live/music/lofi |
-| `audacity_auto_duck` | `bed`, `voice`, fade/threshold/duck controls and dryRun; voice immediately follows bed |
+| `audacity_auto_duck` | `bed`, `voice`, fade/threshold/duck controls and dryRun; changes bed samples, save a backup first. Import bed before voice so voice immediately follows bed; use envelopes for editable automation |
 | `audacity_command` | `command`, `params:{}`; safe catalogue command on current selection |
 | `audacity_menu` | `command`; reviewed no-dialog native menu command |
 | `audacity_macros` | `action:list/apply`, name, dryRun/outputTo; saved local macros, fully preflighted |
@@ -66,7 +66,7 @@ are required; batch excludes profiling. See [effect requirements](effects.md).
 
 | Tool | Arguments / behavior |
 | --- | --- |
-| `audacity_labels_set` | labels start/end/text, `trackName` (Labels); safe insertion across label tracks |
+| `audacity_labels_set` | labels start/end/text, `trackName` (Labels); append safely across label tracks, retaining existing labels |
 | `audacity_labels` | `action:list/find/edit/delete/regular`; flat index/text/time/interval fields as appropriate |
 | `audacity_labels_file` | `action:import/export`, file/format/trackName; TSV/JSON import; eight output formats |
 | `audacity_label_regions_export` | directory/trackName/format/channels; numbered audio files for positive-duration mix regions |
@@ -96,6 +96,11 @@ File/region outputs refuse existing destinations.
 | `audacity_preferences` | action list/get/set, name/value; writes only default sample rate or recording channels |
 
 Measurement reports distinguish sample peak/RMS from optional LUFS/LRA/true peak.
+With `targets`, measure/measure_file return `{measurement,targetCheck}`; metrics
+are inside `measurement`. Without targets, they return the measurement directly.
+Loudness-target dry runs measure the input and return the static-gain plan without
+applying gain. Target the rendered mix track for delivery; normalizing each source
+separately does not establish the loudness or true peak of their combined export.
 Unavailable metrics are null with reasons. Object reports expose the same object
 as JSON text and structured content; legacy arrays and strings remain text-only.
 Pipelines and batches report strictly increasing completed-stage progress when

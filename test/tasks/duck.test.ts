@@ -1,11 +1,40 @@
 import { describe, expect, it, vi } from 'vitest';
-import { autoDuck } from '../../src/tasks/duck.js';
+import { AutoDuckSchema, autoDuck } from '../../src/tasks/duck.js';
 
 vi.mock('../../src/source-rate.js', () => ({ measureSourceRate: vi.fn(async () => 48_000) }));
 
 import { expectNoMutation, mockOps, wave } from '../helpers/task-fixture.js';
 
 describe('Auto Duck control-track semantics', () => {
+  it('documents track order and native control units without changing defaults', () => {
+    const { shape } = AutoDuckSchema;
+    expect(shape.bed.description).toContain('must immediately precede the voice track');
+    expect(shape.voice.description).toContain('must immediately follow the bed track');
+    for (const field of ['duckDb', 'thresholdDb'] as const) expect(shape[field].description).toContain('in dB');
+    for (const field of ['fadeDown', 'fadeUp', 'innerFadeDown', 'innerFadeUp', 'maximumPause'] as const)
+      expect(shape[field].description).toContain('in seconds');
+    expect(AutoDuckSchema.parse({ bed: 'Bed', voice: 'Voice' })).toEqual({
+      bed: 'Bed',
+      voice: 'Voice',
+      duckDb: -12,
+      thresholdDb: -30,
+      fadeDown: 0.5,
+      fadeUp: 0.5,
+      innerFadeDown: 0,
+      innerFadeUp: 0,
+      maximumPause: 1,
+      dryRun: false,
+    });
+  });
+
+  it('gives supported next steps when the voice was imported before the bed', async () => {
+    const mocks = mockOps([wave('Voice'), wave('Bed')]);
+    await expect(autoDuck(mocks.ops, { bed: 'Bed', voice: 'Voice', dryRun: true })).rejects.toThrow(
+      'use audacity_fresh with backupTo and import the bed before the voice for a new mix, or use audacity_envelope_set for editable ducking in the existing track order',
+    );
+    expectNoMutation(mocks);
+  });
+
   it('selects only the bed and leaves the following voice unselected', async () => {
     const mocks = mockOps([wave('Bed', 0, 20), wave('Voice', 2, 10)]);
     const result = await autoDuck(mocks.ops, { bed: 'Bed', voice: 'Voice', start: 2, end: 10, duckDb: -9 });

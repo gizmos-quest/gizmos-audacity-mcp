@@ -82,7 +82,7 @@ export function registerEditingTools(tool: ToolRegistrar, ops: Ops): void {
 
   tool(
     'audacity_labels_set',
-    'Write labels (point or region) into a named label track, creating it if needed. Use them to mark picture events or script lines.',
+    'Add point or region labels to a named label track, creating it if needed and retaining existing labels. Use them for chapters, picture events or script lines. Disable the label naming dialog in Preferences > Tracks > Track Behaviors before adding labels.',
     {
       labels: z
         .array(z.object({ start: Seconds, end: Seconds.optional(), text: SafeString }).strict())

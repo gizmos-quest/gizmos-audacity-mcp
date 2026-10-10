@@ -22,7 +22,8 @@ import { closeProjectWindow, listWindows, setWindowVisible } from './app-windows
 import { validateProjectFile } from './audacity/files.js';
 import { errorMessage, errorWithContext } from './errors.js';
 import { formatCommand, parseInfoJson } from './format.js';
-import { AudacityNoProject, AudacityPipe, type PipeReply } from './pipe.js';
+import { AudacityNoProject, AudacityPipe, defaultPipePaths, type PipeReply } from './pipe.js';
+import { acquirePipeOwnership } from './pipe-ownership.js';
 
 export function assertEnglishCommands(body: string): void {
   const commands = parseInfoJson(body);
@@ -82,6 +83,10 @@ export async function launch(
   assertSupportedVersion(await executableVersion(executable));
   assertExecutableMatches(executable, await audacityProcesses());
   const started = !(await isRunning());
+  const paths = defaultPipePaths();
+  // Refuse another controller before starting or changing native window state.
+  // The owning MCP session retains this claim until explicit handoff or exit.
+  acquirePipeOwnership(paths);
   if (started) {
     const recovery = recoveryEntries();
     if (recovery.length)
@@ -113,7 +118,7 @@ export async function launch(
     await pause(750);
     await readyWindows();
   }
-  const pipe = new AudacityPipe();
+  const pipe = new AudacityPipe(paths);
   // On a first start or after plugin changes, 3.7.8 runs PluginStartupRegistration
   // before creating the project (AudacityApp.cpp:1656-1668); live x64 3.7.8 under
   // emulation, 2026-10-10: its window passed the frame check. The relay then sends

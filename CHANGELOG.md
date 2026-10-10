@@ -11,6 +11,10 @@ First public release of `@gizmos-quest/audacity-mcp`.
 
 ### Added
 
+- Reproducible synthetic voice-over example with reviewed cleanup, ducking,
+  chapters/subtitles, measured delivery and an opt-in live stdio runner.
+- Stronger coverage floors: statements/functions 96%, branches 92%, lines 97%.
+
 - 45 MCP tools over stdio for Audacity 3.7.x through `mod-script-pipe`: session
   and window control, discovery, editing and mixing, effects and reviewed
   pipelines, auto-duck, batch processing, labels and label files, measurement,
@@ -55,6 +59,13 @@ First public release of `@gizmos-quest/audacity-mcp`.
   workflow with npm trusted publishing and provenance.
 
 ### Fixed
+
+- Auto Duck errors give supported import-order/envelope alternatives; tool and
+  argument descriptions explain destructive ducking, retained `mix_new` sources,
+  additive labels, measurement result envelopes and measured loudness previews
+  without changing contracts.
+- Launch checks the endpoint's existing controller lock before starting Audacity,
+  so a competing MCP session cannot start an app it cannot subsequently control.
 
 - Recovery keeps edits locked when the synchronized Tracks reply has invalid
   audio extents or field types, using the same state validation as normal reads.

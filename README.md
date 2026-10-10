@@ -100,7 +100,7 @@ localized plugin IDs.
 
 ## First prompt
 
-> Check Audacity's status. Import my voice recording as Voice. Measure it,
+> Check Audacity's status and launch it if stopped. Import my voice recording as Voice. Measure it,
 > then show a dry-run voice cleanup plan without normalization or noise
 > reduction. Ask before applying it and save a project backup first.
 
@@ -109,6 +109,10 @@ A pipeline preview takes a named or zero-based track reference:
 ```json
 {"track":"Voice","preset":"voice","dryRun":true,"loudness":"none"}
 ```
+
+Try the [reproducible voice-over example](https://github.com/gizmos-quest/gizmos-audacity-mcp/blob/main/examples/voiceover/README.md): generated
+audio, reviewed cleanup, a ducked bed, chapters/subtitles and measured delivery.
+Its opt-in runner drives the built server over stdio against live Audacity.
 
 ## Tools
 

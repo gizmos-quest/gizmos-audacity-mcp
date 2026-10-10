@@ -14,7 +14,7 @@ import { round, SilenceSchema } from './types.js';
 export function registerAnalysisTools(tool: ToolRegistrar, ops: Ops): void {
   tool(
     'audacity_loudness_target',
-    'Measure then apply static gain to approach targetLufs while preserving measured true-peak headroom and respecting maxBoostDb. Requires ffmpeg and a non-silent audio track; default scope is its own extent. dryRun returns before measurement and the Amplify plan. Reports before/after and whether the target was achievable; it never compresses or guesses absent LUFS/true peak.',
+    'Measure then apply static gain to approach targetLufs while preserving measured true-peak headroom and respecting maxBoostDb. Requires ffmpeg and a non-silent audio track; default scope is its own extent. dryRun returns the measured input and Amplify plan without applying gain. Reports before/after and whether the target was achievable; it never compresses or guesses absent LUFS/true peak.',
     LoudnessApplySchema.shape,
     (args) => loudnessTarget(ops, args),
   );
@@ -59,7 +59,7 @@ export function registerAnalysisTools(tool: ToolRegistrar, ops: Ops): void {
   );
   tool(
     'audacity_measure',
-    'Measure tracks, a time range, or currentSelection using a temporary export; restores selection and preserves track controls. Reports peak/RMS/DC/crest, advisory defects and silence. Optional ffmpeg adds integrated LUFS/LRA/true peak. Reads rendered gain/mute/solo/envelopes, so use file measurement for unprocessed source levels.',
+    'Measure tracks, a time range, or currentSelection using a temporary export; restores selection and preserves track controls. Reports peak/RMS/DC/crest, advisory defects and silence. Optional ffmpeg adds integrated LUFS/LRA/true peak. Reads rendered gain/mute/solo/envelopes, so use file measurement for unprocessed source levels. With targets, returns {measurement,targetCheck}; otherwise returns the measurement directly.',
     { ...MeasureScopeShape, ...MeasureOptionsShape, targets: TargetSchema.optional() },
     async ({ targets, backend, dualMono, timeoutMs, ...scope }) => {
       const measurement = await measureScope(ops, scope, { backend, dualMono, timeoutMs });
@@ -68,7 +68,7 @@ export function registerAnalysisTools(tool: ToolRegistrar, ops: Ops): void {
   );
   tool(
     'audacity_measure_file',
-    'Measure an exported/source audio file without touching Audacity. Native PCM/float WAV peak/RMS/DC/crest and advisory defects need no dependencies; ffmpeg on PATH adds EBU R128 LUFS/LRA/true peak and decodes other containers. Unavailable targets report unknown.',
+    'Measure an exported/source audio file without touching Audacity. Native PCM/float WAV peak/RMS/DC/crest and advisory defects need no dependencies; ffmpeg on PATH adds EBU R128 LUFS/LRA/true peak and decodes other containers. Unavailable targets report unknown. With targets, returns {measurement,targetCheck}; otherwise returns the measurement directly.',
     { file: SafeString.min(1), ...MeasureOptionsShape, targets: TargetSchema.optional() },
     async ({ file, targets, ...options }) => {
       const measurement = await measureFile(file, options);

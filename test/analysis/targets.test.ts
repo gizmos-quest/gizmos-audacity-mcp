@@ -10,6 +10,20 @@ import {
 import { measureBuffer, wav } from '../helpers/audio-fixture.js';
 
 describe('measurement targets and comparisons', () => {
+  it('documents loudness control units while retaining the reviewed defaults', () => {
+    const { shape } = LoudnessTargetSchema;
+    expect(shape.targetLufs.description).toContain('integrated loudness, in LUFS');
+    expect(shape.truePeakCeilingDbtp.description).toContain('rendered true peak, in dBTP');
+    expect(shape.maxBoostDb.description).toContain('positive static gain, in dB; does not cap attenuation');
+    expect(shape.toleranceLu.description).toContain('distance from targetLufs, in LU');
+    expect(LoudnessTargetSchema.parse({})).toEqual({
+      targetLufs: -16,
+      truePeakCeilingDbtp: -1,
+      maxBoostDb: 18,
+      toleranceLu: 0.5,
+    });
+  });
+
   it('plans loudness gain from LUFS while retaining true-peak headroom', async () => {
     const measured = { ...(await measureBuffer(wav([0.1]))), integratedLufs: -20, truePeakDbtp: -10 };
     expect(planLoudnessTarget(measured, { targetLufs: -16 })).toMatchObject({

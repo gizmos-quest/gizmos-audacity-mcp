@@ -31,6 +31,15 @@ function session() {
 beforeEach(() => vi.clearAllMocks());
 
 describe('editing tool contracts', () => {
+  it('describes additive labels and the required naming-dialog setting', () => {
+    const descriptions = new Map<string, string>();
+    registerEditingTools((name, description) => descriptions.set(name, description), {} as Ops);
+    expect(descriptions.get('audacity_labels_set')).toContain('retaining existing labels');
+    expect(descriptions.get('audacity_labels_set')).toContain(
+      'Disable the label naming dialog in Preferences > Tracks > Track Behaviors before adding labels',
+    );
+  });
+
   it('forwards selection/import defaults without changing public argument shape', async () => {
     const { call, ops } = session();
     expect(await call('audacity_select', { track: 'Voice' })).toBe('selected');

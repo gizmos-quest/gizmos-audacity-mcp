@@ -96,10 +96,15 @@ export function compareMeasurements(
 }
 
 export const LoudnessTargetShape = {
-  targetLufs: z.number().min(-50).max(-5).default(-16),
-  truePeakCeilingDbtp: z.number().min(-20).max(0).default(-1),
-  maxBoostDb: z.number().min(0).max(36).default(18),
-  toleranceLu: z.number().min(0.1).max(3).default(0.5),
+  targetLufs: z.number().min(-50).max(-5).default(-16).describe('desired integrated loudness, in LUFS'),
+  truePeakCeilingDbtp: z.number().min(-20).max(0).default(-1).describe('maximum rendered true peak, in dBTP'),
+  maxBoostDb: z
+    .number()
+    .min(0)
+    .max(36)
+    .default(18)
+    .describe('maximum positive static gain, in dB; does not cap attenuation'),
+  toleranceLu: z.number().min(0.1).max(3).default(0.5).describe('allowed distance from targetLufs, in LU'),
 };
 export const LoudnessTargetSchema = z.object(LoudnessTargetShape).strict();
 

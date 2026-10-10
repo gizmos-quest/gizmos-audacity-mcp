@@ -53,6 +53,13 @@ describe('analysis tool registrations', () => {
       expect(description.length).toBeGreaterThan(80);
       expect(z.object(shape).strict().safeParse({ arbitrary: 1 }).success).toBe(false);
     }
+    expect(tools.get('audacity_loudness_target')!.description).toContain(
+      'dryRun returns the measured input and Amplify plan without applying gain',
+    );
+    for (const name of ['audacity_measure', 'audacity_measure_file'])
+      expect(tools.get(name)!.description).toContain(
+        'With targets, returns {measurement,targetCheck}; otherwise returns the measurement directly',
+      );
     const targetTool = tools.get('audacity_targets')!;
     expect(await targetTool.handler({} as never)).toMatchObject({ presets: TARGETS });
     const silence = tools.get('audacity_silence')!;

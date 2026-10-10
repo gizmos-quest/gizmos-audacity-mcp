@@ -18,6 +18,7 @@ const fake = vi.hoisted(() => ({
   recovery: vi.fn(),
   helper: vi.fn(),
   start: vi.fn(),
+  ownership: vi.fn(),
 }));
 vi.mock('../src/app-process.js', async (original) => ({
   ...(await original<typeof import('../src/app-process.js')>()),
@@ -37,6 +38,10 @@ vi.mock('../src/app-windows.js', () => ({
 }));
 vi.mock('../src/app-config.js', () => ({ recoveryEntries: fake.recovery }));
 vi.mock('../src/app-helper.js', () => ({ powershell: fake.helper }));
+vi.mock('../src/pipe-ownership.js', async (original) => ({
+  ...(await original<typeof import('../src/pipe-ownership.js')>()),
+  acquirePipeOwnership: fake.ownership,
+}));
 
 import { assertEnglishCommands, launch, quit } from '../src/app.js';
 import { AudacityNoProject, AudacityPipe, AudacityTimeout } from '../src/pipe.js';
@@ -59,6 +64,7 @@ beforeEach(() => {
 afterEach(() => {
   Object.defineProperty(process, 'platform', { value: actualPlatform });
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
   vi.useRealTimers();
 });
 
@@ -72,6 +78,22 @@ describe('qualified launch', () => {
         : '[]',
     }));
   }
+  it.each(['win32', 'linux'])('refuses a foreign controller before native startup on %s', async (platform) => {
+    Object.defineProperty(process, 'platform', { value: platform });
+    fake.running.mockResolvedValue(false);
+    fake.processes.mockResolvedValue([]);
+    fake.ownership.mockImplementation(() => {
+      throw new Error(
+        'Audacity endpoint is owned by MCP process 123. Close that session before attaching another client.',
+      );
+    });
+    const send = vi.spyOn(AudacityPipe.prototype, 'send');
+    await expect(launch(false)).rejects.toThrow('Close that session before attaching another client');
+    expect(fake.helper).not.toHaveBeenCalled();
+    expect(fake.start).not.toHaveBeenCalled();
+    expect(fake.windows).not.toHaveBeenCalled();
+    expect(send).not.toHaveBeenCalled();
+  });
   it('checks blocking dialogs before any potentially blocked readiness request', async () => {
     fake.windows.mockResolvedValue([{ ...frame, dialog: true }]);
     const send = vi.spyOn(AudacityPipe.prototype, 'send');
@@ -107,6 +129,9 @@ describe('qualified launch', () => {
   });
   it('starts a stopped application then verifies its initialized project', async () => {
     vi.useFakeTimers();
+    const paths = { to: '\\\\.\\pipe\\gizmos-launch-test-to', from: '\\\\.\\pipe\\gizmos-launch-test-from' };
+    vi.stubEnv('AUDACITY_PIPE_TO', paths.to);
+    vi.stubEnv('AUDACITY_PIPE_FROM', paths.from);
     fake.running.mockResolvedValue(false);
     fake.processes.mockResolvedValue([]);
     vi.spyOn(AudacityPipe.prototype, 'send').mockImplementation((command) => transport()({}, command));
@@ -114,6 +139,8 @@ describe('qualified launch', () => {
     const assertion = expect(result).resolves.toMatchObject({ started: true });
     await vi.runAllTimersAsync();
     await assertion;
+    expect(fake.ownership).toHaveBeenCalledExactlyOnceWith(paths);
+    expect(fake.ownership.mock.invocationCallOrder[0]).toBeLessThan(fake.helper.mock.invocationCallOrder[0]!);
     expect(fake.helper).toHaveBeenCalledWith(expect.stringContaining('-WindowStyle Normal'));
   });
   it('waits for the overlapping native startup window before its first read', async () => {

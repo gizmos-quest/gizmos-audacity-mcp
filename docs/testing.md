@@ -19,7 +19,7 @@ npm audit --audit-level=high
 | Tier | What it establishes |
 | --- | --- |
 | Unit + contracts | Strict schemas, byte budgets, orchestration, state guards, public tools/argument shapes, annotations and output compatibility |
-| Coverage | All `src/**/*.ts`, including unimported files; enforced floors: statements 95%, branches 91%, functions 95%, lines 96% |
+| Coverage | All `src/**/*.ts`, including unimported files; enforced floors: statements 96%, branches 92%, functions 96%, lines 97% |
 | Built stdio E2E | Real production entry/helper and SDK boundary with recorded native bytes, fragmentation/delay/disconnect, uncertainty and recovery |
 | Package check | Allowlisted files, size limits, metadata and installed-tarball stdio startup; never publishes |
 | Live | Actual native project/lifecycle/effect behavior on the measured Audacity build |
@@ -90,6 +90,33 @@ stale ActiveProjects entries; a failed teardown is not a pass.
 Running-project entries are legitimate. Config recovery clearing is stopped-only,
 with backup and all project files retained. Never terminate Audacity or simulate
 mouse/keyboard input from the server. Retain uncertain saves and scratch.
+
+## Example workflow
+
+The [voice-over example](../examples/voiceover/README.md) generates a 12-second
+voice-like fixture and stereo bed from original deterministic synthesis. Its
+runner uses the built server over a fresh SDK stdio connection, previews cleanup,
+ducking and loudness gain, preserves project backups, exports audio and label
+sidecars, and checks the actual delivery file. No audio binaries are committed.
+
+```sh
+npm run build
+npm run example:voiceover -- --live
+```
+
+This is an explicit Windows/English Audacity **3.7.8** opt-in with ffmpeg/ffprobe
+already installed. Quit Audacity and close other MCP controllers first: the
+runner refuses a running app or
+recovery entries before mutation. It creates a new output directory under
+`.work/`, retains artifacts and a call/timing report, and verifies orderly exit,
+no dialogs and empty ActiveProjects on success. On failure it retains the project
+and artifacts, attempting a saved orderly exit only for the session it started.
+It never kills a process or replays an uncertain edit. See the example README
+for recovery steps and custom output paths.
+
+The example runner is never part of hosted CI: hosted runners have no Audacity.
+Unit tests cover deterministic synthesis and workflow assertions without native
+I/O; the opt-in run establishes actual DSP and lifecycle behavior.
 
 ## Catalogue and release checks
 

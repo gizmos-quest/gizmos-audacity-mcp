@@ -45,7 +45,7 @@ export function registerTaskTools(tool: ToolRegistrar, ops: Ops): void {
 
   tool(
     'audacity_track_edit',
-    'Add mono/stereo/label tracks, remove tracks, mix/render, or align selected tracks by start/end/selection. Track scope is explicit; add actions can name the new track.',
+    'Add mono/stereo/label tracks, remove tracks, mix/render, or align selected tracks by start/end/selection. Track scope is explicit; add actions can name the new track. mix_new keeps the original tracks audible: mute them before exporting the new mix to avoid doubling. Find the new audio track in returned tracks; it can precede label tracks.',
     TrackEditSchema.shape,
     (args) => trackEdit(ops, args),
   );
@@ -59,7 +59,7 @@ export function registerTaskTools(tool: ToolRegistrar, ops: Ops): void {
 
   tool(
     'audacity_auto_duck',
-    'Duck a bed under speech using native AutoDuck. The unselected voice must be the immediately following track below the selected bed; checks topology before editing. dryRun lists exact parameters/range.',
+    'Destructively duck bed samples under speech using native AutoDuck; save a project backup first. The unselected voice must be the immediately following track below the selected bed; import the bed first, then voice. dryRun lists exact parameters/range. Use audacity_envelope_set for editable ducking or an existing track order.',
     AutoDuckSchema.shape,
     (args) => autoDuck(ops, args),
   );

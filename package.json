@@ -15,6 +15,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --coverage",
     "test:live": "vitest run --config vitest.live.config.ts",
+    "example:voiceover": "node examples/voiceover/run.mjs",
     "catalogue": "tsx scripts/refresh-catalogue.ts",
     "parameters": "tsx scripts/source-parameters.ts",
     "start": "node dist/main.js",

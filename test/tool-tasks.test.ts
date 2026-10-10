@@ -28,6 +28,21 @@ vi.mock('../src/tasks/pipeline.js', async (original) => ({
 }));
 
 describe('task registration contracts', () => {
+  it('describes destructive ducking and retained original mix tracks with practical next steps', () => {
+    const descriptions = new Map<string, string>();
+    registerTaskTools((name, description) => descriptions.set(name, description), {} as Ops);
+    expect(descriptions.get('audacity_auto_duck')).toContain('Destructively duck bed samples');
+    expect(descriptions.get('audacity_auto_duck')).toContain('save a project backup first');
+    expect(descriptions.get('audacity_auto_duck')).toContain('import the bed first, then voice');
+    expect(descriptions.get('audacity_auto_duck')).toContain('audacity_envelope_set for editable ducking');
+    expect(descriptions.get('audacity_track_edit')).toContain(
+      'mix_new keeps the original tracks audible: mute them before exporting the new mix to avoid doubling',
+    );
+    expect(descriptions.get('audacity_track_edit')).toContain(
+      'Find the new audio track in returned tracks; it can precede label tracks',
+    );
+  });
+
   it('keeps each public shape and forwards request-scoped pipeline progress', async () => {
     const ops = {} as Ops;
     const progress = vi.fn(async () => undefined);

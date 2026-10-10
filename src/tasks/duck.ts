@@ -6,18 +6,18 @@ import { audioTrack, resolveRange, validRange } from './scope.js';
 
 export const AutoDuckSchema = z
   .object({
-    bed: Track,
-    voice: Track,
+    bed: Track.describe('bed track index (0-based) or unique name; must immediately precede the voice track'),
+    voice: Track.describe('voice track index (0-based) or unique name; must immediately follow the bed track'),
     start: Seconds.optional(),
     end: Seconds.optional(),
     // Native AutoDuck limits (catalogue/parameters.json); others open a modal.
-    duckDb: z.number().min(-24).max(0).default(-12),
-    thresholdDb: z.number().min(-100).max(0).default(-30),
-    fadeDown: z.number().min(0).max(3).default(0.5),
-    fadeUp: z.number().min(0).max(3).default(0.5),
-    innerFadeDown: z.number().min(0).max(3).default(0),
-    innerFadeUp: z.number().min(0).max(3).default(0),
-    maximumPause: z.number().min(0).max(60).default(1),
+    duckDb: z.number().min(-24).max(0).default(-12).describe('attenuation applied to the bed, in dB'),
+    thresholdDb: z.number().min(-100).max(0).default(-30).describe('voice detection threshold, in dB'),
+    fadeDown: z.number().min(0).max(3).default(0.5).describe('outer fade-down duration, in seconds'),
+    fadeUp: z.number().min(0).max(3).default(0.5).describe('outer fade-up duration, in seconds'),
+    innerFadeDown: z.number().min(0).max(3).default(0).describe('inner fade-down duration, in seconds'),
+    innerFadeUp: z.number().min(0).max(3).default(0).describe('inner fade-up duration, in seconds'),
+    maximumPause: z.number().min(0).max(60).default(1).describe('maximum pause to bridge while ducking, in seconds'),
     dryRun: z.boolean().default(false),
   })
   .strict()
@@ -32,7 +32,7 @@ export async function autoDuck(ops: Ops, input: unknown): Promise<unknown> {
   // intervening label clears the control candidate and opens a native modal.
   if (voice.index !== bed.index + 1 || tracks[bed.index + 1]?.kind !== 'wave') {
     throw new Error(
-      'Auto Duck requires the voice to be the immediately following audio track below the bed; reorder the tracks first',
+      'Auto Duck requires the voice to be the immediately following audio track below the bed; use audacity_fresh with backupTo and import the bed before the voice for a new mix, or use audacity_envelope_set for editable ducking in the existing track order',
     );
   }
   const params = {
