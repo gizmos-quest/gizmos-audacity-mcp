@@ -1,7 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { COMMANDS, commandSchema, describeCommand } from '../src/catalogue.js';
-import { AutoDuckSchema, GenerateSchema, PipelineSchema } from '../src/tasks.js';
+import { AutoDuckSchema } from '../src/tasks/duck.js';
+import { GenerateSchema } from '../src/tasks/generate.js';
+import { PipelineSchema } from '../src/tasks/pipeline.js';
 
 interface SourceParam {
   key: string;

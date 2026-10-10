@@ -1,7 +1,8 @@
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
-import { measureFile, parseFfmpegMeasurement, parseProbe, probeFile, runFfmpeg } from '../../src/analysis.js';
+import { parseFfmpegMeasurement, parseProbe, probeFile, runFfmpeg } from '../../src/analysis/executables.js';
+import { measureFile } from '../../src/analysis/measurement.js';
 
 import { temporary, wav } from '../helpers/audio-fixture.js';
 

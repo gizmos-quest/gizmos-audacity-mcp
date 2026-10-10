@@ -2,7 +2,8 @@
 // Pipeline ideas were independently implemented after studying xDarkzx/Audacity-MCP
 // and FFriends/MCP-Audacity; parameter names come from this host's 3.7.8 catalogue.
 import { z } from 'zod';
-import { preflightEffectParameters, preflightScopedEffects } from '../effect-safety.js';
+import { preflightScopedEffects } from '../effects/context.js';
+import { preflightEffectParameters } from '../effects/parameters.js';
 import { catalogueCommand, type ParamValue } from '../format.js';
 import { errorWithContext, type Ops, type TrackRef } from '../ops.js';
 import type { ToolProgress } from '../tools.js';

@@ -2,7 +2,7 @@ import { mkdtemp, open, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
 import { z } from 'zod';
-import { selectionTimes } from './analysis.js';
+import { selectionTimes } from './analysis/render.js';
 import { catalogueCommand } from './format.js';
 import type { Ops } from './ops.js';
 

@@ -20,12 +20,12 @@ flowchart LR
 | Entry, doctor, server assembly | `src/main.ts`, `src/doctor.ts`, `src/server.ts` |
 | Tool boundaries and metadata | `src/tools.ts`, `src/tool-*.ts` |
 | Native process/window/config lifecycle | `src/app.ts`, `src/app-*.ts` |
-| Pipe transport and byte codec | `src/pipe.ts`, `src/pipe-worker.ts`, `src/format.ts` |
-| Catalogue and native effect policy | `src/catalogue.ts`, `src/catalogue-bounds.ts`, `src/effect-safety.ts`, `catalogue/` |
+| Pipe transport, ownership and byte codec | `src/pipe.ts`, `src/pipe-*.ts`, `src/format.ts` |
+| Catalogue and native effect policy | `src/catalogue.ts`, `src/catalogue-bounds.ts`, `src/effects/`, `catalogue/` |
 | Selection, tracks, imports, noise state | `src/ops.ts`, `src/audacity/` |
-| Plans and editing tasks | `src/tasks.ts`, `src/tasks/`, `src/batch.ts` |
-| Analysis and rendered transactions | `src/analysis.ts`, `src/analysis/`, `src/source-rate.ts` |
-| Labels, transport, macros/preferences | `src/labels.ts`, `src/controls.ts` and domain modules |
+| Plans and editing tasks | `src/tasks/`, `src/batch.ts` |
+| Analysis and rendered transactions | `src/analysis/`, `src/source-rate.ts` |
+| Labels, transport, macros/preferences | `src/labels.ts`, `src/controls.ts`, `src/controls/` |
 
 The whole-operation queue protects selection-dependent sequences. Pipe
 exchanges also serialize independently. Dialog/window controls bypass that

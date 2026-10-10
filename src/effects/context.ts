@@ -5,7 +5,7 @@
 // an 8000 Hz source opened the native error dialog despite a 48000 Hz project.
 // Source-rate guards therefore use the silent sample header, not WAV render rate.
 
-import { selectionTimes } from '../analysis.js';
+import { selectionTimes } from '../analysis/render.js';
 import { EFFECT_IDS } from '../catalogue.js';
 import type { Ops, TrackInfo } from '../ops.js';
 import { measureSourceRate } from '../source-rate.js';

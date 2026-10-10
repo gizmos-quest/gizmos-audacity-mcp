@@ -4,7 +4,7 @@ import { registerCatalogueTools } from '../src/tool-catalogue.js';
 import { toolRecorder } from './helpers/tool-recorder.js';
 
 const pipeExists = vi.hoisted(() => vi.fn());
-vi.mock('../src/app.js', () => ({ pipeExists }));
+vi.mock('../src/app-process.js', () => ({ pipeExists }));
 beforeEach(() => pipeExists.mockReset().mockReturnValue(true));
 
 function session() {

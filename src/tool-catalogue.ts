@@ -1,8 +1,9 @@
 import { z } from 'zod';
-import { pipeExists } from './app.js';
+import { pipeExists } from './app-process.js';
+import { preflightCommand } from './audacity/policy.js';
 import { COMMAND_IDS, describeCommand, MENU_IDS } from './catalogue.js';
-import { requireEffectSelection } from './effect-safety.js';
-import { type Ops, preflightCommand } from './ops.js';
+import { requireEffectSelection } from './effects/context.js';
+import type { Ops } from './ops.js';
 import { Params } from './tool-input.js';
 import type { ToolRegistrar } from './tools.js';
 

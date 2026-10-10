@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { listWindows } from '../../src/app.js';
+import { listWindows } from '../../src/app-windows.js';
 import { AudacityNeedsRecovery, AudacityPipe, AudacityTimeout } from '../../src/pipe.js';
 import { type LiveContext, type Measurement, testTimeout, type Windows } from './session.js';
 

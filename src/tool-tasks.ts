@@ -1,20 +1,17 @@
 import type { Ops } from './ops.js';
+import { AutoDuckSchema, autoDuck } from './tasks/duck.js';
 import {
-  AutoDuckSchema,
-  autoDuck,
   ClipSetSchema,
   clipSet,
   EditSchema,
   edit,
   FadeSchema,
   fade,
-  GenerateSchema,
-  generate,
-  PipelineSchema,
-  pipeline,
   TrackEditSchema,
   trackEdit,
-} from './tasks.js';
+} from './tasks/editing.js';
+import { GenerateSchema, generate } from './tasks/generate.js';
+import { PipelineSchema, pipeline } from './tasks/pipeline.js';
 import type { ToolRegistrar } from './tools.js';
 
 export function registerTaskTools(tool: ToolRegistrar, ops: Ops): void {

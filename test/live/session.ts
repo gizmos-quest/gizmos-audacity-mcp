@@ -10,7 +10,8 @@ import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 import { afterAll, beforeAll, beforeEach, expect } from 'vitest';
-import { audacityExe, audacityProcesses, isRunning, recoveryEntries } from '../../src/app.js';
+import { recoveryEntries } from '../../src/app-config.js';
+import { audacityExe, audacityProcesses, isRunning } from '../../src/app-process.js';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));
 export const testTimeout = 120_000;

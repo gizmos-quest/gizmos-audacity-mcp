@@ -1,7 +1,8 @@
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { assertExecutableMatches, audacityExe, launch, preflightExecutableOverride } from '../src/app.js';
+import { launch } from '../src/app.js';
+import { assertExecutableMatches, audacityExe, preflightExecutableOverride } from '../src/app-process.js';
 
 afterEach(() => vi.unstubAllEnvs());
 

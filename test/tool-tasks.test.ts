@@ -1,18 +1,30 @@
 import { describe, expect, it, vi } from 'vitest';
 import type { Ops } from '../src/ops.js';
-import { autoDuck, clipSet, edit, fade, generate, pipeline, trackEdit } from '../src/tasks.js';
+import { autoDuck } from '../src/tasks/duck.js';
+import { clipSet, edit, fade, trackEdit } from '../src/tasks/editing.js';
+import { generate } from '../src/tasks/generate.js';
+import { pipeline } from '../src/tasks/pipeline.js';
 import { registerTaskTools } from '../src/tool-tasks.js';
 import { toolRecorder } from './helpers/tool-recorder.js';
 
-vi.mock('../src/tasks.js', async (original) => ({
-  ...(await original<typeof import('../src/tasks.js')>()),
-  pipeline: vi.fn(async () => ({})),
+vi.mock('../src/tasks/duck.js', async (original) => ({
+  ...(await original<typeof import('../src/tasks/duck.js')>()),
+  autoDuck: vi.fn(async () => ({})),
+}));
+vi.mock('../src/tasks/editing.js', async (original) => ({
+  ...(await original<typeof import('../src/tasks/editing.js')>()),
   edit: vi.fn(async () => ({})),
-  generate: vi.fn(async () => ({})),
   clipSet: vi.fn(async () => ({})),
   trackEdit: vi.fn(async () => ({})),
   fade: vi.fn(async () => ({})),
-  autoDuck: vi.fn(async () => ({})),
+}));
+vi.mock('../src/tasks/generate.js', async (original) => ({
+  ...(await original<typeof import('../src/tasks/generate.js')>()),
+  generate: vi.fn(async () => ({})),
+}));
+vi.mock('../src/tasks/pipeline.js', async (original) => ({
+  ...(await original<typeof import('../src/tasks/pipeline.js')>()),
+  pipeline: vi.fn(async () => ({})),
 }));
 
 describe('task registration contracts', () => {

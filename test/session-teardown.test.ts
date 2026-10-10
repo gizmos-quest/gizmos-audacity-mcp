@@ -1,12 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const fake = vi.hoisted(() => ({ running: vi.fn(), recovery: vi.fn() }));
-vi.mock('../src/app.js', () => ({
-  audacityExe: vi.fn(),
-  audacityProcesses: vi.fn(),
-  isRunning: fake.running,
-  recoveryEntries: fake.recovery,
-}));
+vi.mock('../src/app-config.js', () => ({ recoveryEntries: fake.recovery }));
+vi.mock('../src/app-process.js', () => ({ audacityExe: vi.fn(), audacityProcesses: vi.fn(), isRunning: fake.running }));
 
 import { finishLiveSession } from './live/session.js';
 

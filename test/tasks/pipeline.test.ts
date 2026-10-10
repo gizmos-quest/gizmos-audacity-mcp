@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { pipeline } from '../../src/tasks.js';
+import { pipeline } from '../../src/tasks/pipeline.js';
 
 vi.mock('../../src/source-rate.js', () => ({ measureSourceRate: vi.fn(async () => 48_000) }));
 

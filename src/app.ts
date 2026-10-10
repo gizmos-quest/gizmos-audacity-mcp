@@ -19,13 +19,10 @@ import {
   startPosix,
 } from './app-process.js';
 import { closeProjectWindow, listWindows, setWindowVisible } from './app-windows.js';
+import { validateProjectFile } from './audacity/files.js';
 import { formatCommand, parseInfoJson } from './format.js';
-import { errorWithContext, validateProjectFile } from './ops.js';
+import { errorWithContext } from './ops.js';
 import { AudacityNoProject, AudacityPipe, type PipeReply } from './pipe.js';
-
-export * from './app-config.js';
-export * from './app-process.js';
-export * from './app-windows.js';
 
 export function assertEnglishCommands(body: string): void {
   const commands = parseInfoJson(body);

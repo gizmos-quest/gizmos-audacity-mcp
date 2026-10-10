@@ -1,15 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Ops, type TrackInfo } from '../../src/ops.js';
 import { AudacityPipe, AudacityTimeout, type PipeReply } from '../../src/pipe.js';
-import { pipeline, planPipeline } from '../../src/tasks.js';
+import { pipeline, planPipeline } from '../../src/tasks/pipeline.js';
 
 const { measureScopeMock, measureSourceFramesMock, measureSourceRateMock } = vi.hoisted(() => ({
   measureScopeMock: vi.fn(),
   measureSourceFramesMock: vi.fn(),
   measureSourceRateMock: vi.fn(),
 }));
-vi.mock('../../src/analysis.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../src/analysis.js')>()),
+vi.mock('../../src/analysis/render.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/analysis/render.js')>()),
   measureScope: measureScopeMock,
 }));
 vi.mock('../../src/source-rate.js', () => ({

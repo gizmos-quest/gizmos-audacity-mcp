@@ -2,7 +2,8 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, it } from 'vitest';
-import { configPath, isRunning, recoveryEntries } from '../../src/app.js';
+import { configPath, recoveryEntries } from '../../src/app-config.js';
+import { isRunning } from '../../src/app-process.js';
 import type { LiveContext, Windows } from './session.js';
 
 const root = fileURLToPath(new URL('../..', import.meta.url));

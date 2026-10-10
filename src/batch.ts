@@ -1,11 +1,14 @@
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { z } from 'zod';
-import { compareMeasurements, measureFile, measureScope, selectionTimes } from './analysis.js';
+import { measureFile } from './analysis/measurement.js';
+import { measureScope, selectionTimes } from './analysis/render.js';
+import { compareMeasurements } from './analysis/targets.js';
+import { validateExportFile, validateImportFile } from './audacity/files.js';
 import { SafeString } from './catalogue.js';
 import { catalogueCommand } from './format.js';
-import { errorWithContext, type Ops, validateExportFile, validateImportFile } from './ops.js';
-import { PipelineSchema, pipeline, planPipeline } from './tasks.js';
+import { errorWithContext, type Ops } from './ops.js';
+import { PipelineSchema, pipeline, planPipeline } from './tasks/pipeline.js';
 import type { ToolRegistrar } from './tools.js';
 
 // Keep full pipeline validation, including its refinements, without exposing track/dryRun overrides.

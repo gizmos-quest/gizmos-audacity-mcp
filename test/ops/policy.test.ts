@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { parseMacro } from '../../src/controls.js';
-import { Ops, preflightCommand, type TrackInfo, validateProjectFile } from '../../src/ops.js';
+import { validateProjectFile } from '../../src/audacity/files.js';
+import { preflightCommand } from '../../src/audacity/policy.js';
+import { parseMacro } from '../../src/controls/macros.js';
+import { Ops, type TrackInfo } from '../../src/ops.js';
 import { AudacityPipe, type PipeReply } from '../../src/pipe.js';
 
 type LabelTuple = [number, number, string];

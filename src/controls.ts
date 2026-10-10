@@ -6,10 +6,6 @@ import { registerTransportTool } from './controls/transport.js';
 import type { Ops } from './ops.js';
 import type { ToolRegistrar } from './tools.js';
 
-export type { MacroStep } from './controls/macros.js';
-export { parseMacro } from './controls/macros.js';
-export { PreferenceValue, safePreference } from './controls/preferences.js';
-
 export function registerControlTools(tool: ToolRegistrar, ops: Ops): void {
   registerTransportTool(tool, ops);
   registerProjectInfoTools(tool, ops);

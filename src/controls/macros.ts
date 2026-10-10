@@ -1,12 +1,14 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { z } from 'zod';
-import { configPath } from '../app.js';
+import { configPath } from '../app-config.js';
+import { preflightCommand } from '../audacity/policy.js';
 import { COMMAND_IDS, describeCommand, MENU_IDS, SafeString } from '../catalogue.js';
-import { preflightMacroEffects, requireEffectSelection } from '../effect-safety.js';
+import { requireEffectSelection } from '../effects/context.js';
+import { preflightMacroEffects } from '../effects/macros.js';
 import type { ParamValue } from '../format.js';
 import type { Ops } from '../ops.js';
-import { errorWithContext, preflightCommand } from '../ops.js';
+import { errorWithContext } from '../ops.js';
 import type { ToolRegistrar } from '../tools.js';
 
 export interface MacroStep {

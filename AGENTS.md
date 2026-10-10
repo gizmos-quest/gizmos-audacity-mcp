@@ -34,7 +34,7 @@ and regenerate parameter limits with `npm run parameters -- ../audacity`.
 - `tools.ts` / `tool-*.ts`: strict registrations, metadata, reports/progress.
 - `pipe.ts` / `pipe-worker.ts` / `format.ts`: byte framing, bounded transport.
 - `app.ts` and platform modules: discovery, config, native window lifecycle.
-- `catalogue.ts` / `effect-safety.ts`: safe catalogue and native policy.
+- `catalogue.ts` / `effects/`: safe catalogue and native effect policy.
 - `ops.ts` / `audacity/`: stateful native operations and selection transactions.
 - `tasks/`, `analysis/`, `controls/`, labels and batch: domain workflows.
 

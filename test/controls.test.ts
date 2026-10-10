@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { parseMacro, registerControlTools } from '../src/controls.js';
+import { parseMacro } from '../src/controls/macros.js';
+import { registerControlTools } from '../src/controls.js';
 import type { Ops } from '../src/ops.js';
 import { AudacityTimeout } from '../src/pipe.js';
 import type { ToolRegistrar } from '../src/tools.js';
@@ -17,15 +18,14 @@ vi.mock('node:fs/promises', async (original) => ({
   readFile: fixtures.readFile,
   readdir: fixtures.readdir,
 }));
-vi.mock('../src/app.js', () => ({
-  preflightExecutableOverride: vi.fn(),
+vi.mock('../src/app.js', () => ({ launch: fixtures.launch }));
+vi.mock('../src/app-config.js', () => ({
   configPath: () => '/fixtures/audacity.cfg',
   recoveryEntries: () => [],
   discardStaleRecovery: vi.fn(),
-  isRunning: fixtures.isRunning,
-  launch: fixtures.launch,
-  listWindows: fixtures.listWindows,
 }));
+vi.mock('../src/app-process.js', () => ({ preflightExecutableOverride: vi.fn(), isRunning: fixtures.isRunning }));
+vi.mock('../src/app-windows.js', () => ({ listWindows: fixtures.listWindows }));
 
 function controls() {
   const ops = {

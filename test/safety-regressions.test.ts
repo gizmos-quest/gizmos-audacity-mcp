@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { preflightMacroEffects } from '../src/effect-safety.js';
+import { preflightMacroEffects } from '../src/effects/macros.js';
 import { Ops, type TrackInfo } from '../src/ops.js';
 import { AudacityPipe } from '../src/pipe.js';
-import { generate, trackEdit } from '../src/tasks.js';
+import { trackEdit } from '../src/tasks/editing.js';
+import { generate } from '../src/tasks/generate.js';
 
 const rate = vi.hoisted(() => vi.fn());
 vi.mock('../src/source-rate.js', () => ({ measureSourceRate: rate }));

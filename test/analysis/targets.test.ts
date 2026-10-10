@@ -3,11 +3,11 @@ import {
   checkTargets,
   compareMeasurements,
   LoudnessTargetSchema,
-  measureWavBuffer,
   planLoudnessTarget,
   TARGETS,
   TargetSchema,
-} from '../../src/analysis.js';
+} from '../../src/analysis/targets.js';
+import { measureWavBuffer } from '../../src/analysis/wav-metrics.js';
 
 import { wav } from '../helpers/audio-fixture.js';
 

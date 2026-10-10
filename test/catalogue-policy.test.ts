@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
+import { validateExportFile } from '../src/audacity/files.js';
 import { COMMAND_IDS, describeCommand, EFFECT_IDS, MENU_IDS } from '../src/catalogue.js';
 import { catalogueCommand, formatCommand, parseInfoJson } from '../src/format.js';
-import { Ops, validateExportFile } from '../src/ops.js';
+import { Ops } from '../src/ops.js';
 import { AudacityPipe } from '../src/pipe.js';
 
 describe('catalogue boundaries', () => {

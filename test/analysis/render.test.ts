@@ -2,7 +2,11 @@ import { access } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { loudnessTarget, measureScope, measureWavBuffer, registerAnalysisTools, TARGETS } from '../../src/analysis.js';
+import { loudnessTarget } from '../../src/analysis/loudness.js';
+import { measureScope } from '../../src/analysis/render.js';
+import { TARGETS } from '../../src/analysis/targets.js';
+import { registerAnalysisTools } from '../../src/analysis/tools.js';
+import { measureWavBuffer } from '../../src/analysis/wav-metrics.js';
 import type { TrackInfo } from '../../src/ops.js';
 import { AudacityTimeout } from '../../src/pipe.js';
 

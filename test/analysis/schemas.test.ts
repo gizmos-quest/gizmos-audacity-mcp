@@ -1,12 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import {
-  amplitudeDb,
-  MeasureOptionsSchema,
-  MeasureScopeSchema,
-  percentile,
-  SilenceSchema,
-  selectionTimes,
-} from '../../src/analysis.js';
+import { MeasureOptionsSchema, MeasureScopeSchema } from '../../src/analysis/options.js';
+import { selectionTimes } from '../../src/analysis/render.js';
+import { amplitudeDb, percentile, SilenceSchema } from '../../src/analysis/types.js';
 
 describe('numeric and schema helpers', () => {
   it('returns percentiles at endpoints and linearly interpolates', () => {

@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { McpServer } from '@modelcontextprotocol/server';
-import { registerAnalysisTools } from './analysis.js';
+import { registerAnalysisTools } from './analysis/tools.js';
 import { qualifyAudacity } from './app-process.js';
 import { registerBatchTool } from './batch.js';
 import { registerControlTools } from './controls.js';

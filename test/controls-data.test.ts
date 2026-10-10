@@ -6,8 +6,8 @@ import type { Ops, TrackInfo } from '../src/ops.js';
 import type { ToolRegistrar } from '../src/tools.js';
 
 const measured = vi.hoisted(() => vi.fn());
-vi.mock('../src/analysis.js', () => ({ measureScope: measured }));
-vi.mock('../src/app.js', () => ({ recoveryEntries: () => ['example.aup3'] }));
+vi.mock('../src/analysis/render.js', () => ({ measureScope: measured }));
+vi.mock('../src/app-config.js', () => ({ recoveryEntries: () => ['example.aup3'] }));
 beforeEach(() => {
   measured.mockReset().mockResolvedValue({ sampleRate: 48000 });
 });

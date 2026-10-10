@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { parseActiveProjects } from '../src/app.js';
-import { parseMacro, safePreference } from '../src/controls.js';
+import { parseActiveProjects } from '../src/app-config.js';
+import { parseMacro } from '../src/controls/macros.js';
+import { safePreference } from '../src/controls/preferences.js';
 
 describe('safe saved macros and preferences', () => {
   it('parses explicit types and default Fade Ends macro', () => {

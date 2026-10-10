@@ -11,7 +11,7 @@
     "node": ">=24.21.0"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json",
+    "build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.build.json",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run --coverage",
     "test:live": "node -e \"process.exit(require('node:child_process').spawnSync(process.execPath,['node_modules/vitest/vitest.mjs','run','--config','vitest.live.config.ts'],{stdio:'inherit',env:{...process.env,AUDACITY_LIVE:'1'}}).status ?? 1)\"",

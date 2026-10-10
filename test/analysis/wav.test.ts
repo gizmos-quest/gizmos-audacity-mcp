@@ -1,7 +1,9 @@
 import { writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { amplitudeDb, measureWavBuffer, measureWavFile, parseWavHeader } from '../../src/analysis.js';
+import { amplitudeDb } from '../../src/analysis/types.js';
+import { parseWavHeader } from '../../src/analysis/wav-format.js';
+import { measureWavBuffer, measureWavFile } from '../../src/analysis/wav-metrics.js';
 
 import { change, chunk, riff, temporary, wav } from '../helpers/audio-fixture.js';
 

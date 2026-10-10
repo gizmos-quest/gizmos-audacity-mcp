@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { selectionTimes } from '../analysis.js';
+import { selectionTimes } from '../analysis/render.js';
 import { SafeString } from '../catalogue.js';
 import type { Ops } from '../ops.js';
 import { CommandFailed } from '../ops.js';

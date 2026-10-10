@@ -12,11 +12,12 @@ const native = vi.hoisted(() => ({
   listWindows: vi.fn(),
   setWindowVisible: vi.fn(),
 }));
-vi.mock('../src/app.js', () => ({
-  launch: native.launch,
-  quit: native.quit,
+vi.mock('../src/app.js', () => ({ launch: native.launch, quit: native.quit }));
+vi.mock('../src/app-process.js', () => ({
   pipeExists: native.pipeExists,
   preflightExecutableOverride: native.preflight,
+}));
+vi.mock('../src/app-windows.js', () => ({
   listWindows: native.listWindows,
   setWindowVisible: native.setWindowVisible,
 }));

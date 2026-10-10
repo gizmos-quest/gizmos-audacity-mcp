@@ -1,7 +1,8 @@
 import { z } from 'zod';
+import { validateProjectFile } from './audacity/files.js';
 import { EFFECT_IDS, SafeString } from './catalogue.js';
 import { catalogueCommand } from './format.js';
-import { type Ops, trackPanPercent, validateProjectFile } from './ops.js';
+import { type Ops, trackPanPercent } from './ops.js';
 import { Params, Scope, Seconds, TrackRef } from './tool-input.js';
 import type { ToolRegistrar } from './tools.js';
 

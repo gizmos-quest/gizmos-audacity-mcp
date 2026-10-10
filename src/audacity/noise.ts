@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { measureScope } from '../analysis/render.js';
 import { SafeString } from '../catalogue.js';
 import type { Ops, TrackRef } from '../ops.js';
 import { measureSourceRate } from '../source-rate.js';
@@ -127,7 +128,6 @@ export class NoiseProfile {
     if (intersecting.length !== 1 || intersecting[0]!.start > start || intersecting[0]!.end < end) {
       throw new Error('noise profile must be contained in one audio clip, without timeline gaps or overlapping clips');
     }
-    const { measureScope } = await import('../analysis.js');
     const measured = await measureScope(this.ops, { track: index, start, end }, { backend: 'wav' });
     if (measured.frames < 4096)
       throw new Error('noise profile must contain at least 4096 rendered samples; select a longer room-tone interval');

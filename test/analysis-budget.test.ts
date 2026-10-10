@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { AnalysisBudget, AnalysisBudgetError, assertAudioBudget, MAX_DECODED_BYTES } from '../src/analysis/budget.js';
-import { measureFile, measureWavFile } from '../src/analysis.js';
+import { measureFile } from '../src/analysis/measurement.js';
+import { measureWavFile } from '../src/analysis/wav-metrics.js';
 
 const directories: string[] = [];
 afterEach(async () => {

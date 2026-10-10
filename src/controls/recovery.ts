@@ -1,12 +1,8 @@
 import { z } from 'zod';
-import {
-  discardStaleRecovery,
-  isRunning,
-  launch,
-  listWindows,
-  preflightExecutableOverride,
-  recoveryEntries,
-} from '../app.js';
+import { launch } from '../app.js';
+import { discardStaleRecovery, recoveryEntries } from '../app-config.js';
+import { isRunning, preflightExecutableOverride } from '../app-process.js';
+import { listWindows } from '../app-windows.js';
 import type { Ops } from '../ops.js';
 import { CommandFailed } from '../ops.js';
 import type { ToolRegistrar } from '../tools.js';

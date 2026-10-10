@@ -1,5 +1,5 @@
 import { COMMAND_IDS } from '../catalogue.js';
-import { preflightEffectParameters } from '../effect-safety.js';
+import { preflightEffectParameters } from '../effects/parameters.js';
 import { catalogueCommand } from '../format.js';
 import { validateExportFile, validateImportFile } from './files.js';
 

@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { commandSchema, describeCommand } from '../src/catalogue.js';
-import { parseMacro } from '../src/controls.js';
+import { parseMacro } from '../src/controls/macros.js';
 import { Ops } from '../src/ops.js';
 import { AudacityPipe } from '../src/pipe.js';
 

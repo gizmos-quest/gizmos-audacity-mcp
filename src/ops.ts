@@ -9,7 +9,7 @@ import { preflightCommand } from './audacity/policy.js';
 import { resolveSelection } from './audacity/selection.js';
 import { exportMix, importTrack, moveClip, setEnvelope } from './audacity/tracks.js';
 import { COMMAND_IDS, commandSchema, MENU_IDS } from './catalogue.js';
-import { needsEffectContext, preflightEffect, requireEffectSelection } from './effect-safety.js';
+import { needsEffectContext, preflightEffect, requireEffectSelection } from './effects/context.js';
 import { formatCommand, type ParamValue, parseInfoJson } from './format.js';
 import type { AudacityPipe, PipeReply } from './pipe.js';
 
@@ -294,6 +294,3 @@ export function trackPanPercent(value: number): number {
     throw new RangeError('pan must be finite and between -1 and 1');
   return value * 100;
 }
-
-export { validateExportFile, validateImportFile, validateProjectFile } from './audacity/files.js';
-export { preflightCommand } from './audacity/policy.js';

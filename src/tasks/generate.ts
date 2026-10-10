@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { SafeString } from '../catalogue.js';
-import { preflightEffectParameters } from '../effect-safety.js';
+import { preflightEffectParameters } from '../effects/parameters.js';
 import { catalogueCommand, type ParamValue } from '../format.js';
 import type { Ops } from '../ops.js';
 import { Amplitude, audioTrack, Frequency, Seconds, safeMenu, Track, Waveform } from './scope.js';

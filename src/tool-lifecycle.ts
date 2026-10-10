@@ -1,5 +1,7 @@
 import { z } from 'zod';
-import { launch, listWindows, pipeExists, preflightExecutableOverride, quit, setWindowVisible } from './app.js';
+import { launch, quit } from './app.js';
+import { pipeExists, preflightExecutableOverride } from './app-process.js';
+import { listWindows, setWindowVisible } from './app-windows.js';
 import { SafeString } from './catalogue.js';
 import type { Ops } from './ops.js';
 import { AudacityNeedsRecovery } from './pipe.js';

@@ -8,14 +8,23 @@ import { buildServer } from '../src/server.js';
 
 vi.mock('../src/app.js', async (actual) => ({
   ...(await actual<typeof import('../src/app.js')>()),
-  pipeExists: () => false,
-  preflightExecutableOverride: async () => undefined,
   launch: async () => ({ started: false, visible: false, processes: [] }),
   quit: async () => ({}),
+}));
+vi.mock('../src/app-config.js', async (actual) => ({
+  ...(await actual<typeof import('../src/app-config.js')>()),
+  recoveryEntries: () => [],
+}));
+vi.mock('../src/app-process.js', async (actual) => ({
+  ...(await actual<typeof import('../src/app-process.js')>()),
+  pipeExists: () => false,
+  preflightExecutableOverride: async () => undefined,
+  isRunning: async () => false,
+}));
+vi.mock('../src/app-windows.js', async (actual) => ({
+  ...(await actual<typeof import('../src/app-windows.js')>()),
   setWindowVisible: async () => 0,
   listWindows: async () => [],
-  isRunning: async () => false,
-  recoveryEntries: () => [],
 }));
 
 async function session() {

@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { measureScope } from '../analysis.js';
-import { recoveryEntries } from '../app.js';
+import { measureScope } from '../analysis/render.js';
+import { recoveryEntries } from '../app-config.js';
 import type { Ops } from '../ops.js';
 import type { ToolRegistrar } from '../tools.js';
 

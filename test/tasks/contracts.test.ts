@@ -1,20 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
+import { AutoDuckSchema, autoDuck } from '../../src/tasks/duck.js';
 import {
-  AutoDuckSchema,
-  autoDuck,
   ClipSetSchema,
   clipSet,
   EditSchema,
   edit,
   FadeSchema,
   fade,
-  GenerateSchema,
-  generate,
-  PipelineSchema,
-  pipeline,
   TrackEditSchema,
   trackEdit,
-} from '../../src/tasks.js';
+} from '../../src/tasks/editing.js';
+import { GenerateSchema, generate } from '../../src/tasks/generate.js';
+import { PipelineSchema, pipeline } from '../../src/tasks/pipeline.js';
 
 vi.mock('../../src/source-rate.js', () => ({ measureSourceRate: vi.fn(async () => 48_000) }));
 

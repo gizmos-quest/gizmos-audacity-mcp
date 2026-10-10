@@ -25,11 +25,11 @@ server remains MIT licensed. No additional upstream runtime is bundled.
 | [buckydurddle/audacity-mcp](https://github.com/buckydurddle/audacity-mcp) | [MIT](https://github.com/buckydurddle/audacity-mcp/blob/bf2b08196406629cddae0c9c5799a4e9f396442e/LICENSE), Copyright 2026 Andrew Mercer | Compact discovery/dispatch, selection analysis and backup-first workflow ideas; approximate Undo-count checkpoints are not taken. |
 | [tachyonshuggy/audacity-mcp](https://github.com/tachyonshuggy/audacity-mcp) | [MIT](https://github.com/tachyonshuggy/audacity-mcp/blob/cd2f38783a76a9ef10aa0be2bf3518d3c04e0888/LICENSE), Copyright 2026 Jeff Shoemaker | Selection/export/label/transport and saved-macro coverage. |
 
-Research is reflected in original `src/tasks.ts` and its domain modules (plans/editing/generation),
-`src/analysis.ts` (measurement/silence/loudness), `src/labels.ts` and
-`src/ops.ts` (label workflows), `src/controls.ts` (macros/preferences/transport),
+Research is reflected in original `src/tasks/` (plans/editing/generation),
+`src/analysis/` (measurement/silence/loudness), `src/labels.ts` and
+`src/audacity/labels.ts` (label workflows), `src/controls/` (macros/preferences/transport),
 `src/batch.ts`, `src/source-rate.ts` (native sample-rate header queries),
-`src/effect-safety.ts` (Nyquist parameter/source-rate/context preflight), and
+`src/effects/` (Nyquist parameter/source-rate/context preflight), and
 pipe/catalogue recovery safeguards. Actual wire parameter
 names are the local catalogue's, with comments for independently live-verified
 safeguards. Any future copied or adapted source code must identify its exact

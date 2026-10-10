@@ -7,8 +7,8 @@ const { measureScopeMock, measureSourceFramesMock, measureSourceRateMock } = vi.
   measureSourceFramesMock: vi.fn(),
   measureSourceRateMock: vi.fn(),
 }));
-vi.mock('../../src/analysis.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../../src/analysis.js')>()),
+vi.mock('../../src/analysis/render.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/analysis/render.js')>()),
   measureScope: measureScopeMock,
 }));
 vi.mock('../../src/source-rate.js', () => ({

@@ -1,6 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { expect, it } from 'vitest';
-import { audacityExe, closeProjectWindow, isRunning, listWindows } from '../../src/app.js';
+import { audacityExe, isRunning } from '../../src/app-process.js';
+import { closeProjectWindow, listWindows } from '../../src/app-windows.js';
 import { type LiveContext, testTimeout } from './session.js';
 
 async function waitFor(check: () => Promise<boolean>, milliseconds: number): Promise<void> {

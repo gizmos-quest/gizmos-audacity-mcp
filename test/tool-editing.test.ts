@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { type Ops, validateProjectFile } from '../src/ops.js';
+import { validateProjectFile } from '../src/audacity/files.js';
+import type { Ops } from '../src/ops.js';
 import { registerEditingTools } from '../src/tool-editing.js';
 import { toolRecorder } from './helpers/tool-recorder.js';
 
-vi.mock('../src/ops.js', async (original) => ({
-  ...(await original<typeof import('../src/ops.js')>()),
+vi.mock('../src/audacity/files.js', async (original) => ({
+  ...(await original<typeof import('../src/audacity/files.js')>()),
   validateProjectFile: vi.fn(),
 }));
 
