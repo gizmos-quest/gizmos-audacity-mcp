@@ -2,14 +2,14 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { preflightCommand } from '../src/audacity/policy.js';
-import { COMMAND_IDS, MENU_IDS } from '../src/catalogue.js';
-import { paulstretchBuffer } from '../src/effects/native.js';
-import { Ops, type TrackInfo } from '../src/ops.js';
-import { AudacityPipe } from '../src/pipe.js';
+import { preflightCommand } from '../../src/audacity/policy.js';
+import { COMMAND_IDS, MENU_IDS } from '../../src/catalogue.js';
+import { paulstretchBuffer } from '../../src/effects/native.js';
+import { Ops, type TrackInfo } from '../../src/ops.js';
+import { AudacityPipe } from '../../src/pipe.js';
 
 const mocks = vi.hoisted(() => ({ measureSourceRate: vi.fn() }));
-vi.mock('../src/source-rate.js', () => ({ measureSourceRate: mocks.measureSourceRate }));
+vi.mock('../../src/source-rate.js', () => ({ measureSourceRate: mocks.measureSourceRate }));
 
 function fixture(rates: number[], selection = { Start: 0, End: 1 }, history = { Undo: 'Undo', Redo: 'Redo' }) {
   const tracks: TrackInfo[] = rates.map((_, i) => ({

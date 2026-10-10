@@ -58,4 +58,13 @@ describe('project recovery config', () => {
       'C:\\Audio\\project.aup3',
     ]);
   });
+  it('reads only the recovery section and preserves project paths', () => {
+    expect(
+      parseActiveProjects(
+        '[Other]\n1=ignored\n[ActiveProjects]\n1=C:\\\\projects\\\\x.aup3\n2=/tmp/a.aup3\n[Window]\n1=no',
+      ),
+    ).toEqual(['C:\\projects\\x.aup3', '/tmp/a.aup3']);
+    expect(parseActiveProjects('[ActiveProjects]\n1=last.aup3')).toEqual(['last.aup3']);
+    expect(parseActiveProjects('[ActiveProjects]\n[Window]\nX=1')).toEqual([]);
+  });
 });

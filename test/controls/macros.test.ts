@@ -1,9 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { parseActiveProjects } from '../src/app-config.js';
-import { parseMacro } from '../src/controls/macros.js';
-import { safePreference } from '../src/controls/preferences.js';
+import { parseMacro } from '../../src/controls/macros.js';
 
-describe('safe saved macros and preferences', () => {
+describe('safe saved macros', () => {
   it('parses explicit types and default Fade Ends macro', () => {
     expect(
       parseMacro(
@@ -55,21 +53,5 @@ describe('safe saved macros and preferences', () => {
     '',
   ])('rejects unsafe/incomplete macro %j', (macro) => {
     expect(() => parseMacro(macro)).toThrow();
-  });
-  it('restricts preferences to numeric supported sample rates and one/two record channels', () => {
-    expect(safePreference('/SamplingRate/DefaultProjectSampleRate', 48000)).toBe('48000');
-    expect(safePreference('/AudioIO/RecordChannels', 1)).toBe('1');
-    expect(() => safePreference('/Module/mod-script-pipe', 0)).toThrow('writable');
-    expect(() => safePreference('/SamplingRate/DefaultProjectSampleRate', '48000')).toThrow();
-    expect(() => safePreference('/AudioIO/RecordChannels', 32)).toThrow();
-  });
-  it('reads only the recovery section and preserves project paths', () => {
-    expect(
-      parseActiveProjects(
-        '[Other]\n1=ignored\n[ActiveProjects]\n1=C:\\\\projects\\\\x.aup3\n2=/tmp/a.aup3\n[Window]\n1=no',
-      ),
-    ).toEqual(['C:\\projects\\x.aup3', '/tmp/a.aup3']);
-    expect(parseActiveProjects('[ActiveProjects]\n1=last.aup3')).toEqual(['last.aup3']);
-    expect(parseActiveProjects('[ActiveProjects]\n[Window]\nX=1')).toEqual([]);
   });
 });

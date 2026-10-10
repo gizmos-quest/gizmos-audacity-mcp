@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { replayPipe, wire } from './helpers/replay-pipe.js';
+import { replayPipe, wire } from '../helpers/replay-pipe.js';
 
 const io = vi.hoisted(() => ({ open: vi.fn(), spawn: vi.fn(() => ({ status: 0, stderr: '' })) }));
 vi.mock('node:fs/promises', async (actual) => ({

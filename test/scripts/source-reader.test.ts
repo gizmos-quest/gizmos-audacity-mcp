@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { evaluate, splitArgs, squash, stripCode } from '../scripts/source-cpp.js';
-import { builtinEffects, scriptingCommands } from '../scripts/source-declarations.js';
-import { CppIndex } from '../scripts/source-index.js';
-import { parseChoices, parseNyquist, unquote } from '../scripts/source-nyquist.js';
+import { evaluate, splitArgs, squash, stripCode } from '../../scripts/source-cpp.js';
+import { builtinEffects, scriptingCommands } from '../../scripts/source-declarations.js';
+import { CppIndex } from '../../scripts/source-index.js';
+import { parseChoices, parseNyquist, unquote } from '../../scripts/source-nyquist.js';
 
 const FLT_MAX = 3.4028234663852886e38;
 const effect = (header: string, body: string) =>

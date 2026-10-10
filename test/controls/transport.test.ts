@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { registerControlTools } from '../src/controls.js';
-import { CommandFailed, type Ops } from '../src/ops.js';
-import type { ToolRegistrar } from '../src/tools.js';
+import { registerControlTools } from '../../src/controls.js';
+import { CommandFailed, type Ops } from '../../src/ops.js';
+import type { ToolRegistrar } from '../../src/tools.js';
 
 describe('transport state', () => {
   it('preserves recording mode through pause/resume and rejects ignored arguments', async () => {

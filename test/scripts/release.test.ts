@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 // JavaScript maintenance scripts are validated independently of runtime source coverage.
 // @ts-expect-error The CLI script is deliberately not a library with declarations.
-import { releaseChangelog, releasePlan, releaseVersion } from '../scripts/release.mjs';
+import { releaseChangelog, releasePlan, releaseVersion } from '../../scripts/release.mjs';
 
 describe('release planning without publication', () => {
   it.each([

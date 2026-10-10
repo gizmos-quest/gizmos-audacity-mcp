@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
-import { registerLabelTools } from '../../src/labels.js';
-import type { Ops } from '../../src/ops.js';
-import type { ToolRegistrar } from '../../src/tools.js';
-import { edits, type LabelTuple, label, project, wave } from '../helpers/project-fixture.js';
+import { registerLabelTools } from '../src/labels.js';
+import type { Ops } from '../src/ops.js';
+import type { ToolRegistrar } from '../src/tools.js';
+import { edits, type LabelTuple, label, project, wave } from './helpers/project-fixture.js';
 
 describe('label deletion preflight', () => {
   const labelHandler = (ops: Ops) => {

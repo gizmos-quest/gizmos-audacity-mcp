@@ -17,7 +17,7 @@ vi.mock('node:child_process', async (original) => {
 });
 const { spawnSync } = await vi.importActual<typeof import('node:child_process')>('node:child_process');
 
-const project = fileURLToPath(new URL('..', import.meta.url));
+const project = fileURLToPath(new URL('../..', import.meta.url));
 const biome = join(project, 'node_modules', '@biomejs', 'biome', 'bin', 'biome');
 const name = '@example/audio-mcp';
 let root: string;

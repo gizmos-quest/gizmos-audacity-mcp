@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { trackPanPercent } from '../../src/ops.js';
+import { trackPanPercent } from '../src/ops.js';
 
 describe('native pan units', () => {
   it.each([

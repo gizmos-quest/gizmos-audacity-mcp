@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sanitizeCatalogue } from '../scripts/catalogue-sanitize.js';
+import { sanitizeCatalogue } from '../../scripts/catalogue-sanitize.js';
 
 describe('public catalogue normalization', () => {
   it('removes installation and saved macro IDs without inventing executable aliases', () => {

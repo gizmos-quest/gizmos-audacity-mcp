@@ -79,7 +79,7 @@ async function publicationFixture(
     return { status: 0, stdout: '' };
   });
   // @ts-expect-error This maintenance CLI has no library declarations.
-  const script = await import('../scripts/release.mjs');
+  const script = await import('../../scripts/release.mjs');
   return { commands, publish: script.publish as () => void, prepare: script.prepare as () => void };
 }
 const index = (commands: string[], pattern: RegExp) => commands.findIndex((command) => pattern.test(command));
@@ -201,7 +201,7 @@ async function preparationFixture(
     return { status: 0, stdout: '' };
   });
   // @ts-expect-error This maintenance CLI has no library declarations.
-  const script = await import('../scripts/release.mjs');
+  const script = await import('../../scripts/release.mjs');
   return { commands, prepare: script.prepare as () => void };
 }
 const preparedState = () => JSON.parse(mocks.write.mock.calls.find(([file]) => file.endsWith('state.json'))![1]);
