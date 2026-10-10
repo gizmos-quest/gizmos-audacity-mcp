@@ -173,6 +173,17 @@ export async function doctor(fix = false): Promise<DoctorReport> {
       pipe.release();
     }
   });
+  await check('update notices (advisory)', async () => {
+    // Audacity-3.7.8 checks for updates on a timer while running, on by default
+    // (libraries/lib-preferences/Prefs.cpp:63-64), and shows an update popup or a notice
+    // such as the Audacity 4 promotion modally (src/update/UpdateManager.cpp:169-170,
+    // 296-310, 497-528).
+    if (configValue(await readConfig(), 'Update', 'DefaultUpdatesChecking') !== '0')
+      throw new Error(
+        'Audacity checks for updates and can open an update or Audacity 4 notice that blocks scripting until closed. Audacity 4 has no scripting interface: keep 3.7.x pinned and turn off Preferences > Application > Check for updates.',
+      );
+    return 'Update checks are off, so no update notice interrupts scripting.';
+  });
   await check('ffmpeg (optional)', async () => {
     const ffmpeg = process.env.AUDACITY_FFMPEG ?? 'ffmpeg';
     // Match probeFile: a configured executable directory can provide both
@@ -188,7 +199,7 @@ export async function doctor(fix = false): Promise<DoctorReport> {
     return 'ffmpeg and ffprobe available.';
   });
   return {
-    ok: checks.every((check) => check.ok || check.name === 'ffmpeg (optional)'),
+    ok: checks.every((check) => check.ok || ['update notices (advisory)', 'ffmpeg (optional)'].includes(check.name)),
     checks,
     ...(backup ? { backup } : {}),
   };

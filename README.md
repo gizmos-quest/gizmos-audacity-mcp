@@ -5,7 +5,7 @@ Local MCP tools for editing, processing and measuring audio in Audacity.
 [![Node 24+](https://img.shields.io/badge/Node-24%2B-339933)](https://nodejs.org/)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**45 typed tools · Audacity 3.7.8 · Node 24+ · stdio**
+**45 typed tools · Audacity 3.7.x · Node 24+ · stdio**
 
 Import audio, edit tracks and clips, apply effects, write labels, export mixes,
 and measure peak/RMS or optional LUFS/true peak. Audacity does the processing.
@@ -14,8 +14,10 @@ the scripting FIFOs; their native window lifecycle is not qualified.
 
 ## Requirements
 
-- English **Audacity 3.7.8**, with `mod-script-pipe` enabled; the bundled
-  catalogue targets 3.7.8. On Windows, install and pin it:
+- English **Audacity 3.7.x** with `mod-script-pipe` enabled: **3.7.8** is the
+  reference build (bundled catalogue, parameter limits, source audit) and
+  **3.7.9** is verified; other patch levels are refused until verified. On
+  Windows, install and pin it:
   `winget install --id Audacity.Audacity -e --version 3.7.8`, then
   `winget pin add --id Audacity.Audacity -e --version 3.7.8`.
 - **Audacity 4 is not supported**: 4.0 removed the scripting interface
@@ -32,7 +34,9 @@ commands become available after the first publication. For a source checkout,
 run `npm ci`, then `npm run build`; use `node dist/main.js` as the server command.
 
 1. Install Audacity 3.7.8. In **Preferences → Modules**, enable
-   `mod-script-pipe`, select the English UI and restart Audacity.
+   `mod-script-pipe`, select the English UI and restart Audacity. Turn off
+   **Preferences → Application → Check for updates**: update notices are modal
+   and block scripting until closed.
 2. Check setup:
 
    ```sh

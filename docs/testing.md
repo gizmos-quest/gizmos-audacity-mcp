@@ -52,8 +52,9 @@ npm run test:live
 
 The script explicitly opts in with `AUDACITY_LIVE=1` and drives the built server
 over stdio against hidden Audacity. Verify the **actual executable/file version**
-before mutation; the primary target is **3.7.8 ARM64 and x64**. Test 3.7.9
-separately and report its evidence rather than silently broadening the catalogue.
+before mutation; the reference build is **3.7.8 ARM64 and x64**, and 3.7.9 is
+verified. Admit another patch level only after its source diff against
+`Audacity-3.7.8` and a live run, rather than silently broadening the catalogue.
 Use English UI/registry and disable cloud/musehub modules in the isolated config.
 Forward explicit `AUDACITY_*` overrides through the SDK's restricted environment.
 `AUDACITY_CONFIG` only selects inspection; Audacity itself must use that config,

@@ -1,10 +1,17 @@
 # Setup and configuration
 
-Use English Audacity **3.7.8** with its shipped `mod-script-pipe` module.
+Use English Audacity **3.7.x** with its shipped `mod-script-pipe` module.
+
+| Version | Status |
+| --- | --- |
+| 3.7.8 | Reference build: bundled catalogue, source-derived parameter limits and modal-path audit |
+| 3.7.9 | Verified: its source changes no scripting surface and the live suite passes |
+| Other 3.7 patches | Refused until their source diff and a live run are checked |
+| 4.x | Not supported: Audacity 4 has no scripting interface (4.0 removed `mod-script-pipe`) |
+
 Check the executable's actual file version: a `3.7.*` installer pin can admit
-a later patch. Audacity 4 is not supported: 4.0 removed the scripting
-interface (`mod-script-pipe`). `doctor` and `audacity_launch` refuse a 4.x
-executable and name the remedy: install 3.7.x and pin it, for example
+a later patch. `doctor` and `audacity_launch` refuse other versions and name
+the remedy: install 3.7.x and pin it, for example
 `winget install --id Audacity.Audacity -e --version 3.7.8` then
 `winget pin add --id Audacity.Audacity -e --version 3.7.8`.
 
@@ -13,7 +20,10 @@ executable and name the remedy: install 3.7.x and pin it, for example
 3. Configure a [client](clients.md), then inspect `audacity_status`.
 
 Doctor returns JSON checks for version, process ownership/executable, module
-configuration, pipe presence, essential English IDs and optional ffmpeg.
+configuration, pipe presence, essential English IDs, update checks and
+optional ffmpeg. Audacity checks for updates while running and shows update
+or Audacity 4 notices modally; doctor advises turning off **Preferences →
+Application → Check for updates**, without changing it.
 The pipe and English-ID checks need a running Audacity and fail while it is
 stopped. Audacity loads an enabled module only if the config also records that
 module file's timestamp; after an update it treats the file as new and skips it.

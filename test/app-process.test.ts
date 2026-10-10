@@ -122,6 +122,7 @@ describe('actual process evidence', () => {
       'Audacity 4.0.1 is not supported: Audacity 4.0 removed the scripting interface (mod-script-pipe). Install Audacity 3.7.x and pin it, for example `winget install --id Audacity.Audacity -e --version 3.7.8`',
     );
     expect(() => assertSupportedVersion('3.6.0')).toThrow('Unsupported');
+    expect(() => assertSupportedVersion('3.7.7')).toThrow('3.7.8 (reference build) and 3.7.9 (verified)');
     for (const version of ['3.7.8', '3.7.8.0', '3.7.9.0']) expect(() => assertSupportedVersion(version)).not.toThrow();
   });
   it('reads POSIX version and rejects an unrecognized version', async () => {

@@ -129,6 +129,12 @@ describe('doctor diagnostics', () => {
       detail: expect.stringContaining('WAV measurement'),
     });
   });
+  it('advises turning off update notices without failing the report', async () => {
+    const advisory = async () => (await doctor()).checks.find((check) => check.name === 'update notices (advisory)');
+    expect(await advisory()).toMatchObject({ ok: false, detail: expect.stringContaining('Check for updates') });
+    await writeFile(join(dir, 'audacity.cfg'), '[Module]\nmod-script-pipe=1\n[Update]\nDefaultUpdatesChecking=0\n');
+    expect(await advisory()).toMatchObject({ ok: true });
+  });
   it('reports all supported live checks and releases endpoint ownership', async () => {
     fake.processes.mockResolvedValue([
       {

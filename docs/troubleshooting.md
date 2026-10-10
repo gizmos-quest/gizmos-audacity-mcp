@@ -6,9 +6,9 @@ Redact personal paths, audio names and private configuration from logs.
 
 | Symptom | Check / next action |
 | --- | --- |
-| No scripting pipe | Use Audacity 3.7.8, enable `mod-script-pipe`, restart. Run `doctor --fix` only while stopped. Audacity 4 removed the scripting interface: install 3.7.x and pin it (see [setup](configuration.md)). |
+| No scripting pipe | Use Audacity 3.7.8 or 3.7.9, enable `mod-script-pipe`, restart. Run `doctor --fix` only while stopped. Audacity 4 removed the scripting interface: install 3.7.x and pin it (see [setup](configuration.md)). |
 | Wrong installation | Verify `AUDACITY_EXE` and actual executable version. Preserve and quit the other running installation first. |
-| Startup never answers | Inspect dialogs with `audacity_dialogs`, show the window, check module/config and recovery entries. Do not start a second project. |
+| Startup never answers | Inspect dialogs with `audacity_dialogs` (update notices are modal; turn off update checks), show the window, check module/config and recovery entries. Do not start a second project. |
 | "Empty reply … no active project" | Audacity is still starting or its project window is gone; its script relay runs nothing then. Wait for the project window, then `audacity_recover`. |
 | Quit reports a windowless process | The project was saved and closed but Audacity's main loop kept running. With no `ActiveProjects` entry it holds no project: end it in Task Manager. The server never terminates Audacity. |
 | Command/effect missing | English UI plus an English plugin registry are required. Inspect `audacity_info` Commands and `audacity_describe`. |

@@ -1,6 +1,7 @@
 # Capabilities and limits
 
-The bundled catalogue and safeguards target **English Audacity 3.7.8**.
+The bundled catalogue and safeguards target **English Audacity 3.7.8**, the
+reference build; 3.7.9 is verified.
 Tool count is not a claim that every native menu or plugin is safe to automate.
 See [tools](tools.md), [native safety](safety.md) and [testing](testing.md).
 

@@ -12,6 +12,9 @@ input/result shapes and environment variables.
 - Setup doctor, strict native safeguards and compatible MCP data reports.
 - Recorded-byte stdio E2E, enforced coverage, hosted-only CI and manual release.
 - Public setup, safety and contributor documentation.
+- Support policy: Audacity 3.7.x with 3.7.8 as reference build and 3.7.9
+  verified; Audacity 4 has no scripting interface. Doctor and launch name it, and
+  doctor advises turning off update checks, whose notices are modal.
 - Parameter limits for every built-in effect, scripting command and bundled
   Nyquist plug-in, generated from the Audacity 3.7.8 source (`npm run parameters`).
 

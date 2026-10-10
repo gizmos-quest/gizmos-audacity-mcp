@@ -197,7 +197,7 @@ export function assertSupportedVersion(version: string): void {
     );
   if (!/^3\.7\.(?:8|9)(?:\.0)?$/.test(version))
     throw new Error(
-      `Unsupported Audacity version ${version}; use the verified 3.7.8 target (3.7.9 compatibility is separately tested). ${INSTALL_3_7}`,
+      `Unsupported Audacity version ${version}: this server supports Audacity 3.7.x as 3.7.8 (reference build) and 3.7.9 (verified). ${INSTALL_3_7}`,
     );
 }
 
