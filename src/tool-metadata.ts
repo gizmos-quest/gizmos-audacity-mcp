@@ -32,6 +32,7 @@ const OPEN_WORLD = new Set([
   'audacity_export',
   'audacity_project',
   'audacity_command',
+  'audacity_effect',
   'audacity_macros',
   'audacity_preferences',
   'audacity_project_info',

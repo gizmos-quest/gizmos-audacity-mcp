@@ -65,3 +65,5 @@ First public release of `@gizmos-quest/audacity-mcp`.
   the original project when the result would exceed a native index limit.
 - SRT, VTT and ffmetadata exports refuse regions that collapse to zero duration
   after millisecond rounding; TSV and JSON retain their original precision.
+- `audacity_effect` advertises its filesystem interaction in MCP annotations,
+  and native lifecycle descriptions state their Windows limits.

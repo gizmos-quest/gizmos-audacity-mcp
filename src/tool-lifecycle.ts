@@ -26,14 +26,14 @@ export function registerLifecycleTools(tool: ToolRegistrar, ops: Ops): void {
 
   tool(
     'audacity_window',
-    'Show or hide the Audacity window. A hidden Audacity keeps working through the pipe.',
+    'Show or hide the Audacity window on Windows. A hidden Audacity keeps working through the pipe.',
     { show: z.boolean() },
     async ({ show }) => ({ windows: await setWindowVisible(show) }),
   );
 
   tool(
     'audacity_quit',
-    'Quit Audacity without a save prompt. Without saveTo the project is discarded (saved to a temporary file that is then deleted).',
+    'On Windows, quit Audacity without a save prompt. Without saveTo the project is discarded (saved to a temporary file that is then deleted).',
     { saveTo: SafeString.optional().describe('keep the project at this .aup3 path') },
     async ({ saveTo }) => {
       await preflightExecutableOverride();
@@ -44,14 +44,14 @@ export function registerLifecycleTools(tool: ToolRegistrar, ops: Ops): void {
 
   tool(
     'audacity_dialogs',
-    "List Audacity's open windows and dialogs; close=true closes the dialogs (WM_CLOSE, like the window's X; Cancel for questions). Use it when a call times out: a modal dialog blocks the pipe.",
+    "On Windows, list Audacity's open windows and dialogs; close=true closes the dialogs (WM_CLOSE, like the window's X; Cancel for questions). Use it when a call times out: a modal dialog blocks the pipe.",
     { close: z.boolean().default(false) },
     async ({ close }) => ({ windows: await listWindows(close) }),
   );
 
   tool(
     'audacity_fresh',
-    'Get an empty project in a single window. If the open project has tracks it is saved to backupTo (required then), Audacity quits without a prompt and starts again. Never use the New menu: a second project window has crashed Audacity 3.7 under scripting.',
+    'Get an empty project in a single window. A running session is backed up when it has tracks (backupTo required), then restarted, even when empty. Restart is Windows-only; on other platforms save and quit Audacity first. Never use the New menu: a second project window has crashed Audacity 3.7 under scripting.',
     {
       visible: z.boolean().default(true),
       backupTo: SafeString.optional().describe('.aup3 path for the current project'),

@@ -1,7 +1,7 @@
 import type { CallToolResult, McpServer, ServerContext } from '@modelcontextprotocol/server';
 import { describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
-import { COMMAND_IDS, describeCommand } from '../src/catalogue.js';
+import { COMMAND_IDS, describeCommand, EFFECT_IDS } from '../src/catalogue.js';
 import { AudacityTimeout, AudacityUnavailable } from '../src/pipe.js';
 import { SerialQueue } from '../src/queue.js';
 import { toolAnnotations, toolTitle } from '../src/tool-metadata.js';
@@ -140,6 +140,11 @@ describe('metadata and progress', () => {
     expect(toolAnnotations('audacity_measure')).toMatchObject({ readOnlyHint: false, destructiveHint: false });
     expect(toolAnnotations('audacity_example', true)).toMatchObject({ readOnlyHint: true, destructiveHint: false });
     expect(toolAnnotations('audacity_pipeline')).toMatchObject({ destructiveHint: true, idempotentHint: false });
+  });
+
+  it('marks the effect tool as open-world because SampleDataExport writes caller-selected files', () => {
+    expect(EFFECT_IDS).toContain('SampleDataExport');
+    expect(toolAnnotations('audacity_effect').openWorldHint).toBe(true);
   });
 
   it.each(['task', 0])('scopes stage notifications to the supplied token %j', async (token) => {
