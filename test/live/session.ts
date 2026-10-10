@@ -75,9 +75,38 @@ export function available(executable: string): boolean {
   return spawnSync(executable, ['-version'], { windowsHide: true, stdio: 'ignore', timeout: 10_000 }).status === 0;
 }
 
+/** What setup preserved of the user's Audacity before replacing it with the test project. */
+export interface LiveOriginal {
+  running: boolean;
+  visible: boolean;
+  backup: string | null;
+}
+type Call = <T = unknown>(name: string, args?: Record<string, unknown>) => Promise<T>;
+
+/** Discard only the disposable test project, and only after setup preserved the user's
+ * original; then reopen that original as it was. After a failed setup Audacity is left
+ * untouched, so unsaved user work is never discarded. */
+export async function finishLiveSession(original: LiveOriginal | undefined, call: Call): Promise<void> {
+  if (!original)
+    throw new Error('Live setup did not preserve the open Audacity project; it was left open and untouched.');
+  if (await isRunning()) {
+    await call('audacity_dialogs', { close: true });
+    await call('audacity_recover', { closeDialogs: true });
+    await call('audacity_transport', { action: 'stop' });
+    expect((await call<Windows>('audacity_dialogs')).windows.filter((window) => window.dialog)).toEqual([]);
+    await call('audacity_quit');
+  }
+  expect(await isRunning()).toBe(false);
+  expect(recoveryEntries()).toEqual([]);
+  if (!original.running) return;
+  await call('audacity_launch', { visible: original.visible });
+  if (original.backup) await call('audacity_project', { action: 'open', file: original.backup });
+}
+
 export function installLiveSession() {
   let dir: string;
   let client: Client | undefined;
+  let original: LiveOriginal | undefined;
   let fixture: string;
   let quietFixture: string;
   let lowFixture: string;
@@ -190,7 +219,17 @@ export function installLiveSession() {
     mkdirSync(backups, { recursive: true });
     await connectClient();
     registered = (await client!.listTools()).tools.map((tool) => tool.name).sort();
-    await call('audacity_fresh', { visible: false, backupTo: join(backups, `before-live-${Date.now()}.aup3`) });
+    const running = await isRunning();
+    const visible =
+      running &&
+      (await call<Windows>('audacity_dialogs')).windows.some(
+        (window) => !window.dialog && window.visible && window.title,
+      );
+    const fresh = await call<{ backedUpTo: string | null }>('audacity_fresh', {
+      visible: false,
+      backupTo: join(backups, `before-live-${Date.now()}.aup3`),
+    });
+    original = { running, visible, backup: fresh.backedUpTo };
     await call('audacity_launch', { visible: false });
     const processes = await audacityProcesses();
     expect(processes).toHaveLength(1);
@@ -207,16 +246,7 @@ export function installLiveSession() {
     const errors: unknown[] = [];
     if (client) {
       try {
-        if (await isRunning()) {
-          await call('audacity_dialogs', { close: true });
-          await call('audacity_recover', { closeDialogs: true });
-          await call('audacity_transport', { action: 'stop' });
-          const windows = await call<Windows>('audacity_dialogs');
-          expect(windows.windows.filter((window) => window.dialog)).toEqual([]);
-          await call('audacity_quit');
-        }
-        expect(await isRunning()).toBe(false);
-        expect(recoveryEntries()).toEqual([]);
+        await finishLiveSession(original, call);
       } catch (error) {
         errors.push(error);
       }

@@ -62,7 +62,9 @@ for example Portable Settings beside a portable executable.
 
 Keep one session owner because Windows pipe names are fixed. The suite's first
 call saves any open project to `.work/live-backups/before-live-*.aup3` and never
-deletes it; it does not reopen it, so restore that backup yourself afterwards.
+deletes it. Teardown discards only the disposable test project, then reopens that
+backup with the original window visibility in an Audacity that was running before.
+If setup could not preserve the open project, teardown leaves Audacity untouched.
 Generate synthetic audio/projects. Cover every tool with
 separate attempted/succeeded/expected-refusal accounting, plus save-over refusal,
 blocking-dialog closure, restart/recovery and non-silent generated exports.

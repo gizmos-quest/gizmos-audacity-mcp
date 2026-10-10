@@ -11,6 +11,8 @@ input/result shapes and environment variables.
 - Initial public-release preparation for `@gizmos-quest/audacity-mcp` 0.1.0.
 - Setup doctor, strict native safeguards and compatible MCP data reports.
 - Recorded-byte stdio E2E, enforced coverage, hosted-only CI and manual release.
+- Live-test teardown discards only a preserved session and reopens the original
+  project with its visibility; a failed setup leaves Audacity untouched.
 - Public setup, safety and contributor documentation.
 - Support policy: Audacity 3.7.x with 3.7.8 as reference build and 3.7.9
   verified; Audacity 4 has no scripting interface. Doctor and launch name it, and
