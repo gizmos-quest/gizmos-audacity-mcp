@@ -30,11 +30,15 @@ describe('formatCommand', () => {
   });
 
   it('sends relative file paths as absolute, since Audacity resolves them against its own directory', () => {
-    expect(formatCommand('Export2', { Filename: 'mix.wav' }, 'win32')).toMatch(
-      /^Export2: Filename="?[A-Za-z]:\/.*\/mix\.wav"?$/,
-    );
     expect(formatCommand('Export2', { Filename: 'mix.wav' }, 'linux')).toMatch(
       /^Export2: Filename="?\/.*\/mix\.wav"?$/,
+    );
+  });
+
+  // win32 path resolution uses the working directory's drive, which exists only on a Windows host.
+  it.runIf(process.platform === 'win32')('resolves relative Windows paths onto the working drive', () => {
+    expect(formatCommand('Export2', { Filename: 'mix.wav' }, 'win32')).toMatch(
+      /^Export2: Filename="?[A-Za-z]:\/.*\/mix\.wav"?$/,
     );
   });
 

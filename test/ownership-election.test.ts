@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir, userInfo } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const fake = vi.hoisted(() => ({
@@ -28,7 +28,7 @@ afterEach(() => {
 });
 function fixture() {
   const paths = { to: `\\\\.\\pipe\\ElectionTo-${randomUUID()}`, from: `\\\\.\\pipe\\ElectionFrom-${randomUUID()}` };
-  const normalize = (path: string) => (process.platform === 'win32' ? path.toLowerCase() : path);
+  const normalize = (path: string) => (process.platform === 'win32' ? path.toLowerCase() : resolve(path));
   const key = createHash('sha256')
     .update(JSON.stringify([userInfo().username, normalize(paths.to), normalize(paths.from)]))
     .digest('hex')

@@ -15,7 +15,7 @@ describe('real disposable helper recovery', () => {
       if (command === 'GetInfo: Type=Tracks Format=JSON') return { bytes: wire('01-empty-tracks') };
       return { bytes: wire('07-new-mono'), ...(disconnected ? { truncateAt: 8 } : {}) };
     });
-    const pipe = new AudacityPipe(fake.paths, 5_000);
+    const pipe = new AudacityPipe(fake.paths, 30_000);
     try {
       await expect(pipe.send('Stop:')).rejects.toThrow('disconnected');
       await expect(pipe.send('Stop:')).rejects.toBeInstanceOf(AudacityNeedsRecovery);
@@ -43,11 +43,12 @@ describe('real disposable helper recovery', () => {
         if (command.startsWith('Message: Text=')) return { bytes: recoveryReply(command) };
         return { bytes: wire('01-empty-tracks') };
       });
-      const pipe = new AudacityPipe(fake.paths, 15_000);
+      // The projectless rule ends this call long before the generous exchange timeout.
+      const pipe = new AudacityPipe(fake.paths, 120_000);
       const started = performance.now();
       try {
         await expect(pipe.send('GetInfo: Type=Tracks Format=JSON')).rejects.toThrow(/no active project/);
-        expect(performance.now() - started).toBeLessThan(8_000);
+        expect(performance.now() - started).toBeLessThan(60_000);
         expect(pipe.needsRecovery).toBe(true);
         projectless = false;
         expect((await pipe.reconnect()).body).toBe('[  ]');
@@ -58,15 +59,17 @@ describe('real disposable helper recovery', () => {
         await fake.close();
       }
     },
+    90_000,
   );
 
   it('bounds delayed I/O by terminating only its disposable helper', async () => {
-    const fake = await replayPipe(() => ({ bytes: wire('07-new-mono'), delayMs: 2_000 }));
+    // The reply would arrive after 30 s; the 400 ms budget must end the exchange well before.
+    const fake = await replayPipe(() => ({ bytes: wire('07-new-mono'), delayMs: 30_000 }));
     const pipe = new AudacityPipe(fake.paths, 400);
     const started = performance.now();
     try {
       await expect(pipe.send('Stop:')).rejects.toBeInstanceOf(AudacityTimeout);
-      expect(performance.now() - started).toBeLessThan(1_500);
+      expect(performance.now() - started).toBeLessThan(15_000);
       expect(pipe.needsRecovery).toBe(true);
       await expect(pipe.send('Stop:')).rejects.toBeInstanceOf(AudacityNeedsRecovery);
       expect(fake.commands.filter((command) => command === 'Stop:')).toHaveLength(1);

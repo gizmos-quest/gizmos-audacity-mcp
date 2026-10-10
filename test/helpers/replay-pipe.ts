@@ -31,6 +31,8 @@ export async function replayPipe(replay: Replay) {
   const servers: Server[] = [];
   const sockets = new Set<Socket>();
   let stopped = false;
+  // Closing cancels a delayed delivery instead of waiting for it.
+  const closing = new AbortController();
   let accepting = false;
   let error: unknown;
   function receive(bytes: Buffer): Delivery {
@@ -43,7 +45,12 @@ export async function replayPipe(replay: Replay) {
     const bytes = delivery.bytes.subarray(0, delivery.truncateAt ?? delivery.bytes.length);
     const size = delivery.fragmentBytes ?? bytes.length;
     for (let offset = 0; offset < bytes.length; offset += Math.max(1, size)) {
-      if (delivery.delayMs) await new Promise((resolve) => setTimeout(resolve, delivery.delayMs));
+      if (delivery.delayMs)
+        await new Promise((resolve) => {
+          const timer = setTimeout(resolve, delivery.delayMs);
+          closing.signal.addEventListener('abort', () => resolve(clearTimeout(timer)), { once: true });
+        });
+      if (stopped) return;
       await write(bytes.subarray(offset, offset + Math.max(1, size)));
     }
   }
@@ -111,6 +118,7 @@ export async function replayPipe(replay: Replay) {
         const input = await open(paths.to, 'r');
         const output = await open(paths.from, 'w');
         accepting = false;
+        let replied = false;
         try {
           const chunks: Buffer[] = [];
           for (;;) {
@@ -120,15 +128,23 @@ export async function replayPipe(replay: Replay) {
             chunks.push(buffer.subarray(0, bytesRead));
             if (buffer.subarray(0, bytesRead).includes(10)) break;
           }
-          if (!stopped)
+          if (!stopped && chunks.length)
             await deliver(receive(Buffer.concat(chunks)), async (chunk) => {
               await output.writeFile(chunk);
             });
+          // Ending the reply (complete or truncated) closes our write end. Like
+          // Audacity's PipeServer, wait for the client to close its request end
+          // before reopening, so no stale end pairs with the next client.
+          replied = true;
+          await output.close();
+          while (!stopped && (await input.read(Buffer.alloc(1024), 0, 1024, null)).bytesRead);
         } catch (cause) {
-          if (!stopped) error = cause;
+          // The client stops reading at the completion line; a fragmented reply's
+          // trailing bytes can then meet a closed FIFO, which is not a replay fault.
+          if (!stopped && (cause as NodeJS.ErrnoException).code !== 'EPIPE') error = cause;
         } finally {
           await input.close();
-          await output.close();
+          if (!replied) await output.close();
         }
       }
     })();
@@ -142,6 +158,7 @@ export async function replayPipe(replay: Replay) {
     },
     async close() {
       stopped = true;
+      closing.abort();
       for (const socket of sockets) socket.destroy();
       await Promise.all(servers.map((server) => new Promise<void>((resolve) => server.close(() => resolve()))));
       if (loop && accepting) {

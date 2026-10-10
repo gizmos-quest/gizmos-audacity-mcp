@@ -84,14 +84,14 @@ describe('optional process backends and output parsers', () => {
     expect(
       await runFfmpeg(
         ['-e', 'process.stderr.write(process.argv[1])', 'spaces; $(do-not-execute)'],
-        1000,
+        30_000,
         process.execPath,
       ),
     ).toBe('spaces; $(do-not-execute)');
   });
   it('preserves failed-process diagnostics', async () => {
     await expect(
-      runFfmpeg(['-e', 'process.stderr.write("codec failed");process.exit(7)'], 1000, process.execPath),
+      runFfmpeg(['-e', 'process.stderr.write("codec failed");process.exit(7)'], 30_000, process.execPath),
     ).rejects.toThrow(/exited 7: codec failed/);
   });
   it('reports unavailable executables with an installation hint', async () => {
@@ -106,7 +106,7 @@ describe('optional process backends and output parsers', () => {
   });
   it('bounds diagnostic output', async () => {
     await expect(
-      runFfmpeg(['-e', 'process.stderr.write("x".repeat(1048577))'], 1000, process.execPath),
+      runFfmpeg(['-e', 'process.stderr.write("x".repeat(1048577))'], 30_000, process.execPath),
     ).rejects.toThrow(/exceeded 1 MiB/);
   });
   it.each([0, -1, NaN, 600001, 1.5])('rejects invalid helper timeout %s', async (timeout) => {

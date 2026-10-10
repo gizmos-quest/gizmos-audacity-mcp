@@ -97,16 +97,18 @@ describe('recording modal preflight', () => {
     'respects preference $preferNew for newTrack=$newTrack and replaces a time range with a cursor',
     async ({ newTrack, preferNew, command }) => {
       const { call, ops } = recordingFixture(preferNew);
+      // A frozen clock keeps the position estimate exact on slow runners.
+      vi.spyOn(performance, 'now').mockReturnValue(1_000);
       const result = (await call({ action: 'record', newTrack, track: 1, start: 1 })) as {
         state: string;
         positionSeconds: number;
       };
+      vi.restoreAllMocks();
       expect(ops.select).toHaveBeenCalledWith({ track: 1, start: 1, end: 1 });
       expect(ops.record).toHaveBeenCalledExactlyOnceWith(command);
       expect(ops.run).toHaveBeenCalledExactlyOnceWith('Stop');
       expect(result.state).toBe('recording');
-      expect(result.positionSeconds).toBeGreaterThanOrEqual(newTrack ? 1 : 3);
-      expect(result.positionSeconds).toBeLessThan((newTrack ? 1 : 3) + 0.1);
+      expect(result.positionSeconds).toBe(newTrack ? 1 : 3);
     },
   );
   it('clears track selection before untargeted new recording to avoid mixed-rate selected tracks', async () => {
