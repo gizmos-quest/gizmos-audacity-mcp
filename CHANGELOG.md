@@ -51,5 +51,5 @@ First public release of `@gizmos-quest/audacity-mcp`.
   adds LUFS, LRA and true peak.
 - Recorded-byte stdio end-to-end tests; a live suite that preserves and then
   reopens the open project and accounts for every tool; enforced coverage; CI on
-  GitHub-hosted runners only; CodeQL; and a manual release workflow with npm
-  trusted publishing.
+  GitHub-hosted runners only; CodeQL and OpenSSF Scorecard; and a manual release
+  workflow with npm trusted publishing and provenance.

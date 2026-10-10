@@ -9,9 +9,10 @@ on:
 permissions:
   contents: read
 
+# A newer push supersedes a pull request's run; every commit on main keeps its own result.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   quality:
@@ -39,4 +40,6 @@ jobs:
       - run: npm run test:e2e
       - run: npm run check:package
       - run: npm audit --audit-level=high
+        if: matrix.os == 'ubuntu-latest' && matrix.node == '24'
+      - run: npm audit signatures
         if: matrix.os == 'ubuntu-latest' && matrix.node == '24'

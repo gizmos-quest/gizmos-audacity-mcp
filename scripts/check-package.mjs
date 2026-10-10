@@ -52,6 +52,7 @@ const metadata = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 assert.equal(metadata.private, undefined);
 assert.equal(metadata.bin['gizmos-audacity-mcp'], 'dist/main.js');
 assert.equal(metadata.engines.node, '>=24.21.0');
+assert.deepEqual(metadata.publishConfig, { access: 'public', provenance: true });
 const registry = JSON.parse(readFileSync(join(root, 'server.json'), 'utf8'));
 assert.equal(registry.name, metadata.mcpName);
 assert.equal(registry.version, metadata.version);

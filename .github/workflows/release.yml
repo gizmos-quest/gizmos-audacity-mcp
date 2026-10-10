@@ -48,6 +48,7 @@ jobs:
       - run: npm run test:e2e
       - run: npm run check:package
       - run: npm audit --audit-level=high
+      - run: npm audit signatures
       - run: npm run release:publish
         env:
           GH_TOKEN: ${{ github.token }}

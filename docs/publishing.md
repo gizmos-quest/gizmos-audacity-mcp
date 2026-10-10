@@ -11,8 +11,8 @@ never publish, tag by hand or change repository settings.
    private vulnerability reporting, secret scanning with push protection,
    Dependabot alerts and a ruleset for `main` that blocks force pushes and
    deletion. Runner groups must never grant this repository self-hosted runners.
-2. **Watch the first hosted runs** of `Check` and `CodeQL`. A configured workflow
-   is not evidence that GitHub ran it.
+2. **Watch the first hosted runs** of `Check`, `CodeQL` and `Scorecard`. A
+   configured workflow is not evidence that GitHub ran it.
 3. **Create the npm package once.** npm configures trusted publishing only for
    an existing package. With the `gizmos-quest` npm organization in place,
    publish a placeholder from an empty folder with your own login and 2FA:

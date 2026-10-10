@@ -58,13 +58,18 @@
   },
   "keywords": [
     "mcp",
+    "mcp-server",
+    "model-context-protocol",
     "audacity",
+    "mod-script-pipe",
     "audio",
-    "editing",
-    "model-context-protocol"
+    "audio-editing",
+    "podcast",
+    "loudness"
   ],
   "mcpName": "io.github.gizmos-quest/gizmos-audacity-mcp",
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "provenance": true
   }
 }
