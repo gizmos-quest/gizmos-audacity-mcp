@@ -85,6 +85,8 @@ export interface AudacityWindow {
   title: string;
   className: string;
   dialog: boolean;
+  /** Texts of a dialog's child controls, one per line. */
+  message: string;
   closed: boolean;
   visible: boolean;
 }

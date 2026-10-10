@@ -2,6 +2,7 @@
 // of pipe commands; every reply is checked, so a failed step stops the rest.
 
 import { currentProcessIdentity } from './app-process.js';
+import { tracksInfo } from './audacity/info.js';
 import { setLabels } from './audacity/labels.js';
 import { requireMenuState, STATEFUL_MENUS } from './audacity/menu-state.js';
 import { NoiseProfile } from './audacity/noise.js';
@@ -180,7 +181,7 @@ export class Ops {
   }
 
   async tracks(): Promise<TrackInfo[]> {
-    return (await this.info('Tracks')) as TrackInfo[];
+    return tracksInfo(await this.info('Tracks'));
   }
 
   async trackIndex(ref: TrackRef): Promise<number> {

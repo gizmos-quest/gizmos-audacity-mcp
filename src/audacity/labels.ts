@@ -3,6 +3,7 @@ import { describeCommand, SafeString } from '../catalogue.js';
 import { catalogueCommand } from '../format.js';
 import type { Ops } from '../ops.js';
 import { Seconds } from '../tool-input.js';
+import { labelsInfo } from './info.js';
 
 // SetLabel's flat index is declared 0..10000 (Audacity-3.7.8
 // src/commands/SetLabelCommand.cpp:46); a larger index would open the
@@ -45,7 +46,7 @@ export async function setLabels(
   trackName = 'Labels',
 ): Promise<number> {
   const labels = preflightLabels(unsorted, trackName);
-  const existing = ((await ops.info('Labels')) as [number, unknown[]][]).reduce((n, [, list]) => n + list.length, 0);
+  const existing = labelsInfo(await ops.info('Labels')).reduce((n, [, list]) => n + list.length, 0);
   if (existing + labels.length > MAX_LABEL + 1)
     throw new Error(`Audacity's SetLabel addresses at most ${MAX_LABEL + 1} labels per project`);
   const tracks = await ops.tracks();
@@ -60,10 +61,10 @@ export async function setLabels(
   }
   for (const label of labels) {
     const end = label.end ?? label.start;
-    const before = (await ops.info('Labels')) as [number, [number, number, string][]][];
+    const before = labelsInfo(await ops.info('Labels'));
     await ops.run('Select', { Track: labelTrack, TrackCount: 1, Start: label.start, End: end, Mode: 'Set' });
     await ops.run('AddLabel');
-    const after = (await ops.info('Labels')) as [number, [number, number, string][]][];
+    const after = labelsInfo(await ops.info('Labels'));
     let offset = 0;
     let inserted = -1;
     for (const [track, values] of after) {

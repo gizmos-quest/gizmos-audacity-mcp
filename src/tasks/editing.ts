@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { clipsInfo } from '../audacity/info.js';
 import { SafeString } from '../catalogue.js';
 import { catalogueCommand } from '../format.js';
 import type { Ops } from '../ops.js';
@@ -46,7 +47,7 @@ export async function edit(ops: Ops, input: unknown): Promise<unknown> {
   if (!Number.isFinite(start) || !Number.isFinite(end) || end < start || (end === start && args.action !== 'split'))
     throw new Error(`${args.action} requires a finite non-empty time range`);
   if (args.action === 'trim') {
-    const clips = (await ops.info('Clips')) as ClipInfo[];
+    const clips = clipsInfo(await ops.info('Clips'));
     if (
       !clips.some(
         (clip) =>
@@ -79,14 +80,6 @@ export async function edit(ops: Ops, input: unknown): Promise<unknown> {
   return { action: args.action, track: target.index, start, end, reply };
 }
 
-interface ClipInfo {
-  track: number;
-  clip?: number;
-  start: number;
-  end: number;
-  name?: string;
-}
-
 export const ClipSetSchema = z
   .object({
     track: Track,
@@ -105,7 +98,7 @@ export const ClipSetSchema = z
 export async function clipSet(ops: Ops, input: unknown): Promise<unknown> {
   const args = ClipSetSchema.parse(input);
   const { index } = await audioTrack(ops, args.track);
-  const clips = (await ops.info('Clips')) as ClipInfo[];
+  const clips = clipsInfo(await ops.info('Clips'));
   const matches = clips.filter((clip) => clip.track === index && clip.start <= args.at && args.at < clip.end);
   if (matches.length !== 1)
     throw new Error(

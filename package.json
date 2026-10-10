@@ -18,7 +18,7 @@
     "catalogue": "tsx scripts/refresh-catalogue.ts",
     "parameters": "tsx scripts/source-parameters.ts",
     "start": "node dist/main.js",
-    "lint": "biome ci .",
+    "lint": "biome ci --error-on-warnings .",
     "format": "biome check --write .",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "check:package": "node scripts/check-package.mjs",

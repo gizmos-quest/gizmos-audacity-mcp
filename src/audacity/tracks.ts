@@ -3,6 +3,7 @@ import { catalogueCommand } from '../format.js';
 import type { Ops, TrackRef } from '../ops.js';
 import { Seconds, Track } from '../tool-input.js';
 import { validateExportFile, validateImportFile } from './files.js';
+import { clipsInfo } from './info.js';
 
 const EnvelopePoints = z
   .array(z.object({ time: Seconds, value: z.number().min(0).max(2) }).strict())
@@ -47,7 +48,7 @@ export async function moveClip(ops: Ops, track: TrackRef, at: number, start: num
   Seconds.parse(at);
   Seconds.parse(start);
   const index = await ops.trackIndex(track);
-  const clips = (await ops.info('Clips')) as { track: number; start: number; end: number }[];
+  const clips = clipsInfo(await ops.info('Clips'));
   const matches = clips.filter((clip) => clip.track === index && clip.start <= at && at < clip.end);
   if (matches.length !== 1)
     throw new Error(`time ${at}s identifies ${matches.length} clips on track ${index}; choose a point inside one clip`);

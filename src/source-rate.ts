@@ -2,7 +2,7 @@ import { mkdtemp, open, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
 import { z } from 'zod';
-import { selectionTimes } from './analysis/render.js';
+import { selectionTimes } from './audacity/info.js';
 import { withCleanupFailure } from './errors.js';
 import { catalogueCommand } from './format.js';
 import type { Ops } from './ops.js';
@@ -101,7 +101,7 @@ export async function measureSourceRate(ops: Ops, input: z.input<typeof SourceSc
       // selected tracks; Focused=false only clears an already-focused target.
       // Restore focus before sparse selection, including an originally
       // focused track that was not selected. No unlisted setter scope keys.
-      if (!ops.pipe?.needsRecovery) {
+      if (!ops.pipe.needsRecovery) {
         await ops.command('SelectTracks', { Track: focused >= 0 ? focused : scope.track, TrackCount: 1, Mode: 'Set' });
         await ops.command('SetTrackStatus', { Focused: focused >= 0 });
         await ops.run('SelectNone');
@@ -118,7 +118,7 @@ export async function measureSourceRate(ops: Ops, input: z.input<typeof SourceSc
         // biome-ignore lint/correctness/noUnsafeFinally: Cleanup path containment overrides any successful return to prevent unsafe deletion.
         throw new Error(`refusing unsafe source-rate scratch cleanup: ${scratch}`);
       }
-      if (ops.pipe?.needsRecovery) {
+      if (ops.pipe.needsRecovery) {
         // A blocked SampleDataExport may still create its output after the
         // client times out. Keep its directory and avoid further pipe edits.
         const error = restorationError ?? operationError;

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { selectionTimes } from '../analysis/render.js';
+import { selectionTimes } from '../audacity/info.js';
 import type { Ops } from '../ops.js';
 import { CommandFailed } from '../ops.js';
 import { Seconds, Track } from '../tool-input.js';

@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { selectionTimes } from '../../src/analysis/render.js';
+import { selectionTimes } from '../../src/audacity/info.js';
 import { available, type LiveContext, type Measurement, testTimeout } from './session.js';
 
 export function registerAnalysis(context: LiveContext) {

@@ -12,6 +12,7 @@ export function fakeOps(tracks: TrackInfo[], selected = { start: 0.25, end: 0.75
     return '';
   });
   const mock = {
+    pipe: { needsRecovery: false },
     tracks: vi.fn(async () => tracks),
     info: vi.fn(async () => selected),
     trackIndex: vi.fn(async (ref: number | string) => {

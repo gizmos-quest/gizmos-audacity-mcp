@@ -1,4 +1,5 @@
 import type { Ops } from '../ops.js';
+import { menusInfo } from './info.js';
 
 /** Menu items whose handlers rely on enabling flags that scripted dispatch skips. */
 export const STATEFUL_MENUS = ['Undo', 'Redo', 'NewTimeTrack'];
@@ -17,8 +18,7 @@ export async function requireMenuState(ops: Ops, id: string): Promise<void> {
       throw new Error('the project already has a time track; a second one would replace its timing');
     return;
   }
-  const menus = (await ops.info('Menus')) as { id?: unknown; label?: unknown }[];
-  const label = menus.find((item) => item.id === id)?.label;
-  if (typeof label !== 'string' || !label.startsWith(`${id} `))
+  const label = menusInfo(await ops.info('Menus')).find((item) => item.id === id)?.label;
+  if (!label?.startsWith(`${id} `))
     throw new Error(`Audacity has nothing to ${id.toLowerCase()} in its native history`);
 }

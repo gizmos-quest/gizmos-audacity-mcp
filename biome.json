@@ -8,6 +8,12 @@
   "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 120, "lineEnding": "lf" },
   "javascript": { "formatter": { "quoteStyle": "single" } },
   "linter": {
-    "rules": { "preset": "recommended", "style": { "noNonNullAssertion": "off" } }
+    "rules": {
+      "preset": "recommended",
+      "correctness": { "noUndeclaredDependencies": "error" },
+      "suspicious": { "noEvolvingTypes": "error", "noImportCycles": "error" },
+      "nursery": { "noFloatingPromises": "error", "noMisusedPromises": "error" },
+      "style": { "noNonNullAssertion": "off" }
+    }
   }
 }

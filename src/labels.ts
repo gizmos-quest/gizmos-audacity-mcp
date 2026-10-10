@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { z } from 'zod';
+import { labelsInfo } from './audacity/info.js';
 import { preflightLabels } from './audacity/labels.js';
 import { SafeString } from './catalogue.js';
 import { catalogueCommand } from './format.js';
@@ -29,7 +30,7 @@ export const LabelInput = z
 export async function labels(ops: Ops): Promise<Label[]> {
   const tracks = await ops.tracks();
   let index = 0;
-  return ((await ops.info('Labels')) as [number, [number, number, string][]][]).flatMap(([track, values]) =>
+  return labelsInfo(await ops.info('Labels')).flatMap(([track, values]) =>
     values.map(([start, end, text]) => ({
       index: index++,
       track,

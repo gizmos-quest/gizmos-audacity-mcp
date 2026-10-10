@@ -2,6 +2,7 @@ import { measureScope } from '../analysis/render.js';
 import type { Ops, TrackRef } from '../ops.js';
 import { measureSourceRate } from '../source-rate.js';
 import { Seconds, Track } from '../tool-input.js';
+import { clipsInfo } from './info.js';
 
 type CapturedProfile = { track: number; name: string; start: number; end: number; rate: number };
 
@@ -120,7 +121,7 @@ export class NoiseProfile {
     // Live verified 3.7.8: first no-parameter call profiles, subsequent calls
     // reduce; Reduction/Sensitivity/Smoothing are ignored, not controllable.
     // Prevent the native "profile too short" modal before the first call.
-    const clips = (await this.ops.info('Clips')) as { track: number; start: number; end: number }[];
+    const clips = clipsInfo(await this.ops.info('Clips'));
     const intersecting = clips.filter((clip) => clip.track === index && clip.start < end && start < clip.end);
     if (intersecting.length !== 1 || intersecting[0]!.start > start || intersecting[0]!.end < end) {
       throw new Error('noise profile must be contained in one audio clip, without timeline gaps or overlapping clips');

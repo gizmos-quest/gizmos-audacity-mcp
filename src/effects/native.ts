@@ -69,7 +69,7 @@ export async function preflightNativeEffect(
   } else if (id !== 'ClassicFilters' || selected.length > 1) {
     // EqualizationBase.cpp:254-297 and ScienFilterBase.cpp:159-183 open a dialog
     // for selected tracks of different rates; equalization also at 40 Hz or less.
-    const rates = [];
+    const rates: number[] = [];
     for (const selection of selected) rates.push(await rate(selection));
     if (new Set(rates).size > 1)
       throw new Error(`${id} needs all selected audio tracks at one source sample rate; found ${rates.join(', ')} Hz`);

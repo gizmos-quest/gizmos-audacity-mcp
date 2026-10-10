@@ -1,6 +1,7 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { selectionTimes } from '../audacity/info.js';
 import { withCleanupFailure } from '../errors.js';
 import { catalogueCommand } from '../format.js';
 import type { Ops, TrackInfo, TrackRef } from '../ops.js';
@@ -21,25 +22,6 @@ interface SelectionSnapshot {
   selected: number[];
   tracks: TrackInfo[];
 }
-export function selectionTimes(info: unknown): { start: number; end: number } {
-  const object = Array.isArray(info) ? info[0] : info;
-  if (!object || typeof object !== 'object') throw new Error('Audacity returned no readable selection');
-  const value = object as Record<string, unknown>;
-  const start = value.start ?? value.Start;
-  const end = value.end ?? value.End;
-  if (
-    typeof start !== 'number' ||
-    typeof end !== 'number' ||
-    !Number.isFinite(start) ||
-    !Number.isFinite(end) ||
-    start < 0 ||
-    end < start
-  ) {
-    throw new Error('Audacity returned invalid selection start/end');
-  }
-  return { start, end };
-}
-
 async function snapshotSelection(ops: Ops): Promise<SelectionSnapshot> {
   const tracks = await ops.tracks();
   return {
@@ -129,7 +111,7 @@ export async function measureScope(
     throw error;
   } finally {
     try {
-      if (selectionChanged && !ops.pipe?.needsRecovery) await restoreSelection(ops, previous);
+      if (selectionChanged && !ops.pipe.needsRecovery) await restoreSelection(ops, previous);
     } catch (restoreError) {
       restorationError = withCleanupFailure(restoreError, operationError, 'Selection restoration');
       // biome-ignore lint/correctness/noUnsafeFinally: A failed restoration must replace success and retain the original failure context.
@@ -137,7 +119,7 @@ export async function measureScope(
     } finally {
       // A timed-out Export2 may still write its destination. Retain scratch
       // and the timeout/recovery error class, including restoration failures.
-      if (ops.pipe?.needsRecovery) {
+      if (ops.pipe.needsRecovery) {
         const error = restorationError ?? operationError;
         if (error instanceof Error)
           error.message += `. Selection restoration is incomplete. Measurement scratch retained at ${directory}; inspect after audacity_recover`;

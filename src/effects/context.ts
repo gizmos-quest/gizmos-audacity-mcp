@@ -5,7 +5,7 @@
 // an 8000 Hz source opened the native error dialog despite a 48000 Hz project.
 // Source-rate guards therefore use the silent sample header, not WAV render rate.
 
-import { selectionTimes } from '../analysis/render.js';
+import { clipsInfo, selectionTimes } from '../audacity/info.js';
 import { EFFECT_IDS } from '../catalogue.js';
 import type { Ops, TrackInfo } from '../ops.js';
 import { measureSourceRate } from '../source-rate.js';
@@ -116,7 +116,7 @@ export async function preflightEffect(
   ) {
     throw new Error(`${id} requires audio within the selected range on every selected track`);
   }
-  const allClips = (await ops.info('Clips')) as { track: number; start: number; end: number }[];
+  const allClips = clipsInfo(await ops.info('Clips'));
   if (
     selected.some(
       ({ index }) => !allClips.some((clip) => clip.track === index && clip.start < time.end && clip.end > time.start),
