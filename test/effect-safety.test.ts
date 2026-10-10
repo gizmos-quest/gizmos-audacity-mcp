@@ -145,7 +145,7 @@ describe('selection and topology Nyquist guards', () => {
     async (command) => {
       const state = fixture();
       state.tracks[0]!.selected = 0;
-      await expect(state.ops.command(command)).rejects.toThrow('selected audio tracks');
+      await expect(state.ops.command(command)).rejects.toThrow('selected audio');
       expect(edits(state.calls)).toEqual([]);
     },
   );

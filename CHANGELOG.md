@@ -30,3 +30,8 @@ input/result shapes and environment variables.
 - Out-of-range parameters (for example Compressor `attackMs` above 200 or Amplify
   `Ratio` 0.003162) are refused before Audacity shows a blocking settings message;
   pipeline, batch and auto-duck ranges now match the native limits.
+- Modal paths found in the Audacity 3.7.8 source are refused before dispatch:
+  effects without a selected track or time range, Undo/Redo without native
+  history, project imports, and selection- or rate-dependent dialogs in
+  Paulstretch, Echo, equalization, Classic Filters, TruncateSilence and
+  FindClipping. Paste, ZeroCross, RescanDevices and DTMF generation are reserved.

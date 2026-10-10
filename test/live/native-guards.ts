@@ -11,6 +11,14 @@ export function registerNativeGuards(context: LiveContext) {
     'validates noise-profile clip continuity and source frames independently of project rate',
     async () => {
       await call('audacity_fresh', { visible: false });
+      // A fresh history labels both items without a step; the gate must refuse before dispatch.
+      const menus = await call<{ id: string; label: string }[]>('audacity_info', { type: 'Menus' });
+      expect(menus.filter((item) => ['Undo', 'Redo'].includes(item.id)).map((item) => item.label)).toEqual([
+        'Undo',
+        'Redo',
+      ]);
+      await expect(refuse('audacity_history', { action: 'undo' })).rejects.toThrow(/nothing to undo/);
+      await expect(refuse('audacity_menu', { command: 'Redo' })).rejects.toThrow(/nothing to redo/);
       await call('audacity_command', { command: 'SetProject', params: { Rate: 48000 } });
       const lowRate = output('source-rate-8000');
       tone(lowRate, 1, 12000, 0, 8000);

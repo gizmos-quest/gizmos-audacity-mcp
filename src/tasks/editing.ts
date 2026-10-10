@@ -14,7 +14,6 @@ const EDIT_COMMANDS = {
   cut: 'Cut',
   split_cut: 'SplitCut',
   copy: 'Copy',
-  paste: 'Paste',
   silence: 'Silence',
   join: 'Join',
   disjoin: 'Disjoin',
@@ -43,12 +42,7 @@ export async function edit(ops: Ops, input: unknown): Promise<unknown> {
     throw new Error('edit scope must contain existing audio tracks only');
   const start = args.start ?? Math.min(...selected.map((t) => t.start));
   const end = args.end ?? Math.max(...selected.map((t) => t.end));
-  if (
-    !Number.isFinite(start) ||
-    !Number.isFinite(end) ||
-    end < start ||
-    (end === start && !['split', 'paste'].includes(args.action))
-  )
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start || (end === start && args.action !== 'split'))
     throw new Error(`${args.action} requires a finite non-empty time range`);
   if (args.action === 'trim') {
     const clips = (await ops.info('Clips')) as ClipInfo[];

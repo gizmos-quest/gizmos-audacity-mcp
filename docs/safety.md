@@ -132,16 +132,44 @@ it never resends the edit. Dialog/window tools remain available during blocked
 pipe work. Recovery clearing requires stopped Audacity, a config backup and
 retained project files. Live ActiveProjects entries are legitimate.
 
-| Reserved native behavior | Safe alternative / reason |
-| --- | --- |
-| Ellipsis menus, lifecycle, unrestricted prefs/programs | Typed tools; prevent dialogs, project/process/config surprises |
-| MeasureRms, Contrast, PlotSpectrum | Numeric export-based measurement; native result windows are modal |
-| ClickRemoval | Refused: valid no-click audio still opens an error dialog |
-| Repair | Hidden pitch/speed/context constraints cannot be established by GetInfo; length alone is insufficient |
-| Spectral Nyquist editors | Required spectral UI state is unobservable; initialization can be modal |
-| LabelSounds | Silent/no-result cases show a blocking dialog; use silence analysis plus explicit labels |
-| RegularIntervalLabels | Trace errors persist debug state; even later valid calls can be modal. Use typed regular labels |
-| Opus / AIFF export | Opus opened dialogs; AIFF failed on the pinned host. WAV/FLAC/MP3/OGG are exposed |
+## Modal-path classification
+
+Generic commands and menus, typed tools, macros, pipelines and batch all reach
+Audacity's batch dispatcher, so one classification covers every route. Source
+lines refer to tag `Audacity-3.7.8`. Out-of-range parameters open a blocking
+settings message (`Effect.cpp:269-287`) and are refused on every route.
+Scripted menu items skip their enabling flags (`CommandManager.cpp:826-829`),
+so only a handler's own checks remain.
+
+| Class | Commands | Guard or reason |
+| --- | --- | --- |
+| Safe | Get*, Set*, Select*, Comment, CompareAudio; menu items not named below | Bounded parameters; Set* act on the current selection |
+| Preflight | Every effect and generator | A selected non-time track and a non-empty time range (`BatchCommands.cpp:543-551`) |
+| Preflight | Undo, Redo | The native menu label must name a step (`EditMenus.cpp:181-191, 210-220`) |
+| Preflight | Import2 | An existing audio file, music-import prompts off; `.aup3`, `.aup`, `.lof` refused (`ProjectFileManager.cpp:1539-1546, 1588-1598`) |
+| Preflight | Export2, project open/save, preferences, recording | Typed tools only, as described above |
+| Preflight | Paulstretch | Two buffers plus one sample of selected source audio per track (`PaulstretchBase.cpp:192-262`) |
+| Preflight | Echo | Delay within the selection, which bounds its buffer (`EchoBase.cpp:64-79`) |
+| Preflight | FilterCurve, GraphicEq, ClassicFilters | One source rate across selected tracks; equalization above 40 Hz (`EqualizationBase.cpp:254-297`, `ScienFilterBase.cpp:159-183`) |
+| Preflight | TruncateSilence | `Independent:true` on one selected audio track (`TruncSilenceBase.cpp:232-253`) |
+| Preflight | FindClipping | `Duty Cycle Start` at most 16777, a 64 MiB buffer (`FindClippingBase.cpp:118-137`) |
+| Preflight | Nyquist audio effects, AutoDuck, NoiseReduction, NoiseGate, SampleDataExport, Amplify | [Effect requirements](effects.md) |
+| Reserved | Paste | Imports files from the system clipboard and can ask about hidden clip data (`EditMenus.cpp:453-457, 548-555, 596-607`) |
+| Reserved | ZeroCross | Errors near pitch- or speed-changed clips, which GetInfo omits (`SelectMenus.cpp:644-666`) |
+| Reserved | RescanDevices | Restarts audio devices even while playing or recording (`TransportMenus.cpp:804-805`) |
+| Reserved | DtmfTones | Scripted settings skip the tone recalculation (`DtmfBase.cpp:37-49`): wrong tone count and length |
+| Reserved | Ellipsis menus, lifecycle, unrestricted prefs/programs | Typed tools; prevent dialogs, project/process/config surprises |
+| Reserved | MeasureRms, Contrast, PlotSpectrum | Numeric export-based measurement; native result windows are modal |
+| Reserved | ClickRemoval | Valid no-click audio still opens an error dialog |
+| Reserved | Repair | Hidden pitch/speed/context constraints cannot be established by GetInfo; length alone is insufficient |
+| Reserved | Spectral Nyquist editors | Required spectral UI state is unobservable; initialization can be modal |
+| Reserved | LabelSounds | Silent/no-result cases show a blocking dialog; use silence analysis plus explicit labels |
+| Reserved | RegularIntervalLabels | Trace errors persist debug state; even later valid calls can be modal. Use typed regular labels |
+| Reserved | Opus / AIFF export | Opus opened dialogs; AIFF failed on the pinned host. WAV/FLAC/MP3/OGG are exposed |
+
+Native dialogs remain possible for conditions GetInfo cannot show: unreadable
+or unsupported import files, export disk errors, saved noise-reduction window
+settings, a corrupt `EQCurves.xml` and audio device failures.
 
 Retained analyzers need explicit silent file options and source frames.
 [Effect-specific guards](effects.md) and adjacent code comments preserve native

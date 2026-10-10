@@ -76,6 +76,12 @@ const RESERVED = new Set([
   // VERBOSE=None call still opens Debug Output; that process state is not
   // observable when attaching. Use audacity_labels regular instead.
   'RegularIntervalLabels',
+  // Scripted settings load through VisitSettings (Effect.cpp:264-274), which
+  // skips the post-set step (ShuttleAutomation.h:100-105) where DtmfBase.cpp:37-49
+  // recalculates tones; count and timing stay as constructed (DtmfBase.h:13-15).
+  // Live 3.7.8, 2026-10-10: 10 symbols over 2 s gave 4 tones of 0.25 s, and
+  // "12#" read past its end for the fourth tone.
+  'DtmfTones',
 ]);
 
 export const COMMAND_IDS = COMMANDS.map((c) => c.id).filter((id) => !RESERVED.has(id));
@@ -97,6 +103,18 @@ const MENU_DENY = new Set([
   // tool verifies topology and chooses the action from the user's preference.
   'Record1stChoice',
   'Record2ndChoice',
+  // Scripted menu commands skip their enabling flags (Audacity-3.7.8
+  // libraries/lib-menus/CommandManager.cpp:826-829), so a handler's own checks
+  // decide. Paste first imports files from the system clipboard, then can ask
+  // about hidden clip data or report a track mismatch (src/menus/EditMenus.cpp:
+  // 453-457, 548-555, 596-607); clipboard state is not observable.
+  'Paste',
+  // A stretched clip near either selection edge opens an error (src/menus/
+  // SelectMenus.cpp:644-666); GetInfo does not report pitch or speed changes.
+  'ZeroCross',
+  // Restarts PortAudio even during playback or recording, which its menu flags
+  // forbid (src/menus/TransportMenus.cpp:804-805, DeviceManager.cpp:245-262).
+  'RescanDevices',
   'Exit',
   'Close',
   'New',

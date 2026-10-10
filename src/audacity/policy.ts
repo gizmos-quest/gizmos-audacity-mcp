@@ -19,6 +19,14 @@ export function preflightCommand(id: string, params: Record<string, unknown> = {
   if (id === 'Export2') validateExportFile(String(params.Filename ?? ''));
   if (id === 'Import2' && (!existsSync(String(params.Filename ?? '')) || !statSync(String(params.Filename)).isFile()))
     throw new Error('import file does not exist or is not a regular file');
+  // Audacity-3.7.8 src/ProjectFileManager.cpp:1539-1546 answers an .aup3 import
+  // with an error dialog; .aup and .lof are projects/lists, not audio (:1588-1598).
+  if (id === 'Import2' && /\.(?:aup3|aup|lof)$/i.test(String(params.Filename)))
+    throw new Error('Import2 imports audio; open .aup3 projects with audacity_project');
+  // FindClippingBase.cpp:118-137 allocates Duty Cycle Start x 1000 samples and
+  // reports a failed allocation in a dialog: keep that block within 64 MiB.
+  if (id === 'FindClipping' && Number(params['Duty Cycle Start'] ?? 0) > 16_777)
+    throw new Error('FindClipping Duty Cycle Start above 16777 needs an unbounded native buffer');
   if (id === 'SampleDataExport' && (params.MESSAGES !== 'None' || !params.FILENAME)) {
     throw new Error('SampleDataExport requires MESSAGES=None and an explicit FILENAME to avoid modal result dialogs');
   }

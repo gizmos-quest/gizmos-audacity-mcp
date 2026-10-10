@@ -2,13 +2,14 @@
 // of pipe commands; every reply is checked, so a failed step stops the rest.
 
 import { currentProcessIdentity } from './app-process.js';
+import { requireHistory } from './audacity/history.js';
 import { setLabels } from './audacity/labels.js';
 import { NoiseProfile } from './audacity/noise.js';
 import { preflightCommand } from './audacity/policy.js';
 import { resolveSelection } from './audacity/selection.js';
 import { exportMix, importTrack, moveClip, setEnvelope } from './audacity/tracks.js';
 import { COMMAND_IDS, commandSchema, MENU_IDS } from './catalogue.js';
-import { needsEffectContext, preflightEffect } from './effect-safety.js';
+import { needsEffectContext, preflightEffect, requireEffectSelection } from './effect-safety.js';
 import { formatCommand, type ParamValue, parseInfoJson } from './format.js';
 import type { AudacityPipe, PipeReply } from './pipe.js';
 
@@ -96,8 +97,13 @@ export class Ops {
     }
     if (!MENU_IDS.includes(id))
       commandSchema(id).parse(Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined)));
-    this.noise.invalidate(id, params);
     const command = formatCommand(id, params);
+    if (id === 'Undo' || id === 'Redo')
+      return requireHistory(this, id).then(() => {
+        this.noise.invalidate(id, params);
+        return this.raw(command, timeoutMs);
+      });
+    this.noise.invalidate(id, params);
     return id === 'Import2' ? this.importWithoutTempoDetection(command, timeoutMs) : this.raw(command, timeoutMs);
   }
 
@@ -256,14 +262,14 @@ export class Ops {
     const command = preflightCommand(effect, params); // Validate before changing selection.
     if (effect === 'NoiseReduction') this.requireNoiseProfile();
     const selected = await this.resolveSelection(scope);
-    if (needsEffectContext(effect)) {
-      await preflightEffect(this, effect, params, {
-        track: Number(selected.Track),
-        trackCount: Number(selected.TrackCount),
-        start: Number(selected.Start),
-        end: Number(selected.End),
-      });
-    }
+    const range = {
+      track: Number(selected.Track),
+      trackCount: Number(selected.TrackCount),
+      start: Number(selected.Start),
+      end: Number(selected.End),
+    };
+    if (needsEffectContext(effect)) await preflightEffect(this, effect, params, range);
+    else await requireEffectSelection(this, effect, range);
     await this.run('Select', selected);
     // This serialized operation already proved this exact scope. Dispatch it
     // once instead of querying source rates again through generic command().

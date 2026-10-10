@@ -83,6 +83,7 @@ describe('saved macro edge cases', () => {
 
   it('reports the failing command/count while retaining the original timeout class', async () => {
     const { call, ops } = controls();
+    ops.tracks.mockResolvedValue([{ name: 'Audio', kind: 'wave', start: 0, end: 1, selected: 1 }] as never);
     const failure = new AudacityTimeout('native reply unavailable');
     ops.command.mockImplementation(async (command: string) => {
       if (command === 'FadeOut') throw failure;

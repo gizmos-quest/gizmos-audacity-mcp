@@ -52,7 +52,6 @@ export class NoiseProfile {
         'SplitNew',
         'Cut',
         'SplitCut',
-        'Paste',
         'Join',
         'Undo',
         'Redo',

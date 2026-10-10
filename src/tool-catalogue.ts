@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { pipeExists } from './app.js';
 import { COMMAND_IDS, describeCommand, MENU_IDS } from './catalogue.js';
-import type { Ops } from './ops.js';
+import { requireEffectSelection } from './effect-safety.js';
+import { type Ops, preflightCommand } from './ops.js';
 import { Params } from './tool-input.js';
 import type { ToolRegistrar } from './tools.js';
 
@@ -46,7 +47,11 @@ export function registerCatalogueTools(tool: ToolRegistrar, ops: Ops): void {
     'audacity_command',
     "Run a catalogue scripting command or effect on the current selection (Amplify, Compressor, Limiter, LoudnessNormalization, Normalize, High-passFilter, FilterCurve, AutoDuck, FadeIn, …). Parameters follow Audacity's own list; see audacity_describe. Native Set* setters use selected tracks: call audacity_select first. NoiseReduction requires a captured profile.",
     { command: z.enum(COMMAND_IDS as [string, ...string[]]), params: Params.default({}) },
-    ({ command, params }) => ops.command(command, params, 600_000),
+    async ({ command, params }) => {
+      preflightCommand(command, params); // Refuse invalid input before reading the selection.
+      await requireEffectSelection(ops, command);
+      return ops.command(command, params, 600_000);
+    },
   );
 
   tool(

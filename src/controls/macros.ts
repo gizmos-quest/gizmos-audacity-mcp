@@ -3,7 +3,7 @@ import { dirname, join } from 'node:path';
 import { z } from 'zod';
 import { configPath } from '../app.js';
 import { COMMAND_IDS, describeCommand, MENU_IDS, SafeString } from '../catalogue.js';
-import { preflightMacroEffects } from '../effect-safety.js';
+import { preflightMacroEffects, requireEffectSelection } from '../effect-safety.js';
 import type { ParamValue } from '../format.js';
 import type { Ops } from '../ops.js';
 import { errorWithContext, preflightCommand } from '../ops.js';
@@ -132,8 +132,10 @@ export function registerMacroTool(tool: ToolRegistrar, ops: Ops): void {
         try {
           if (step.command === 'Export2')
             await ops.exportMix(String(step.params.Filename), Number(step.params.NumChannels));
-          else if (COMMAND_IDS.includes(step.command)) await ops.command(step.command, step.params, 600_000);
-          else await ops.run(step.command, step.params, 600_000);
+          else if (COMMAND_IDS.includes(step.command)) {
+            await requireEffectSelection(ops, step.command);
+            await ops.command(step.command, step.params, 600_000);
+          } else await ops.run(step.command, step.params, 600_000);
           completed++;
         } catch (error) {
           throw errorWithContext(

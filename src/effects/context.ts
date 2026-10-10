@@ -6,8 +6,10 @@
 // Source-rate guards therefore use the silent sample header, not WAV render rate.
 
 import { selectionTimes } from '../analysis.js';
-import type { Ops } from '../ops.js';
+import { EFFECT_IDS } from '../catalogue.js';
+import type { Ops, TrackInfo } from '../ops.js';
 import { measureSourceRate } from '../source-rate.js';
+import { NATIVE_CONTEXT, preflightNativeEffect } from './native.js';
 import { FILTERS, type Parameters, preflightEffectParameters } from './parameters.js';
 
 export interface EffectStep {
@@ -38,9 +40,24 @@ const NYQUIST_AUDIO = new Set([
   'Vocoder',
   'SampleDataExport',
 ]);
-const CONTEXT_EFFECTS = new Set([...NYQUIST_AUDIO, 'AutoDuck']);
+const CONTEXT_EFFECTS = new Set([...NYQUIST_AUDIO, 'AutoDuck', ...NATIVE_CONTEXT]);
 export function needsEffectContext(id: string): boolean {
   return CONTEXT_EFFECTS.has(id);
+}
+
+const inScope = (scope: EffectScope | undefined, track: TrackInfo, index: number) =>
+  scope ? index >= scope.track && index < scope.track + (scope.trackCount ?? 1) : !!track.selected;
+
+/** Every effect, generators included, opens a modal without a selected track that
+ * supports editing (all but time tracks) or with an empty time selection, unless
+ * /GUI/SelectAllOnNone is set (Audacity-3.7.8 src/BatchCommands.cpp:543-551,
+ * src/SelectUtilities.cpp:100-114). Context effects check this in preflightEffect. */
+export async function requireEffectSelection(ops: Ops, id: string, scope?: EffectScope): Promise<void> {
+  if (!EFFECT_IDS.includes(id) || needsEffectContext(id)) return;
+  const time = scope ?? selectionTimes(await ops.info('Selection'));
+  const tracks = await ops.tracks();
+  if (!(time.end > time.start) || !tracks.some((track, index) => inScope(scope, track, index) && track.kind !== 'time'))
+    throw new Error(`${id} needs a selected audio or label track and a non-empty time selection`);
 }
 
 /** Preflight source-rate and clip/selection conditions without changing audio. */
@@ -57,14 +74,23 @@ export async function preflightEffect(
   const time = scope ?? selectionTimes(await ops.info('Selection'));
   if (!Number.isFinite(time.start) || !Number.isFinite(time.end) || !(time.end > time.start))
     throw new Error(`${id} needs a positive-duration audio selection`);
+  if (!tracks.some((track, index) => inScope(scope, track, index) && track.kind !== 'time'))
+    throw new Error(`${id} needs a selected audio or label track`);
+  if (NATIVE_CONTEXT.has(id)) {
+    const audio = tracks.flatMap((track, index) =>
+      track.kind === 'wave' && inScope(scope, track, index) ? [{ track, index }] : [],
+    );
+    return preflightNativeEffect(id, params, time, audio, async ({ track, index }) => {
+      const known =
+        rates.get(index) ?? (await measureSourceRate(ops, { track: index, start: track.start, end: track.end }));
+      rates.set(index, known);
+      return known;
+    });
+  }
   if (id === 'AutoDuck') {
     // Audacity-3.7.8 AutoDuckBase::Init walks every native track, not just
     // audio tracks. Selected labels or a label below the last bed open modals.
-    const beds = tracks.flatMap((track, index) =>
-      (scope ? index >= scope.track && index < scope.track + (scope.trackCount ?? 1) : !!track.selected)
-        ? [{ track, index }]
-        : [],
-    );
+    const beds = tracks.flatMap((track, index) => (inScope(scope, track, index) ? [{ track, index }] : []));
     if (!beds.length || beds.some(({ track }) => track.kind !== 'wave'))
       throw new Error('AutoDuck requires selected audio tracks only');
     const controlIndex = beds.at(-1)!.index + 1;
@@ -75,10 +101,7 @@ export async function preflightEffect(
     }
   }
   const selected = tracks.flatMap((track, index) =>
-    track.kind === 'wave' &&
-    (scope ? index >= scope.track && index < scope.track + (scope.trackCount ?? 1) : !!track.selected)
-      ? [{ track, index }]
-      : [],
+    track.kind === 'wave' && inScope(scope, track, index) ? [{ track, index }] : [],
   );
   if (!selected.length) throw new Error(`${id} needs selected audio tracks`);
   if (

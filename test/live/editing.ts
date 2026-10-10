@@ -8,7 +8,7 @@ import { type LiveContext, type Measurement, testTimeout } from './session.js';
 export function registerEditing(context: LiveContext) {
   const { call, refuse, tracks, clearTracks, importVoice } = context;
   it(
-    'edits clips with split/trim/duplicate/delete/copy/paste/silence/join',
+    'edits clips with split/trim/duplicate/delete/copy/silence/join',
     async () => {
       await importVoice();
       await call('audacity_edit', { action: 'split', track: 'Voice', start: 1, end: 1 });
@@ -16,8 +16,7 @@ export function registerEditing(context: LiveContext) {
       await call('audacity_edit', { action: 'join', track: 'Voice', start: 0, end: 2 });
       expect((await call<unknown[]>('audacity_info', { type: 'Clips' })).length).toBe(1);
       await call('audacity_edit', { action: 'copy', track: 'Voice', start: 0.25, end: 0.5 });
-      await call('audacity_edit', { action: 'paste', track: 'Voice', start: 2, end: 2 });
-      expect((await tracks())[0]?.end).toBeCloseTo(2.25, 3);
+      await expect(refuse('audacity_edit', { action: 'paste', track: 'Voice', start: 2, end: 2 })).rejects.toThrow();
       await call('audacity_edit', { action: 'silence', track: 'Voice', start: 0.5, end: 0.75 });
       expect(
         (await call<Measurement>('audacity_measure', { track: 'Voice', start: 0.5, end: 0.75, backend: 'wav' })).rms,

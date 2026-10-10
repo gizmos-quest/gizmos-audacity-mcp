@@ -141,7 +141,6 @@ describe('source-derived parameters', () => {
     const pauses = pipeline.shortenPauses.unwrap().shape;
     const duck = AutoDuckSchema.shape;
     const generate = GenerateSchema.shape;
-    // generate.amplitude also feeds DtmfTones, whose 0.001 minimum is checked when the command is built.
     for (const [schema, id, key] of [
       [pipeline.highPassHz, 'High-passFilter', 'FREQUENCY'],
       [pipeline.lowPassHz, 'Low-passFilter', 'FREQUENCY'],
@@ -170,7 +169,6 @@ describe('source-derived parameters', () => {
       [generate.frequency, 'Chirp', 'StartFreq'],
       [generate.endFrequency, 'Chirp', 'EndFreq'],
       [generate.amplitude, 'Tone', 'Amplitude'],
-      [generate.dutyCycle, 'DtmfTones', 'Duty Cycle'],
       [generate.tempo, 'RhythmTrack', 'TEMPO'],
       [generate.beatsPerBar, 'RhythmTrack', 'TIMESIG'],
       [generate.swing, 'RhythmTrack', 'SWING'],

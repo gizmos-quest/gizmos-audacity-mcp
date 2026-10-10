@@ -16,7 +16,6 @@ describe('selection editing', () => {
     ['cut', 'Cut'],
     ['split_cut', 'SplitCut'],
     ['copy', 'Copy'],
-    ['paste', 'Paste'],
     ['silence', 'Silence'],
     ['join', 'Join'],
     ['disjoin', 'Disjoin'],
@@ -28,10 +27,16 @@ describe('selection editing', () => {
     expect(result).toMatchObject({ action, track: 0, start: 0, end: 20, reply: 'Audacity reply' });
   });
 
-  it.each(['split', 'paste'])('accepts an explicit cursor point for %s', async (action) => {
+  it('accepts an explicit cursor point for split', async () => {
     const mocks = mockOps();
-    await edit(mocks.ops, { action, track: 0, start: 3, end: 3 });
+    await edit(mocks.ops, { action: 'split', track: 0, start: 3, end: 3 });
     expect(mocks.select).toHaveBeenCalledExactlyOnceWith({ track: 0, trackCount: 1, start: 3, end: 3 });
+  });
+
+  it('does not offer paste, whose source is the system clipboard', async () => {
+    const mocks = mockOps();
+    await expect(edit(mocks.ops, { action: 'paste', track: 0, start: 3, end: 3 })).rejects.toThrow();
+    expectNoMutation(mocks);
   });
 
   it.each(['trim', 'delete', 'copy', 'silence'])('refuses a cursor-only %s before selection', async (action) => {

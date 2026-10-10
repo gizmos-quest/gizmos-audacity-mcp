@@ -7,7 +7,8 @@ import { Amplitude, audioTrack, Frequency, Seconds, safeMenu, Track, Waveform } 
 
 export const GenerateSchema = z
   .object({
-    kind: z.enum(['tone', 'noise', 'silence', 'chirp', 'dtmf', 'rhythm']),
+    // DTMF is reserved: scripted DtmfTones ignores the sequence length (catalogue.ts).
+    kind: z.enum(['tone', 'noise', 'silence', 'chirp', 'rhythm']),
     track: Track.optional().describe('omit to create a new track; supplying it replaces audio in the range'),
     name: SafeString.min(1).optional(),
     channels: z
@@ -26,12 +27,6 @@ export const GenerateSchema = z
     endFrequency: Frequency.optional(),
     endAmplitude: Amplitude.optional(),
     interpolation: z.enum(['Linear', 'Logarithmic']).optional(),
-    sequence: z
-      .string()
-      .regex(/^[0-9A-Da-d*#]+$/)
-      .max(256)
-      .optional(),
-    dutyCycle: z.number().finite().min(0).max(100).optional(),
     tempo: z.number().finite().min(30).max(300).optional(),
     beatsPerBar: z.number().int().min(1).max(20).optional(),
     swing: z.number().finite().min(-1).max(1).optional(),
@@ -63,7 +58,6 @@ export const GenerateSchema = z
       noise: ['amplitude', 'noiseType'],
       silence: [],
       chirp: ['frequency', 'amplitude', 'waveform', 'endFrequency', 'endAmplitude', 'interpolation'],
-      dtmf: ['sequence', 'dutyCycle', 'amplitude'],
       rhythm: ['tempo', 'beatsPerBar', 'swing', 'clickSound'],
     };
     for (const key of [
@@ -74,8 +68,6 @@ export const GenerateSchema = z
       'endFrequency',
       'endAmplitude',
       'interpolation',
-      'sequence',
-      'dutyCycle',
       'tempo',
       'beatsPerBar',
       'swing',
@@ -93,7 +85,6 @@ export async function generate(ops: Ops, input: unknown): Promise<unknown> {
     noise: 'Noise',
     silence: 'Silence',
     chirp: 'Chirp',
-    dtmf: 'DtmfTones',
     rhythm: 'RhythmTrack',
   }[args.kind];
   const params: Record<string, ParamValue> = {};
@@ -113,12 +104,6 @@ export async function generate(ops: Ops, input: unknown): Promise<unknown> {
       StartAmp: args.amplitude ?? 0.25,
       EndAmp: args.endAmplitude ?? 0.1,
       Interpolation: args.interpolation ?? 'Linear',
-    });
-  if (args.kind === 'dtmf')
-    Object.assign(params, {
-      Sequence: (args.sequence ?? '0123456789').toUpperCase(),
-      'Duty Cycle': args.dutyCycle ?? 55,
-      Amplitude: args.amplitude ?? 0.25,
     });
   if (args.kind === 'rhythm')
     Object.assign(params, {

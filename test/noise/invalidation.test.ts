@@ -42,7 +42,16 @@ function fixture(
           ok: true,
           status: 'OK',
           body: JSON.stringify(
-            command.includes('Type=Clips') ? clips : command.includes('Type=Selection') ? selection : tracks,
+            command.includes('Type=Clips')
+              ? clips
+              : command.includes('Type=Selection')
+                ? selection
+                : command.includes('Type=Menus')
+                  ? [
+                      { id: 'Undo', label: 'Undo Split' },
+                      { id: 'Redo', label: 'Redo Split' },
+                    ]
+                  : tracks,
           ),
         };
       if (command.startsWith('Select:')) {

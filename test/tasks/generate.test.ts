@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from 'vitest';
-import { catalogueCommand } from '../../src/format.js';
 import { generate } from '../../src/tasks.js';
 
 vi.mock('../../src/source-rate.js', () => ({ measureSourceRate: vi.fn(async () => 48_000) }));
@@ -25,7 +24,6 @@ describe('audio generation', () => {
       'Chirp',
       { StartFreq: 440, EndFreq: 1320, StartAmp: 0.25, EndAmp: 0.1, Interpolation: 'Linear', Waveform: 'Sine' },
     ],
-    ['dtmf', 'DtmfTones', { Sequence: '0123456789', 'Duty Cycle': 55, Amplitude: 0.25 }],
     [
       'rhythm',
       'RhythmTrack',
@@ -64,12 +62,10 @@ describe('audio generation', () => {
     expect(mocks.command.mock.calls[1]).toEqual(['SetTrack', { Name: 'Test tone' }]);
   });
 
-  it('uppercases a validated DTMF sequence and formats its spaced parameter', async () => {
+  it('does not offer DTMF, whose scripted tone timing ignores the sequence', async () => {
     const mocks = mockOps();
-    await generate(mocks.ops, { kind: 'dtmf', track: 0, sequence: 'a1b2*#', dutyCycle: 75 });
-    const params = mocks.command.mock.calls[0]![1]!;
-    expect(catalogueCommand('DtmfTones', params)).toContain('"Duty Cycle"=75');
-    expect(params.Sequence).toBe('A1B2*#');
+    await expect(generate(mocks.ops, { kind: 'dtmf', track: 0 })).rejects.toThrow();
+    expectNoMutation(mocks);
   });
 
   it('refuses replacing audio on a non-audio track before selection', async () => {

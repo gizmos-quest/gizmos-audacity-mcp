@@ -111,10 +111,10 @@ describe('catalogue boundaries', () => {
   it('keeps Audacity error text verbatim', async () => {
     const pipe = new AudacityPipe(undefined, 10, async () => ({
       ok: false,
-      body: 'Cannot paste into a label track.',
+      body: 'Cannot cut from a label track.',
       status: 'Failed!',
     }));
-    await expect(new Ops(pipe).run('Paste')).rejects.toThrow('Cannot paste into a label track.');
+    await expect(new Ops(pipe).run('Cut')).rejects.toThrow('Cannot cut from a label track.');
   });
   it('refuses command bypasses before pipe transport', async () => {
     const transport = vi.fn();

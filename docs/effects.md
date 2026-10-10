@@ -31,7 +31,10 @@ count. Project render rate cannot establish source frames or source Nyquist.
 | SampleDataExport | Explicit FILENAME and MESSAGES=None; public source-frame preflight |
 
 NoiseGate Analyze, ClickRemoval, Repair, spectral Nyquist tools, LabelSounds,
-MeasureRms and native RegularIntervalLabels are reserved due to modal paths.
+MeasureRms, DtmfTones and native RegularIntervalLabels are reserved due to modal
+or broken scripted paths. Paulstretch, Echo, equalization, Classic Filters,
+TruncateSilence and FindClipping have source-derived guards listed in the
+[modal-path classification](safety.md#modal-path-classification).
 Amplify rejects `AllowClipping:false`, which native batch processing ignores.
 
 The [safety reference](safety.md) explains noise state, source-rate querying,

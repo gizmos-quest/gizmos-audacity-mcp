@@ -32,7 +32,7 @@ is the authoritative machine-readable input/output schema.
 | `audacity_track_edit` | `action`: add/remove/mix/alignment; explicit track/count/time, optional new name |
 | `audacity_clip_move` | `track`, `at`, new `start`; shared boundary picks the clip starting there |
 | `audacity_clip_set` | `track`, interior `at`, name/color/gainDb; relative sample gain -50..36 dB |
-| `audacity_edit` | `action`: split/split_new/trim/duplicate/delete/split_delete/cut/split_cut/copy/paste/silence/join/disjoin; scope |
+| `audacity_edit` | `action`: split/split_new/trim/duplicate/delete/split_delete/cut/split_cut/copy/silence/join/disjoin; scope |
 | `audacity_fade` | `track`, `direction:in/out`, optional start/end; sample fade |
 | `audacity_envelope_set` | `track`, `points:[{time,value}]`, `replace` (true); editable linear gain 0..2 |
 
@@ -44,7 +44,7 @@ delete can close gaps. Export explicitly clears label-edit focus through selecti
 
 | Tool | Arguments / behavior |
 | --- | --- |
-| `audacity_generate` | `kind:tone/noise/silence/chirp/dtmf/rhythm`; duration/start, optional existing track or new mono/stereo track |
+| `audacity_generate` | `kind:tone/noise/silence/chirp/rhythm`; duration/start, optional existing track or new mono/stereo track |
 | `audacity_effect` | `effect`, `params:{}`, optional track/count/time; exact bundled catalogue and native context preflight |
 | `audacity_noise_profile` | `track`, start/end; one pure room-tone interval in a known fresh process |
 | `audacity_pipeline` | `track`, preset/options, `dryRun`; cleanup/voice/podcast/interview/audiobook/vocal/live/music/lofi |

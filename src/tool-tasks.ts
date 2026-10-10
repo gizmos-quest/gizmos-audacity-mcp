@@ -27,14 +27,14 @@ export function registerTaskTools(tool: ToolRegistrar, ops: Ops): void {
 
   tool(
     'audacity_edit',
-    'Split, split-new, trim, duplicate, delete, cut/copy/paste, silence or join/disjoin audio on explicit tracks and time range. split/paste accept a cursor; delete closes the gap while split_delete retains timing.',
+    'Split, split-new, trim, duplicate, delete, cut/copy, silence or join/disjoin audio on explicit tracks and time range. split accepts a cursor; delete closes the gap while split_delete retains timing. Paste is not offered: it depends on the system clipboard.',
     EditSchema.shape,
     (args) => edit(ops, args),
   );
 
   tool(
     'audacity_generate',
-    'Generate tone/noise/silence/chirp/DTMF/rhythm in a new mono/stereo track, or replace a range of an existing track. Uses a time selection for duration and validates kind-specific parameters before adding tracks.',
+    'Generate tone/noise/silence/chirp/rhythm in a new mono/stereo track, or replace a range of an existing track. Uses a time selection for duration and validates kind-specific parameters before adding tracks.',
     GenerateSchema.shape,
     (args) => generate(ops, args),
   );

@@ -15,7 +15,6 @@ export function registerGeneration(context: LiveContext) {
       endAmplitude: 0.05,
       interpolation: 'Logarithmic',
     },
-    { kind: 'dtmf', sequence: '12#', dutyCycle: 55, amplitude: 0.1 },
     { kind: 'rhythm', tempo: 120, beatsPerBar: 4, swing: 0.1, clickSound: 'Metronome' },
   ])(
     'generates $kind without dialogs',

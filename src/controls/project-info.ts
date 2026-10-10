@@ -7,7 +7,7 @@ import type { ToolRegistrar } from '../tools.js';
 export function registerProjectInfoTools(tool: ToolRegistrar, ops: Ops): void {
   tool(
     'audacity_history',
-    'Undo or redo existing native menu/import history entries. Individual scripted effects and pipelines add no undo entry; save a project backup before destructive processing. Stops at Audacity’s own first error and does not claim checkpoint rollback.',
+    'Undo or redo existing native menu/import history entries. Individual scripted effects and pipelines add no undo entry; save a project backup before destructive processing. Stops before a step the native history does not have, or at Audacity’s own first error, and does not claim checkpoint rollback.',
     { action: z.enum(['undo', 'redo']), steps: z.number().int().min(1).max(100).default(1) },
     async ({ action, steps }) => {
       let completed = 0;
