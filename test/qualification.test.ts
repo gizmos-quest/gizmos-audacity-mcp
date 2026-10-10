@@ -54,6 +54,7 @@ describe('pipe qualification before edits', () => {
   it('accepts the configured supported process and caches its version per process identity', async () => {
     running(101, '3,7,8,0');
     await qualifyAudacity(nativePipePaths());
+    expect(mocks.helper).toHaveBeenCalledWith(expect.not.stringContaining('Get-CimInstance')); // no owner lookup
     running(101, '4,0,0,0');
     await qualifyAudacity(nativePipePaths()); // same identity: the version is not read again
     running(102, '4,0,0,0');

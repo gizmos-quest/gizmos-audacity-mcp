@@ -81,8 +81,9 @@ function posixExecutable(pid: number, command: string): string {
   }
 }
 
-/** Process records, not stale FIFO names, authorize stopped-only config writes. */
-export async function audacityProcesses(): Promise<AudacityProcess[]> {
+/** Process records, not stale FIFO names, authorize stopped-only config writes. The
+ * Windows owner lookup doubles the query time; qualification before edits omits it. */
+export async function audacityProcesses(owners = true): Promise<AudacityProcess[]> {
   if (process.platform !== 'win32') {
     const output = await capture('ps', ['-axo', 'pid=,uid=,lstart=,comm=']);
     return output.split('\n').flatMap((line) => {
@@ -104,12 +105,15 @@ export async function audacityProcesses(): Promise<AudacityProcess[]> {
       ];
     });
   }
+  const user = owners
+    ? `$identity = Get-CimInstance Win32_Process -Filter "ProcessId=$($_.Id)"
+  $user = if ($identity) { Invoke-CimMethod -InputObject $identity -MethodName GetOwner -ErrorAction SilentlyContinue } else { $null }`
+    : '$user = $null';
   const output = await powershell(`
 $found = @(Get-Process Audacity -ErrorAction SilentlyContinue | ForEach-Object {
   $processPath = $_.Path
   $version = if ($processPath) { (Get-Item -LiteralPath $processPath).VersionInfo } else { $null }
-  $identity = Get-CimInstance Win32_Process -Filter "ProcessId=$($_.Id)"
-  $user = if ($identity) { Invoke-CimMethod -InputObject $identity -MethodName GetOwner -ErrorAction SilentlyContinue } else { $null }
+  ${user}
   [pscustomobject]@{ pid = $_.Id; executable = $processPath; fileVersion = $version.FileVersion; productVersion = $version.ProductVersion; started = $_.StartTime.ToUniversalTime().Ticks.ToString(); owner = $user.User }
 })
 ConvertTo-Json -Compress -InputObject @($found)`);
@@ -117,7 +121,7 @@ ConvertTo-Json -Compress -InputObject @($found)`);
 }
 
 export async function currentProcessIdentity(): Promise<string | undefined> {
-  const processes = await audacityProcesses();
+  const processes = await audacityProcesses(false);
   if (processes.length !== 1) return undefined;
   const process = processes[0]!;
   if (!process.executable || !process.started) return undefined;
@@ -167,7 +171,7 @@ export async function qualifyAudacity(paths: PipePaths): Promise<void> {
     return;
   }
   const executable = audacityExe();
-  const processes = await audacityProcesses();
+  const processes = await audacityProcesses(false);
   if (processes.length !== 1)
     throw new Error(`Editing needs exactly one running Audacity, found ${processes.length}; use audacity_launch.`);
   assertExecutableMatches(executable, processes);
