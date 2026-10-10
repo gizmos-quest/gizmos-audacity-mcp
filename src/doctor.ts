@@ -1,9 +1,9 @@
 import { spawnSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
-import { existsSync, statSync } from 'node:fs';
+import { existsSync, readdirSync, statSync } from 'node:fs';
 import { copyFile, readFile } from 'node:fs/promises';
 import { userInfo } from 'node:os';
-import { dirname, extname, join } from 'node:path';
+import { basename, dirname, extname, join } from 'node:path';
 import { assertEnglishCommands } from './app.js';
 import { configPath, writeStoppedConfig } from './app-config.js';
 import {
@@ -61,12 +61,26 @@ export function enablePipeConfig(config: string, moduleStamp?: string): string {
   return moduleStamp ? setConfigValue(enabled, 'ModuleDateTime', 'mod-script-pipe', moduleStamp) : enabled;
 }
 
-/** Windows/portable installs keep modules beside the executable; a macOS bundle in Contents/modules. */
-export function scriptModule(executable: string): string | undefined {
+/** Where Audacity-3.7.8 finds modules for this executable (libraries/lib-files/PathList.cpp:
+ * 89-110, lib-module-manager/ModuleManager.cpp:244-268): beside it (Windows, portable), in a
+ * macOS bundle, or in a Linux library directory such as /usr/lib/audacity/modules; else the
+ * path Audacity itself recorded (ModuleSettings.cpp:109-110). */
+export function scriptModule(executable: string, config = ''): string | undefined {
   const name = `mod-script-pipe${process.platform === 'win32' ? '.dll' : '.so'}`;
-  return [join(dirname(executable), 'modules', name), join(dirname(executable), '..', 'modules', name)].find((file) =>
-    existsSync(file),
-  );
+  const bin = dirname(executable);
+  const lib = join(dirname(bin), 'lib');
+  let multiarch: string[] = [];
+  try {
+    multiarch = readdirSync(lib).map((entry) => join(lib, entry, 'audacity', 'modules'));
+  } catch {
+    /* No library directory: a Windows, portable or bundle layout. */
+  }
+  const recorded = configValue(config, 'ModulePath', 'mod-script-pipe');
+  return [join(bin, 'modules'), join(dirname(bin), 'modules'), join(bin, 'lib', 'audacity', 'modules')]
+    .concat([join(lib, 'audacity', 'modules'), join(lib, 'modules'), ...multiarch])
+    .map((directory) => join(directory, name))
+    .concat(recorded && basename(recorded) === name ? [recorded] : [])
+    .find((file) => existsSync(file));
 }
 
 /** wxDateTime::FormatISOCombined of the file's local modification time, as ModuleSettings writes it. */
@@ -75,6 +89,9 @@ export function moduleStamp(file: string): string {
   const pad = (value: number) => String(value).padStart(2, '0');
   return `${time.getFullYear()}-${pad(time.getMonth() + 1)}-${pad(time.getDate())}T${pad(time.getHours())}:${pad(time.getMinutes())}:${pad(time.getSeconds())}`;
 }
+
+const MODULE_MISSING =
+  'Cannot find the mod-script-pipe module file of this Audacity, so its timestamp cannot be recorded or checked; Audacity skips a module without it. Enable it once in Preferences > Modules.';
 
 async function readConfig(file = configPath()): Promise<string> {
   try {
@@ -94,10 +111,11 @@ export async function fixPipeConfig(): Promise<string | undefined> {
     throw new Error('doctor --fix requires Audacity to be stopped; quit it before changing its config.');
   const file = configPath();
   const original = await readConfig(file);
-  const module = scriptModule(executable);
+  const module = scriptModule(executable, original);
   // Mirrors ModuleSettings::SetModuleStatus for an explicit user decision: without
   // the module file's current timestamp, 3.7.8 resets the module to "new" and skips it.
-  const updated = enablePipeConfig(original, module && moduleStamp(module));
+  if (!module) throw new Error(`${MODULE_MISSING} Config unchanged.`);
+  const updated = enablePipeConfig(original, moduleStamp(module));
   if (updated === original) return undefined;
   const backup = `${file}.before-doctor-${randomUUID()}.bak`;
   await copyFile(file, backup);
@@ -131,8 +149,9 @@ export async function doctor(fix = false): Promise<DoctorReport> {
       );
     // 3.7.8 ModuleSettings::GetModuleStatus loads an enabled module only when its
     // recorded ModuleDateTime equals the file's; otherwise it is "new" and skipped.
-    const module = scriptModule(audacityExe());
-    if (module && configValue(config, 'ModuleDateTime', 'mod-script-pipe') !== moduleStamp(module))
+    const module = scriptModule(audacityExe(), config);
+    if (!module) throw new Error(MODULE_MISSING);
+    if (configValue(config, 'ModuleDateTime', 'mod-script-pipe') !== moduleStamp(module))
       throw new Error(
         'mod-script-pipe was enabled for a different module file (for example before an update), so Audacity skips it. While Audacity is stopped, run doctor --fix, then restart.',
       );

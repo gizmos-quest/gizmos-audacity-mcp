@@ -30,6 +30,9 @@ input/result shapes and environment variables.
 - A projectless or still-starting Audacity is reported within seconds, and
   launch waits until the project exists (for example after plugin scans).
 - `doctor --fix` also records the module timestamp Audacity needs after updates.
+- Doctor finds mod-script-pipe in Linux library directories such as
+  `/usr/lib/audacity/modules` and at the path Audacity recorded; without the module
+  file it reports a failure instead of a fix Audacity would ignore.
 - Hour-long recordings are measurable; Linux/macOS process checks name real binaries.
 - Audacity 4 is refused with its reason and the 3.7.x install remedy.
 - Edits no longer reach an unqualified Audacity: before each tool call's first

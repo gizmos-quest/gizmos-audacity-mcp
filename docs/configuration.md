@@ -31,7 +31,10 @@ stopped. Audacity loads an enabled module only if the config also records that
 module file's timestamp; after an update it treats the file as new and skips it.
 With Audacity stopped, `doctor --fix` writes both values, as **Preferences →
 Modules** does, and retains a unique config backup; an already correct config is
-left untouched. It does not install Audacity or rewrite plugin/language settings.
+left untouched. It finds the module beside the executable, in a macOS bundle, in
+Linux library directories such as `/usr/lib/audacity/modules`, or at the path
+Audacity recorded; without the module file doctor reports a failure and `--fix`
+changes nothing. It does not install Audacity or rewrite plugin/language settings.
 
 | Variable | Purpose |
 | --- | --- |
