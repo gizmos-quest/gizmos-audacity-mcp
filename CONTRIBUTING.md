@@ -4,7 +4,7 @@ Start with an issue describing the user problem and smallest useful change.
 For bugs, include a reproducible case, OS/CPU, actual Audacity version, MCP client
 and redacted doctor output. Report vulnerabilities privately via [SECURITY](SECURITY.md).
 
-Use Node 24+, `npm ci`, then:
+Use Node 24.21+, `npm ci`, then:
 
 ```sh
 npm run lint

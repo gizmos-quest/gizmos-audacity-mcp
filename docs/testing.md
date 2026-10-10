@@ -1,6 +1,6 @@
 # Development and testing
 
-Node 24+ is the minimum. The runtime uses the official MCP SDK v2 and zod;
+Node 24.21+ is the minimum. The runtime uses the official MCP SDK v2 and zod;
 Biome and Vitest/v8 coverage are development tools. No audio runtime or model
 is installed/downloaded by a server tool.
 

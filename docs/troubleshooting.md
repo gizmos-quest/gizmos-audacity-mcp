@@ -12,7 +12,7 @@ Redact personal paths, audio names and private configuration from logs.
 | "Empty reply … no active project" | Audacity is still starting or its project window is gone; its script relay runs nothing then. Wait for the project window, then `audacity_recover`. |
 | Quit reports a windowless process | The project was saved and closed but Audacity's main loop kept running. With no `ActiveProjects` entry it holds no project: end it in Task Manager. The server never terminates Audacity. |
 | Command/effect missing | English UI plus an English plugin registry are required. Inspect `audacity_info` Commands and `audacity_describe`. |
-| Client cannot find Node/npx | Restart the client after installing Node 24+; use the Windows wrapper in [clients](clients.md). |
+| Client cannot find Node/npx | Restart the client after installing Node 24.21+; use the Windows wrapper in [clients](clients.md). |
 | Access denied | Run client and Audacity under the same user/privilege level; inspect endpoint/config ownership. |
 | Endpoint already owned | Close the other MCP session before attaching. The local ownership lock coordinates this server's entry points; unrelated readers remain unsupported. |
 | Effect request times out | Give the client at least ten minutes. A server timeout leaves the edit outcome unknown; follow recovery below. |

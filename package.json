@@ -8,7 +8,7 @@
     "gizmos-audacity-mcp": "dist/main.js"
   },
   "engines": {
-    "node": ">=24.0.0"
+    "node": ">=24.21.0"
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -37,8 +37,8 @@
     "@modelcontextprotocol/client": "2.3.1",
     "@types/node": "24.19.2",
     "@vitest/coverage-v8": "5.0.3",
-    "tsx": "^4.23.15",
-    "typescript": "^7.0.2",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
     "vitest": "5.0.3"
   },
   "files": [

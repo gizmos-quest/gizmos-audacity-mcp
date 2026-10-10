@@ -38,7 +38,7 @@ and regenerate parameter limits with `npm run parameters -- ../audacity`.
 - `ops.ts` / `audacity/`: stateful native operations and selection transactions.
 - `tasks/`, `analysis/`, `controls/`, labels and batch: domain workflows.
 
-Use TypeScript, Node 24+, official MCP SDK v2 (`@modelcontextprotocol/server`)
+Use TypeScript, Node 24.21+, official MCP SDK v2 (`@modelcontextprotocol/server`)
 and zod. No extra runtime dependency without a measured need. Keep source/tests
 about 300 lines or less; generated catalogue JSON and lockfile are exceptions.
 Prefer the smallest domain change over speculative abstractions.

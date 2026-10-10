@@ -2,10 +2,10 @@
 
 Local MCP tools for editing, processing and measuring audio in Audacity.
 
-[![Node 24+](https://img.shields.io/badge/Node-24%2B-339933)](https://nodejs.org/)
+[![Node 24.21+](https://img.shields.io/badge/Node-24.21%2B-339933)](https://nodejs.org/)
 [![MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**45 typed tools · Audacity 3.7.x · Node 24+ · stdio**
+**45 typed tools · Audacity 3.7.x · Node 24.21+ · stdio**
 
 Import audio, edit tracks and clips, apply effects, write labels, export mixes,
 and measure peak/RMS or optional LUFS/true peak. Audacity does the processing.
@@ -23,7 +23,7 @@ the scripting FIFOs; their native window lifecycle is not qualified.
 - **Audacity 4 is not supported**: 4.0 removed the scripting interface
   (`mod-script-pipe`). Support would be reconsidered only if Audacity ships a
   scripting host with full control.
-- **Node.js 24 or newer**, running as the same user as Audacity.
+- **Node.js 24.21 or newer**, running as the same user as Audacity.
 - Optional **ffmpeg/ffprobe** for LUFS, LRA, true peak, other file formats and
   metadata. Native PCM/float WAV measurement needs neither.
 
