@@ -4,10 +4,12 @@
 import { z } from 'zod';
 import { preflightScopedEffects } from '../effects/context.js';
 import { preflightEffectParameters } from '../effects/parameters.js';
+import { errorMessage, errorWithContext } from '../errors.js';
 import { catalogueCommand, type ParamValue } from '../format.js';
-import { errorWithContext, type Ops, type TrackRef } from '../ops.js';
+import type { Ops, TrackRef } from '../ops.js';
+import { Seconds } from '../tool-input.js';
 import type { ToolProgress } from '../tools.js';
-import { audioTrack, Frequency, resolveRange, Scope, Seconds, validRange } from './scope.js';
+import { audioTrack, Frequency, resolveRange, Scope, validRange } from './scope.js';
 
 const NoiseProfile = z
   .object({
@@ -19,9 +21,9 @@ const NoiseProfile = z
 
 const ShortenPauses = z
   .object({
-    thresholdDb: z.number().finite().min(-80).max(-20).default(-40), // native TruncateSilence limit
-    minimum: z.number().finite().min(0.01).max(60).default(0.5),
-    truncateTo: z.number().finite().min(0).max(60).default(0.3),
+    thresholdDb: z.number().min(-80).max(-20).default(-40), // native TruncateSilence limit
+    minimum: z.number().min(0.01).max(60).default(0.5),
+    truncateTo: z.number().min(0).max(60).default(0.3),
   })
   .strict()
   .refine((a) => a.truncateTo <= a.minimum, { message: 'truncateTo must not exceed minimum' });
@@ -48,23 +50,23 @@ export const PipelineSchema = z
       })
       .describe('must remain false: native Click Removal can open a blocking result dialog'),
     compress: z.boolean().optional(),
-    thresholdDb: z.number().finite().min(-60).max(0).optional(),
-    ratio: z.number().finite().min(1).max(20).optional(),
+    thresholdDb: z.number().min(-60).max(0).optional(),
+    ratio: z.number().min(1).max(20).optional(),
     // Native Compressor limits (catalogue/parameters.json); others open a modal.
-    attackMs: z.number().finite().min(0).max(200).optional(),
-    releaseMs: z.number().finite().min(1).max(1000).optional(),
-    bassDb: z.number().finite().min(-20).max(20).optional(),
-    trebleDb: z.number().finite().min(-20).max(20).optional(),
+    attackMs: z.number().min(0).max(200).optional(),
+    releaseMs: z.number().min(1).max(1000).optional(),
+    bassDb: z.number().min(-20).max(20).optional(),
+    trebleDb: z.number().min(-20).max(20).optional(),
     loudness: z
       .enum(['none', 'peak', 'lufs', 'rms'])
       .default('none')
       .describe('normalization can raise quiet audio; select it explicitly'),
-    peakDb: z.number().finite().min(-60).max(0).default(-1),
-    lufs: z.number().finite().min(-50).max(-5).default(-16),
-    rmsDb: z.number().finite().min(-50).max(-5).default(-20),
+    peakDb: z.number().min(-60).max(0).default(-1),
+    lufs: z.number().min(-50).max(-5).default(-16),
+    rmsDb: z.number().min(-50).max(-5).default(-20),
     limitPeakDb: z
       .number()
-      .finite()
+
       .min(-20)
       .max(0)
       .optional()
@@ -240,7 +242,7 @@ export async function pipeline(ops: Ops, input: unknown, progress?: ToolProgress
     } catch (error) {
       throw errorWithContext(
         error,
-        `pipeline stopped at "${step.name}" after ${applied.length} completed steps: ${error instanceof Error ? error.message : String(error)}`,
+        `pipeline stopped at "${step.name}" after ${applied.length} completed steps: ${errorMessage(error)}`,
       );
     }
   }

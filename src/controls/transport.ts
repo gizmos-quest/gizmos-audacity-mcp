@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import { selectionTimes } from '../analysis/render.js';
-import { SafeString } from '../catalogue.js';
 import type { Ops } from '../ops.js';
 import { CommandFailed } from '../ops.js';
+import { Seconds, Track } from '../tool-input.js';
 import type { ToolRegistrar } from '../tools.js';
 
 export function registerTransportTool(tool: ToolRegistrar, ops: Ops): void {
@@ -23,10 +23,10 @@ export function registerTransportTool(tool: ToolRegistrar, ops: Ops): void {
     'Play a selected region, pause/resume, stop, or record using Audacity’s configured input. Appending requires an explicit audio track matching the configured recording channels (1 or 2). Record mode respects Audacity’s new-track preference, and recording always starts from a cursor point to avoid batch progress waits. status reports selection and a monotonic estimated position; manual transport changes are not tracked. record returns immediately unless duration is supplied.',
     {
       action: z.enum(['play', 'pause', 'resume', 'stop', 'record', 'status']),
-      start: z.number().finite().min(0).max(86400).optional(),
-      end: z.number().finite().min(0).max(86400).optional(),
-      track: z.union([z.number().int().nonnegative(), SafeString.min(1)]).optional(),
-      duration: z.number().finite().positive().max(60).optional(),
+      start: Seconds.optional(),
+      end: Seconds.optional(),
+      track: Track.optional(),
+      duration: z.number().positive().max(60).optional(),
       newTrack: z.boolean().default(true),
     },
     async ({ action, start, end, track, duration, newTrack }) => {

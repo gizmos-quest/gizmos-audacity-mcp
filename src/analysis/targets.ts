@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { type Measurement, round } from './types.js';
 
 const Bound = z
-  .object({ min: z.number().finite().optional(), max: z.number().finite().optional() })
+  .object({ min: z.number().optional(), max: z.number().optional() })
   .strict()
   .refine((b) => b.min !== undefined || b.max !== undefined, 'a target needs min or max')
   .refine((b) => b.min === undefined || b.max === undefined || b.max >= b.min, 'target max must be >= min');
@@ -96,10 +96,10 @@ export function compareMeasurements(
 }
 
 export const LoudnessTargetShape = {
-  targetLufs: z.number().finite().min(-50).max(-5).default(-16),
-  truePeakCeilingDbtp: z.number().finite().min(-20).max(0).default(-1),
-  maxBoostDb: z.number().finite().min(0).max(36).default(18),
-  toleranceLu: z.number().finite().min(0.1).max(3).default(0.5),
+  targetLufs: z.number().min(-50).max(-5).default(-16),
+  truePeakCeilingDbtp: z.number().min(-20).max(0).default(-1),
+  maxBoostDb: z.number().min(0).max(36).default(18),
+  toleranceLu: z.number().min(0.1).max(3).default(0.5),
 };
 export const LoudnessTargetSchema = z.object(LoudnessTargetShape).strict();
 

@@ -2,8 +2,8 @@ import { z } from 'zod';
 import { describeCommand, SafeString } from '../catalogue.js';
 import { catalogueCommand } from '../format.js';
 import type { Ops } from '../ops.js';
+import { Seconds } from '../tool-input.js';
 
-const Seconds = z.number().finite().min(0).max(86400);
 // SetLabel's flat index is declared 0..10000 (Audacity-3.7.8
 // src/commands/SetLabelCommand.cpp:46); a larger index would open the
 // "Could not load settings" message instead of editing a label.

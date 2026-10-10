@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { taskOutputs } from './tool-task-output.js';
 
-const NumberValue = z.number().finite();
+const NumberValue = z.number();
 const MaybeNumber = NumberValue.nullable();
 const Strings = z.array(z.string());
 const JsonObject = z.record(z.string(), z.json());
@@ -19,7 +19,7 @@ export const TrackOutput = z
     selected: NumberValue.optional(),
     focused: NumberValue.optional(),
   })
-  .passthrough();
+  .loose();
 const ScopeOutput = z.object({ tracks: z.array(z.number().int().nonnegative()), start: NumberValue, end: NumberValue });
 const Region = z.object({ start: NumberValue, end: NumberValue, duration: NumberValue });
 const Channel = z.object({
@@ -59,8 +59,8 @@ const MeasurementShape = {
   file: z.string().optional(),
   scope: ScopeOutput.optional(),
 };
-export const MeasurementOutput = z.object(MeasurementShape).passthrough();
-const Bounds = z.object({ min: NumberValue.optional(), max: NumberValue.optional() }).passthrough();
+export const MeasurementOutput = z.object(MeasurementShape).loose();
+const Bounds = z.object({ min: NumberValue.optional(), max: NumberValue.optional() }).loose();
 const TargetCheck = z
   .object({
     status: z.enum(['met', 'missed', 'unknown']),
@@ -74,17 +74,17 @@ const TargetCheck = z
           reason: z.string().optional(),
           gap: NumberValue.optional(),
         })
-        .passthrough(),
+        .loose(),
     ),
   })
-  .passthrough();
+  .loose();
 // Existing measurement tools return a flat report, or {measurement,targetCheck}
 // when targets are supplied. Keep both shapes without an incompatible envelope.
 const MeasurementReport = z
   .object(MeasurementShape)
   .partial()
   .extend({ measurement: MeasurementOutput.optional(), targetCheck: TargetCheck.optional() })
-  .passthrough()
+  .loose()
   .superRefine((value, ctx) => {
     if (value.measurement === undefined && !MeasurementOutput.safeParse(value).success) {
       ctx.addIssue({ code: 'custom', message: 'expected a measurement report' });
@@ -92,7 +92,7 @@ const MeasurementReport = z
   });
 const Delta = z.record(z.string(), z.object({ before: NumberValue, after: NumberValue, change: NumberValue }));
 const outputs: Record<string, z.ZodType> = {
-  audacity_status: z.object({ running: z.boolean(), tracks: z.array(TrackOutput).optional() }).passthrough(),
+  audacity_status: z.object({ running: z.boolean(), tracks: z.array(TrackOutput).optional() }).loose(),
   audacity_track_set: TrackOutput,
   audacity_project_info: z
     .object({
@@ -105,7 +105,7 @@ const outputs: Record<string, z.ZodType> = {
       activeProjectFiles: Strings,
       fileSource: z.string(),
     })
-    .passthrough(),
+    .loose(),
   audacity_describe: z
     .object({
       id: z.string(),
@@ -122,16 +122,16 @@ const outputs: Record<string, z.ZodType> = {
             minimum: NumberValue.optional(),
             maximum: NumberValue.optional(),
           })
-          .passthrough(),
+          .loose(),
       ),
     })
-    .passthrough(),
+    .loose(),
   audacity_measure: MeasurementReport,
   audacity_measure_file: MeasurementReport,
   audacity_compare_files: z
     .object({ before: MeasurementOutput, after: MeasurementOutput, delta: Delta, targetCheck: TargetCheck.optional() })
-    .passthrough(),
-  audacity_probe_file: z.object({ file: z.string(), format: JsonObject, streams: z.array(JsonObject) }).passthrough(),
+    .loose(),
+  audacity_probe_file: z.object({ file: z.string(), format: JsonObject, streams: z.array(JsonObject) }).loose(),
   audacity_silence: z
     .object({
       regions: z.array(Region),
@@ -143,7 +143,7 @@ const outputs: Record<string, z.ZodType> = {
       scope: ScopeOutput.optional(),
       notes: Strings,
     })
-    .passthrough(),
+    .loose(),
   audacity_contrast: z
     .object({
       foregroundRmsDbfs: MaybeNumber,
@@ -153,10 +153,8 @@ const outputs: Record<string, z.ZodType> = {
       status: z.enum(['met', 'missed', 'unknown']),
       reason: z.string().optional(),
     })
-    .passthrough(),
-  audacity_targets: z
-    .object({ presets: z.record(z.string(), z.record(z.string(), Bounds)), note: z.string() })
-    .passthrough(),
+    .loose(),
+  audacity_targets: z.object({ presets: z.record(z.string(), z.record(z.string(), Bounds)), note: z.string() }).loose(),
   audacity_loudness_target: z
     .object({
       dryRun: z.boolean(),
@@ -169,7 +167,7 @@ const outputs: Record<string, z.ZodType> = {
       clippedSamples: NumberValue.optional(),
       notes: Strings.optional(),
     })
-    .passthrough(),
+    .loose(),
 };
 
 export function outputSchema(name: string): z.ZodType | undefined {

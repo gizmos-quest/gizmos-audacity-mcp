@@ -12,7 +12,7 @@ import {
   unavailableLoudness,
   type WavFormat,
 } from './types.js';
-import { fileHeader, parseWavHeader, readExactly } from './wav-format.js';
+import { fileHeader, readExactly } from './wav-format.js';
 
 function sampleAt(buffer: Buffer, offset: number, format: WavFormat): number {
   if (format.floatingPoint) return format.bits === 32 ? buffer.readFloatLE(offset) : buffer.readDoubleLE(offset);
@@ -179,13 +179,6 @@ class Metrics {
       dualMono: false,
     };
   }
-}
-
-export function measureWavBuffer(buffer: Buffer, silence: SilenceOptions = {}): Measurement {
-  const format = parseWavHeader(buffer);
-  const metrics = new Metrics(format, silence);
-  metrics.add(buffer.subarray(format.dataOffset, format.dataOffset + format.dataBytes));
-  return metrics.finish();
 }
 
 export async function measureWavFile(

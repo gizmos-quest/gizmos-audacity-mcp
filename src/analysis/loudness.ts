@@ -1,13 +1,10 @@
 import { z } from 'zod';
-import { SafeString } from '../catalogue.js';
 import { catalogueCommand } from '../format.js';
 import type { Ops } from '../ops.js';
+import { Seconds, Track } from '../tool-input.js';
 import { MeasureScopeSchema } from './options.js';
 import { measureScope } from './render.js';
 import { checkTargets, LoudnessTargetShape, planLoudnessTarget } from './targets.js';
-
-const Track = z.union([z.number().int().nonnegative(), SafeString.min(1)]);
-const Seconds = z.number().finite().min(0).max(86400);
 
 export const LoudnessApplySchema = z
   .object({

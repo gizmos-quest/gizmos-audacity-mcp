@@ -1,6 +1,7 @@
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { withCleanupFailure } from '../errors.js';
 import { catalogueCommand } from '../format.js';
 import type { Ops, TrackInfo, TrackRef } from '../ops.js';
 import { measureFile } from './measurement.js';
@@ -130,19 +131,9 @@ export async function measureScope(
     try {
       if (selectionChanged && !ops.pipe?.needsRecovery) await restoreSelection(ops, previous);
     } catch (restoreError) {
-      restorationError = restoreError;
-      if (operationError !== undefined) {
-        const message = `${operationError instanceof Error ? operationError.message : String(operationError)}. Selection restoration also failed: ${restoreError instanceof Error ? restoreError.message : String(restoreError)}`;
-        if (restoreError instanceof Error) {
-          restoreError.message = message;
-          // biome-ignore lint/correctness/noUnsafeFinally: A failed restoration must replace success and retain the original failure context.
-          throw restoreError;
-        }
-        // biome-ignore lint/correctness/noUnsafeFinally: A failed restoration must replace success and retain the original failure context.
-        throw new Error(message);
-      }
+      restorationError = withCleanupFailure(restoreError, operationError, 'Selection restoration');
       // biome-ignore lint/correctness/noUnsafeFinally: A failed restoration must replace success and retain the original failure context.
-      throw restoreError;
+      throw restorationError;
     } finally {
       // A timed-out Export2 may still write its destination. Retain scratch
       // and the timeout/recovery error class, including restoration failures.

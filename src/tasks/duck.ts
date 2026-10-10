@@ -1,7 +1,8 @@
 import { z } from 'zod';
 import { catalogueCommand } from '../format.js';
 import type { Ops } from '../ops.js';
-import { audioTrack, resolveRange, Seconds, Track, validRange } from './scope.js';
+import { Seconds, Track } from '../tool-input.js';
+import { audioTrack, resolveRange, validRange } from './scope.js';
 
 export const AutoDuckSchema = z
   .object({
@@ -10,13 +11,13 @@ export const AutoDuckSchema = z
     start: Seconds.optional(),
     end: Seconds.optional(),
     // Native AutoDuck limits (catalogue/parameters.json); others open a modal.
-    duckDb: z.number().finite().min(-24).max(0).default(-12),
-    thresholdDb: z.number().finite().min(-100).max(0).default(-30),
-    fadeDown: z.number().finite().min(0).max(3).default(0.5),
-    fadeUp: z.number().finite().min(0).max(3).default(0.5),
-    innerFadeDown: z.number().finite().min(0).max(3).default(0),
-    innerFadeUp: z.number().finite().min(0).max(3).default(0),
-    maximumPause: z.number().finite().min(0).max(60).default(1),
+    duckDb: z.number().min(-24).max(0).default(-12),
+    thresholdDb: z.number().min(-100).max(0).default(-30),
+    fadeDown: z.number().min(0).max(3).default(0.5),
+    fadeUp: z.number().min(0).max(3).default(0.5),
+    innerFadeDown: z.number().min(0).max(3).default(0),
+    innerFadeUp: z.number().min(0).max(3).default(0),
+    maximumPause: z.number().min(0).max(60).default(1),
     dryRun: z.boolean().default(false),
   })
   .strict()

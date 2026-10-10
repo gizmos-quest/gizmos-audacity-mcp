@@ -6,11 +6,10 @@ import { loudnessTarget } from '../../src/analysis/loudness.js';
 import { measureScope } from '../../src/analysis/render.js';
 import { TARGETS } from '../../src/analysis/targets.js';
 import { registerAnalysisTools } from '../../src/analysis/tools.js';
-import { measureWavBuffer } from '../../src/analysis/wav-metrics.js';
 import type { TrackInfo } from '../../src/ops.js';
 import { AudacityTimeout } from '../../src/pipe.js';
 
-import { directories, wav } from '../helpers/audio-fixture.js';
+import { directories, measureBuffer, wav } from '../helpers/audio-fixture.js';
 
 import { bed, fakeOps, label, voice } from '../helpers/render-fixture.js';
 
@@ -18,7 +17,7 @@ describe('rendered measurement selection transactions and tool registration', ()
   it('returns the loudness dry-run plan without selecting or changing samples', async () => {
     const { ops, mock } = fakeOps([voice]);
     const measured = {
-      ...measureWavBuffer(wav([0.1])),
+      ...(await measureBuffer(wav([0.1]))),
       integratedLufs: -20,
       truePeakDbtp: -10,
       scope: { tracks: [0], start: 2, end: 3 },
@@ -36,9 +35,9 @@ describe('rendered measurement selection transactions and tool registration', ()
   });
   it('applies the planned loudness gain and verifies both loudness and native sample peaks', async () => {
     const { ops, mock } = fakeOps([voice]);
-    const before = { ...measureWavBuffer(wav([0.1])), integratedLufs: -20, truePeakDbtp: -10, scope: {} };
+    const before = { ...(await measureBuffer(wav([0.1]))), integratedLufs: -20, truePeakDbtp: -10, scope: {} };
     const after = {
-      ...measureWavBuffer(wav([0.1 * 10 ** (4 / 20)])),
+      ...(await measureBuffer(wav([0.1 * 10 ** (4 / 20)]))),
       integratedLufs: -16,
       truePeakDbtp: -6,
       scope: {},
@@ -58,7 +57,7 @@ describe('rendered measurement selection transactions and tool registration', ()
   });
   it('refuses missing loudness or label targeting before mutation', async () => {
     const { ops, mock } = fakeOps([voice, label]);
-    const measure = vi.fn<typeof measureScope>().mockResolvedValue({ ...measureWavBuffer(wav([0.1])), scope: {} });
+    const measure = vi.fn<typeof measureScope>().mockResolvedValue({ ...(await measureBuffer(wav([0.1]))), scope: {} });
     await expect(loudnessTarget(ops, { track: 0 }, measure)).rejects.toThrow(/established integrated LUFS/);
     await expect(loudnessTarget(ops, { track: 1 }, measure)).rejects.toThrow(/audio track/);
     expect(mock.command).not.toHaveBeenCalled();
@@ -68,21 +67,21 @@ describe('rendered measurement selection transactions and tool registration', ()
     const { ops, mock } = fakeOps([voice]);
     const measure = vi
       .fn<typeof measureScope>()
-      .mockResolvedValue({ ...measureWavBuffer(wav([0.1])), integratedLufs: 50, truePeakDbtp: 60, scope: {} });
+      .mockResolvedValue({ ...(await measureBuffer(wav([0.1]))), integratedLufs: 50, truePeakDbtp: 60, scope: {} });
     await expect(loudnessTarget(ops, { track: 0 }, measure)).rejects.toThrow();
     expect(mock.command).not.toHaveBeenCalled();
     expect(mock.select).not.toHaveBeenCalled();
   });
   it('reports unknown when post-gain loudness cannot be established', async () => {
     const { ops } = fakeOps([voice]);
-    const before = { ...measureWavBuffer(wav([0.1])), integratedLufs: -20, truePeakDbtp: -10, scope: {} };
-    const after = { ...measureWavBuffer(wav([0.1])), scope: {} };
+    const before = { ...(await measureBuffer(wav([0.1]))), integratedLufs: -20, truePeakDbtp: -10, scope: {} };
+    const after = { ...(await measureBuffer(wav([0.1]))), scope: {} };
     const measure = vi.fn<typeof measureScope>().mockResolvedValueOnce(before).mockResolvedValueOnce(after);
     expect(await loudnessTarget(ops, { track: 0 }, measure)).toMatchObject({ targetCheck: { status: 'unknown' } });
   });
   it('preserves Audacity gain errors and does not continue to verification', async () => {
     const { ops, mock } = fakeOps([voice]);
-    const before = { ...measureWavBuffer(wav([0.1])), integratedLufs: -20, truePeakDbtp: -10, scope: {} };
+    const before = { ...(await measureBuffer(wav([0.1]))), integratedLufs: -20, truePeakDbtp: -10, scope: {} };
     const measure = vi.fn<typeof measureScope>().mockResolvedValue(before);
     mock.command.mockRejectedValue(new Error('Audacity Amplify error'));
     await expect(loudnessTarget(ops, { track: 0 }, measure)).rejects.toThrow('Audacity Amplify error');

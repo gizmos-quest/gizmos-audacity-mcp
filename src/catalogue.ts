@@ -190,7 +190,7 @@ export const SafeString = z
 
 function paramSchema(param: CatalogueParam): z.ZodType {
   if (['double', 'float', 'int', 'size_t'].includes(param.type)) {
-    let number = z.number().finite();
+    let number = z.number();
     if (param.type === 'int' || param.type === 'size_t') number = number.int();
     if (param.type === 'size_t') number = number.nonnegative();
     if (param.minimum !== undefined) number = number.min(param.minimum);

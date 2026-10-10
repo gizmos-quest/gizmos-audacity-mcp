@@ -35,40 +35,6 @@ function readFormat(fmt: Buffer, dataOffset: number, dataBytes: number): WavForm
   return format;
 }
 
-/** Parse RIFF PCM/IEEE-float WAV, including odd-sized metadata and extensible fmt chunks. */
-export function parseWavHeader(buffer: Buffer): WavFormat {
-  if (buffer.length < 12 || buffer.toString('ascii', 0, 4) !== 'RIFF' || buffer.toString('ascii', 8, 12) !== 'WAVE') {
-    throw new Error('native measurement requires RIFF WAV; use ffmpeg for other containers');
-  }
-  const limit = buffer.readUInt32LE(4) + 8;
-  if (limit < 12) throw new Error('WAV RIFF body is invalid');
-  if (limit > buffer.length) throw new Error('WAV RIFF body is truncated');
-  let fmt: Buffer | undefined;
-  let dataOffset: number | undefined;
-  let dataBytes = 0;
-  let offset = 12;
-  for (; offset + 8 <= limit; ) {
-    const id = buffer.toString('ascii', offset, offset + 4);
-    const size = buffer.readUInt32LE(offset + 4);
-    const start = offset + 8;
-    if (start + size + (size & 1) > limit) throw new Error(`WAV ${id} chunk is truncated`);
-    if (id === 'fmt ') {
-      if (fmt) throw new Error('WAV contains multiple fmt chunks; use ffmpeg');
-      if (size > 4096) throw new Error('WAV fmt chunk is unreasonably large');
-      fmt = buffer.subarray(start, start + size);
-    }
-    if (id === 'data') {
-      if (dataOffset !== undefined) throw new Error('WAV contains multiple data chunks; use ffmpeg');
-      dataOffset = start;
-      dataBytes = size;
-    }
-    offset = start + size + (size & 1);
-  }
-  if (offset !== limit) throw new Error('WAV ends with a truncated chunk header');
-  if (!fmt || dataOffset === undefined) throw new Error('WAV requires fmt and data chunks');
-  return readFormat(fmt, dataOffset, dataBytes);
-}
-
 export async function readExactly(
   handle: FileHandle,
   size: number,
@@ -86,14 +52,16 @@ export async function readExactly(
   return buffer;
 }
 
+/** Parse RIFF PCM/IEEE-float WAV chunk headers, including odd-sized metadata and extensible fmt chunks. */
 export async function fileHeader(handle: FileHandle, budget?: AnalysisBudget): Promise<WavFormat> {
-  const header = await readExactly(handle, 12, 0, budget);
-  if (header.toString('ascii', 0, 4) !== 'RIFF' || header.toString('ascii', 8, 12) !== 'WAVE') {
+  const fileBytes = (await handle.stat()).size;
+  const header = fileBytes < 12 ? undefined : await readExactly(handle, 12, 0, budget);
+  if (header?.toString('ascii', 0, 4) !== 'RIFF' || header.toString('ascii', 8, 12) !== 'WAVE') {
     throw new Error('native measurement requires RIFF WAV; use ffmpeg for other containers');
   }
   const limit = header.readUInt32LE(4) + 8;
   if (limit < 12) throw new Error('WAV RIFF body is invalid');
-  if (limit > (await handle.stat()).size) throw new Error('WAV RIFF body is truncated');
+  if (limit > fileBytes) throw new Error('WAV RIFF body is truncated');
   let fmt: Buffer | undefined;
   let dataOffset: number | undefined;
   let dataBytes = 0;

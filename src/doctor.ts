@@ -3,7 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { copyFile, readFile } from 'node:fs/promises';
 import { userInfo } from 'node:os';
-import { basename, dirname, extname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
+import { ffmpegExecutable, ffprobeExecutable } from './analysis/executables.js';
 import { assertEnglishCommands } from './app.js';
 import { configPath, writeStoppedConfig } from './app-config.js';
 import {
@@ -15,6 +16,7 @@ import {
   isRunning,
   pipeExists,
 } from './app-process.js';
+import { errorMessage } from './errors.js';
 import { AudacityPipe } from './pipe.js';
 
 export interface DoctorCheck {
@@ -133,7 +135,7 @@ export async function doctor(fix = false): Promise<DoctorReport> {
     try {
       checks.push({ name, ok: true, detail: await inspect() });
     } catch (error) {
-      checks.push({ name, ok: false, detail: error instanceof Error ? error.message : String(error) });
+      checks.push({ name, ok: false, detail: errorMessage(error) });
     }
   };
   await check('version', async () => {
@@ -204,13 +206,8 @@ export async function doctor(fix = false): Promise<DoctorReport> {
     return 'Update checks are off, so no update notice interrupts scripting.';
   });
   await check('ffmpeg (optional)', async () => {
-    const ffmpeg = process.env.AUDACITY_FFMPEG ?? 'ffmpeg';
-    // Match probeFile: a configured executable directory can provide both
-    // optional tools without being added to the user's PATH.
-    const ffprobe =
-      process.env.AUDACITY_FFPROBE ??
-      (/[\\/]/.test(ffmpeg) ? join(dirname(ffmpeg), `ffprobe${extname(ffmpeg)}`) : 'ffprobe');
-    for (const file of [ffmpeg, ffprobe]) {
+    // The same resolution as measurement and probing, so doctor checks the tools they will run.
+    for (const file of [ffmpegExecutable(), ffprobeExecutable()]) {
       const result = spawnSync(file, ['-version'], { timeout: 10_000, windowsHide: true, stdio: 'ignore' });
       if (result.status !== 0)
         throw new Error(`${file} unavailable; WAV measurement still works, LUFS/true peak need ffmpeg and ffprobe.`);

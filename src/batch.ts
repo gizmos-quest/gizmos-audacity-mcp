@@ -6,8 +6,9 @@ import { measureScope, selectionTimes } from './analysis/render.js';
 import { compareMeasurements } from './analysis/targets.js';
 import { validateExportFile, validateImportFile } from './audacity/files.js';
 import { SafeString } from './catalogue.js';
+import { errorMessage, errorWithContext, withCleanupFailure } from './errors.js';
 import { catalogueCommand } from './format.js';
-import { errorWithContext, type Ops } from './ops.js';
+import type { Ops } from './ops.js';
 import { PipelineSchema, pipeline, planPipeline } from './tasks/pipeline.js';
 import type { ToolRegistrar } from './tools.js';
 
@@ -111,7 +112,7 @@ export function registerBatchTool(tool: ToolRegistrar, ops: Ops): void {
           } catch (error) {
             jobError = errorWithContext(
               error,
-              `batch stopped on ${job.file} after ${results.length} completed jobs: ${error instanceof Error ? error.message : String(error)}`,
+              `batch stopped on ${job.file} after ${results.length} completed jobs: ${errorMessage(error)}`,
             );
             throw jobError;
           } finally {
@@ -127,14 +128,8 @@ export function registerBatchTool(tool: ToolRegistrar, ops: Ops): void {
                 }
               }
             } catch (error) {
-              if (jobError !== undefined)
-                // biome-ignore lint/correctness/noUnsafeFinally: A failed restoration must replace success and retain the original failure context.
-                throw errorWithContext(
-                  error,
-                  `${(jobError as Error).message}. Temporary-track cleanup also failed: ${error instanceof Error ? error.message : String(error)}`,
-                );
               // biome-ignore lint/correctness/noUnsafeFinally: A failed restoration must replace success and retain the original failure context.
-              throw error;
+              throw withCleanupFailure(error, jobError, 'Temporary-track cleanup');
             }
           }
         }
@@ -156,14 +151,8 @@ export function registerBatchTool(tool: ToolRegistrar, ops: Ops): void {
             await ops.command('SelectTime', { Start: selection.start, End: selection.end, RelativeTo: 'ProjectStart' });
           }
         } catch (error) {
-          if (operationError !== undefined)
-            // biome-ignore lint/correctness/noUnsafeFinally: A failed restoration must replace success and retain the original failure context.
-            throw errorWithContext(
-              error,
-              `${operationError instanceof Error ? operationError.message : String(operationError)}. Selection restoration also failed: ${error instanceof Error ? error.message : String(error)}`,
-            );
           // biome-ignore lint/correctness/noUnsafeFinally: A failed restoration must replace success and retain the original failure context.
-          throw error;
+          throw withCleanupFailure(error, operationError, 'Selection restoration');
         }
       }
       return { dryRun: false, completed: results.length, results };

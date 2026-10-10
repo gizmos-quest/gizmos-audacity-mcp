@@ -10,6 +10,7 @@ import { resolveSelection } from './audacity/selection.js';
 import { exportMix, importTrack, moveClip, setEnvelope } from './audacity/tracks.js';
 import { COMMAND_IDS, commandSchema, MENU_IDS } from './catalogue.js';
 import { needsEffectContext, preflightEffect, requireEffectSelection } from './effects/context.js';
+import { withCleanupFailure } from './errors.js';
 import { formatCommand, type ParamValue, parseInfoJson } from './format.js';
 import type { AudacityPipe, PipeReply } from './pipe.js';
 
@@ -20,15 +21,6 @@ export class CommandFailed extends Error {
   ) {
     super(`Audacity rejected "${command}": ${reply.body || reply.status}`);
   }
-}
-
-/** Keep transport error classes so the server can attach recovery guidance. */
-export function errorWithContext(error: unknown, message: string): Error {
-  if (error instanceof Error) {
-    error.message = message;
-    return error;
-  }
-  return new Error(message);
 }
 
 export interface TrackInfo {
@@ -176,14 +168,8 @@ export class Ops {
         try {
           await this.restoreImportPreferences();
         } catch (error) {
-          if (operationError !== undefined)
-            // biome-ignore lint/correctness/noUnsafeFinally: A failed restoration must replace success and retain the original failure context.
-            throw errorWithContext(
-              error,
-              `${operationError instanceof Error ? operationError.message : String(operationError)}. Import preference restoration also failed: ${error instanceof Error ? error.message : String(error)}`,
-            );
           // biome-ignore lint/correctness/noUnsafeFinally: A failed restoration must replace success and retain the original failure context.
-          throw error;
+          throw withCleanupFailure(error, operationError, 'Import preference restoration');
         }
       }
     }

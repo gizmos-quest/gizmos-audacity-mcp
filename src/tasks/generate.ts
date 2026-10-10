@@ -3,7 +3,8 @@ import { SafeString } from '../catalogue.js';
 import { preflightEffectParameters } from '../effects/parameters.js';
 import { catalogueCommand, type ParamValue } from '../format.js';
 import type { Ops } from '../ops.js';
-import { Amplitude, audioTrack, Frequency, Seconds, safeMenu, Track, Waveform } from './scope.js';
+import { Seconds, Track } from '../tool-input.js';
+import { Amplitude, audioTrack, Frequency, safeMenu, Waveform } from './scope.js';
 
 export const GenerateSchema = z
   .object({
@@ -19,7 +20,7 @@ export const GenerateSchema = z
       .optional()
       .describe('new-track channel count; defaults to mono and must be omitted for an existing track'),
     start: Seconds.default(0),
-    duration: z.number().finite().positive().max(3600).default(1),
+    duration: z.number().positive().max(3600).default(1),
     frequency: Frequency.optional(),
     amplitude: Amplitude.optional(),
     waveform: Waveform.optional(),
@@ -27,9 +28,9 @@ export const GenerateSchema = z
     endFrequency: Frequency.optional(),
     endAmplitude: Amplitude.optional(),
     interpolation: z.enum(['Linear', 'Logarithmic']).optional(),
-    tempo: z.number().finite().min(30).max(300).optional(),
+    tempo: z.number().min(30).max(300).optional(),
     beatsPerBar: z.number().int().min(1).max(20).optional(),
-    swing: z.number().finite().min(-1).max(1).optional(),
+    swing: z.number().min(-1).max(1).optional(),
     clickSound: z
       .enum([
         'Metronome',

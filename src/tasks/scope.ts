@@ -1,12 +1,11 @@
 import { z } from 'zod';
-import { MENU_IDS, SafeString } from '../catalogue.js';
+import { MENU_IDS } from '../catalogue.js';
 import type { Ops, TrackInfo, TrackRef } from '../ops.js';
+import { Seconds, Track } from '../tool-input.js';
 
-export const Seconds = z.number().finite().min(0).max(86_400);
-export const Track = z.union([z.number().int().nonnegative(), SafeString.min(1)]);
-export const Gain = z.number().finite().min(-50).max(36);
-export const Frequency = z.number().finite().min(1).max(20_000);
-export const Amplitude = z.number().finite().min(0).max(1);
+export const Gain = z.number().min(-50).max(36);
+export const Frequency = z.number().min(1).max(20_000);
+export const Amplitude = z.number().min(0).max(1);
 export const Waveform = z.enum(['Sine', 'Square', 'Sawtooth', 'Square, no alias', 'Triangle']);
 export const Scope = { track: Track, start: Seconds.optional(), end: Seconds.optional() };
 

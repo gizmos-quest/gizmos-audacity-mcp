@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { SafeString } from '../catalogue.js';
+import { Seconds, Track, TrackCount } from '../tool-input.js';
 import { type SilenceOptions, SilenceSchema } from './types.js';
 
 export interface MeasureOptions {
@@ -9,11 +9,9 @@ export interface MeasureOptions {
   silence?: SilenceOptions;
 }
 
-const Seconds = z.number().finite().min(0).max(86_400);
-const Track = z.union([z.number().int().nonnegative(), SafeString.min(1)]);
 export const MeasureScopeShape = {
   track: Track.optional(),
-  trackCount: z.number().int().min(1).max(256).optional(),
+  trackCount: TrackCount.optional(),
   start: Seconds.optional(),
   end: Seconds.optional(),
   currentSelection: z.boolean().default(false),

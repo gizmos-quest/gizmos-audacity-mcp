@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { SafeString } from '../catalogue.js';
 import type { Ops } from '../ops.js';
+import { Seconds, Track } from '../tool-input.js';
 import type { ToolRegistrar } from '../tools.js';
 import { probeFile } from './executables.js';
 import { LoudnessApplySchema, loudnessTarget } from './loudness.js';
@@ -9,9 +10,6 @@ import { MeasureOptionsShape, MeasureScopeSchema, MeasureScopeShape } from './op
 import { measureScope } from './render.js';
 import { checkTargets, compareMeasurements, TARGETS, TargetSchema } from './targets.js';
 import { round, SilenceSchema } from './types.js';
-
-const Track = z.union([z.number().int().nonnegative(), SafeString.min(1)]);
-const Seconds = z.number().finite().min(0).max(86400);
 
 export function registerAnalysisTools(tool: ToolRegistrar, ops: Ops): void {
   tool(
@@ -110,7 +108,7 @@ export function registerAnalysisTools(tool: ToolRegistrar, ops: Ops): void {
     {
       foreground: z.object({ track: Track, start: Seconds, end: Seconds }).strict(),
       background: z.object({ track: Track, start: Seconds, end: Seconds }).strict(),
-      minimumDb: z.number().finite().min(0).max(100).default(20),
+      minimumDb: z.number().min(0).max(100).default(20),
     },
     async ({ foreground, background, minimumDb }) => {
       // Both nested intervals must pass before the first temporary export.

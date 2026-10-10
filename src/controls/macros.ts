@@ -6,9 +6,9 @@ import { preflightCommand } from '../audacity/policy.js';
 import { COMMAND_IDS, describeCommand, MENU_IDS, SafeString } from '../catalogue.js';
 import { requireEffectSelection } from '../effects/context.js';
 import { preflightMacroEffects } from '../effects/macros.js';
+import { errorMessage, errorWithContext } from '../errors.js';
 import type { ParamValue } from '../format.js';
 import type { Ops } from '../ops.js';
-import { errorWithContext } from '../ops.js';
 import type { ToolRegistrar } from '../tools.js';
 
 export interface MacroStep {
@@ -142,7 +142,7 @@ export function registerMacroTool(tool: ToolRegistrar, ops: Ops): void {
         } catch (error) {
           throw errorWithContext(
             error,
-            `macro stopped at ${step.command} after ${completed} completed steps: ${error instanceof Error ? error.message : String(error)}`,
+            `macro stopped at ${step.command} after ${completed} completed steps: ${errorMessage(error)}`,
           );
         }
       }

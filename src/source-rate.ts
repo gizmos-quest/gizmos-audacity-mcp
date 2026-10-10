@@ -3,16 +3,18 @@ import { tmpdir } from 'node:os';
 import { join, resolve, sep } from 'node:path';
 import { z } from 'zod';
 import { selectionTimes } from './analysis/render.js';
+import { withCleanupFailure } from './errors.js';
 import { catalogueCommand } from './format.js';
 import type { Ops } from './ops.js';
+import { Seconds } from './tool-input.js';
 
 const HEADER_BYTES = 4096;
 const MAX_OUTPUT_BYTES = 65_536;
 const SourceScope = z
   .object({
     track: z.number().int().nonnegative(),
-    start: z.number().finite().min(0).max(86_400),
-    end: z.number().finite().min(0).max(86_400),
+    start: Seconds,
+    end: Seconds,
   })
   .strict()
   .refine((scope) => scope.end > scope.start, 'source measurement needs a non-empty interval');
@@ -107,19 +109,9 @@ export async function measureSourceRate(ops: Ops, input: z.input<typeof SourceSc
         await ops.command('SelectTime', { Start: previous.start, End: previous.end, RelativeTo: 'ProjectStart' });
       }
     } catch (restoreError) {
-      restorationError = restoreError;
-      if (operationError !== undefined) {
-        const message = `${operationError instanceof Error ? operationError.message : String(operationError)}. Selection restoration also failed: ${restoreError instanceof Error ? restoreError.message : String(restoreError)}`;
-        if (restoreError instanceof Error) {
-          restoreError.message = message;
-          // biome-ignore lint/correctness/noUnsafeFinally: A failed restoration must replace success and retain the original failure context.
-          throw restoreError;
-        }
-        // biome-ignore lint/correctness/noUnsafeFinally: A failed restoration must replace success and retain the original failure context.
-        throw new Error(message);
-      }
+      restorationError = withCleanupFailure(restoreError, operationError, 'Selection restoration');
       // biome-ignore lint/correctness/noUnsafeFinally: A failed restoration must replace success and retain the original failure context.
-      throw restoreError;
+      throw restorationError;
     } finally {
       const scratch = resolve(directory);
       if (!scratch.startsWith(resolve(tmpdir()) + sep) || !scratch.includes('gizmos-audacity-source-rate-')) {

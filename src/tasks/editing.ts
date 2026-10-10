@@ -2,7 +2,8 @@ import { z } from 'zod';
 import { SafeString } from '../catalogue.js';
 import { catalogueCommand } from '../format.js';
 import type { Ops } from '../ops.js';
-import { audioTrack, Gain, resolveRange, Scope, Seconds, safeMenu, Track, validRange } from './scope.js';
+import { Seconds, Track, TrackCount } from '../tool-input.js';
+import { audioTrack, Gain, resolveRange, Scope, safeMenu, validRange } from './scope.js';
 
 const EDIT_COMMANDS = {
   split: 'Split',
@@ -23,7 +24,7 @@ export const EditSchema = z
   .object({
     action: z.enum(Object.keys(EDIT_COMMANDS) as [keyof typeof EDIT_COMMANDS, ...(keyof typeof EDIT_COMMANDS)[]]),
     ...Scope,
-    trackCount: z.number().int().min(1).max(256).default(1),
+    trackCount: TrackCount.default(1),
   })
   .strict()
   .refine((a) => a.start === undefined || a.end === undefined || a.end >= a.start, {
@@ -164,7 +165,7 @@ export const TrackEditSchema = z
       'align_end_end',
     ]),
     track: Track.optional(),
-    trackCount: z.number().int().min(1).max(256).default(1),
+    trackCount: TrackCount.default(1),
     name: SafeString.min(1).optional(),
     start: Seconds.optional(),
     end: Seconds.optional(),

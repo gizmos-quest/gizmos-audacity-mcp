@@ -1,6 +1,7 @@
 import { mkdtemp, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { errorMessage } from '../errors.js';
 import { AnalysisBudget, AnalysisBudgetError, MAX_DECODED_BYTES } from './budget.js';
 import { parseFfmpegMeasurement, runFfmpeg } from './executables.js';
 import { type MeasureOptions, MeasureOptionsSchema } from './options.js';
@@ -48,9 +49,7 @@ export async function measureFile(file: string, options: MeasureOptions = {}): P
       result.backend = 'ffmpeg-decode+native-wav';
       result.notes.push('ffmpeg decoded the first audio stream without changing its sample rate or channel count.');
     } catch (error) {
-      throw new Error(
-        `Native WAV measurement: ${nativeError instanceof Error ? nativeError.message : String(nativeError)}. ${error instanceof Error ? error.message : String(error)}`,
-      );
+      throw new Error(`Native WAV measurement: ${errorMessage(nativeError)}. ${errorMessage(error)}`);
     } finally {
       await rm(directory, { recursive: true, force: true });
     }
@@ -99,7 +98,7 @@ export async function measureFile(file: string, options: MeasureOptions = {}): P
     );
   } catch (error) {
     if (backend === 'ffmpeg') throw error;
-    const reason = error instanceof Error ? error.message : String(error);
+    const reason = errorMessage(error);
     for (const key of ['integratedLufs', 'truePeakDbtp', 'loudnessRangeLu']) result.unavailable[key] = reason;
   }
   return result;

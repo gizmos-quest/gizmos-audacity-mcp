@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export type Parameters = Record<string, unknown>;
 export const FILTERS = new Set(['High-passFilter', 'Low-passFilter', 'NotchFilter', 'ShelfFilter']);
-const NumberValue = z.number().finite();
+const NumberValue = z.number();
 
 function explicitNumber(id: string, params: Parameters, key: string): number {
   if (params[key] === undefined)

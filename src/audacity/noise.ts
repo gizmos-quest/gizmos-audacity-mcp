@@ -1,11 +1,8 @@
-import { z } from 'zod';
 import { measureScope } from '../analysis/render.js';
-import { SafeString } from '../catalogue.js';
 import type { Ops, TrackRef } from '../ops.js';
 import { measureSourceRate } from '../source-rate.js';
+import { Seconds, Track } from '../tool-input.js';
 
-const Seconds = z.number().finite().min(0).max(86400);
-const Track = z.union([z.number().int().nonnegative(), SafeString.min(1)]);
 type CapturedProfile = { track: number; name: string; start: number; end: number; rate: number };
 
 /** Native process-wide state belongs to an observed process lifetime. */

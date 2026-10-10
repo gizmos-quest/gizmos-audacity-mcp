@@ -1,7 +1,10 @@
-import { mkdtemp, rm } from 'node:fs/promises';
+import { mkdtemp, open, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, vi } from 'vitest';
+import type { Measurement, SilenceOptions, WavFormat } from '../../src/analysis/types.js';
+import { fileHeader } from '../../src/analysis/wav-format.js';
+import { measureWavFile } from '../../src/analysis/wav-metrics.js';
 
 export const directories: string[] = [];
 afterEach(async () => {
@@ -13,6 +16,27 @@ export async function temporary(): Promise<string> {
   const directory = await mkdtemp(join(tmpdir(), 'gizmos-analysis-test-'));
   directories.push(directory);
   return directory;
+}
+
+async function written(buffer: Buffer): Promise<string> {
+  const file = join(await temporary(), 'fixture.wav');
+  await writeFile(file, buffer);
+  return file;
+}
+
+/** Measures the bytes through the production streaming file reader. */
+export async function measureBuffer(buffer: Buffer, silence?: SilenceOptions): Promise<Measurement> {
+  return measureWavFile(await written(buffer), silence);
+}
+
+/** Parses the bytes with the production chunk reader. */
+export async function wavHeader(buffer: Buffer): Promise<WavFormat> {
+  const handle = await open(await written(buffer), 'r');
+  try {
+    return await fileHeader(handle);
+  } finally {
+    await handle.close();
+  }
 }
 
 export function chunk(id: string, content: Buffer): Buffer {

@@ -72,7 +72,7 @@ export function registerEditingTools(tool: ToolRegistrar, ops: Ops): void {
     {
       track: TrackRef,
       points: z
-        .array(z.object({ time: Seconds, value: z.number().finite().min(0).max(2) }).strict())
+        .array(z.object({ time: Seconds, value: z.number().min(0).max(2) }).strict())
         .min(1)
         .max(2000),
       replace: z.boolean().default(true),

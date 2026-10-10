@@ -1,16 +1,14 @@
 import { z } from 'zod';
-import { SafeString } from '../catalogue.js';
 import { catalogueCommand, type ParamValue } from '../format.js';
 import type { Ops, TrackRef } from '../ops.js';
+import { Seconds, Track, TrackCount } from '../tool-input.js';
 
-const Seconds = z.number().finite().min(0).max(86400);
-const Track = z.union([z.number().int().nonnegative(), SafeString.min(1)]);
 const SelectionScope = z
   .object({
     start: Seconds.optional(),
     end: Seconds.optional(),
     track: Track.optional(),
-    trackCount: z.number().int().min(1).max(256).optional(),
+    trackCount: TrackCount.optional(),
   })
   .strict();
 

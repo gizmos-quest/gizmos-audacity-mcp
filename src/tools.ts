@@ -1,5 +1,6 @@
 import type { CallToolResult, McpServer, ServerContext } from '@modelcontextprotocol/server';
 import { z } from 'zod';
+import { errorMessage } from './errors.js';
 import { AudacityTimeout, AudacityUnavailable } from './pipe.js';
 import type { SerialQueue } from './queue.js';
 import { toolAnnotations, toolTitle } from './tool-metadata.js';
@@ -34,8 +35,7 @@ export function toolResult(value: unknown, schema?: z.ZodType): CallToolResult {
 }
 
 export function toolFailure(error: unknown): CallToolResult {
-  let message =
-    error instanceof z.ZodError ? z.prettifyError(error) : error instanceof Error ? error.message : String(error);
+  let message = error instanceof z.ZodError ? z.prettifyError(error) : errorMessage(error);
   if (error instanceof AudacityUnavailable) {
     message += error.advice;
   } else if (error instanceof AudacityTimeout) {

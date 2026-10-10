@@ -1,13 +1,11 @@
 import { z } from 'zod';
-import { SafeString } from '../catalogue.js';
 import { catalogueCommand } from '../format.js';
 import type { Ops, TrackRef } from '../ops.js';
+import { Seconds, Track } from '../tool-input.js';
 import { validateExportFile, validateImportFile } from './files.js';
 
-const Seconds = z.number().finite().min(0).max(86400);
-const Track = z.union([z.number().int().nonnegative(), SafeString.min(1)]);
 const EnvelopePoints = z
-  .array(z.object({ time: Seconds, value: z.number().finite().min(0).max(2) }).strict())
+  .array(z.object({ time: Seconds, value: z.number().min(0).max(2) }).strict())
   .min(1)
   .max(2000);
 

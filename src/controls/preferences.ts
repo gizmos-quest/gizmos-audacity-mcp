@@ -3,7 +3,7 @@ import { SafeString } from '../catalogue.js';
 import type { Ops } from '../ops.js';
 import type { ToolRegistrar } from '../tools.js';
 
-export const PreferenceValue = z.union([z.string(), z.number().finite(), z.boolean()]);
+export const PreferenceValue = z.union([z.string(), z.number(), z.boolean()]);
 export function safePreference(name: string, value: string | number | boolean): string {
   // Get/SetPreference keys verified on live 3.7.8 (2026-10-02); no module/device/language changes.
   if (name === '/SamplingRate/DefaultProjectSampleRate')

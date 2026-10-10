@@ -20,8 +20,8 @@ import {
 } from './app-process.js';
 import { closeProjectWindow, listWindows, setWindowVisible } from './app-windows.js';
 import { validateProjectFile } from './audacity/files.js';
+import { errorMessage, errorWithContext } from './errors.js';
 import { formatCommand, parseInfoJson } from './format.js';
-import { errorWithContext } from './ops.js';
 import { AudacityNoProject, AudacityPipe, type PipeReply } from './pipe.js';
 
 export function assertEnglishCommands(body: string): void {
@@ -183,10 +183,7 @@ export async function quit(pipe: AudacityPipe, keepProject?: string): Promise<{ 
     if (recoveryEntries().length) throw new Error('Audacity exited with recovery entries; inspect audacity_recover');
     pipe.reset();
   } catch (error) {
-    throw errorWithContext(
-      error,
-      `${error instanceof Error ? error.message : String(error)}. Project destination retained for inspection: ${target}`,
-    );
+    throw errorWithContext(error, `${errorMessage(error)}. Project destination retained for inspection: ${target}`);
   }
   if (scratch) {
     const absolute = resolve(scratch);

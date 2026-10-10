@@ -56,8 +56,8 @@ export const amplitudeDb = (value: number): number | null =>
 
 export const SilenceSchema = z
   .object({
-    thresholdDb: z.number().finite().min(-120).max(0).default(-60),
-    minimumSeconds: z.number().finite().min(0.001).max(3600).default(0.5),
+    thresholdDb: z.number().min(-120).max(0).default(-60),
+    minimumSeconds: z.number().min(0.001).max(3600).default(0.5),
     maxRegions: z.number().int().min(1).max(1000).default(100),
   })
   .strict();

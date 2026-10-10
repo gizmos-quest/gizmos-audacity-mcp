@@ -33,11 +33,23 @@ export function parseFfmpegMeasurement(text: string): FfmpegMeasurement {
   };
 }
 
+/** ffmpeg from AUDACITY_FFMPEG, otherwise from PATH. */
+export function ffmpegExecutable(): string {
+  return process.env.AUDACITY_FFMPEG ?? 'ffmpeg';
+}
+
+/** ffprobe from AUDACITY_FFPROBE, otherwise beside a configured ffmpeg path, otherwise from PATH. */
+export function ffprobeExecutable(): string {
+  const ffmpeg = process.env.AUDACITY_FFMPEG;
+  if (process.env.AUDACITY_FFPROBE !== undefined) return process.env.AUDACITY_FFPROBE;
+  return ffmpeg && /[\\/]/.test(ffmpeg) ? join(dirname(ffmpeg), `ffprobe${extname(ffmpeg)}`) : 'ffprobe';
+}
+
 /** Spawn a fixed executable with argument arrays. Bounds both runtime and captured diagnostic output. */
 export function runFfmpeg(
   args: readonly string[],
   timeoutMs = 300_000,
-  executable = process.env.AUDACITY_FFMPEG ?? 'ffmpeg',
+  executable = ffmpegExecutable(),
 ): Promise<string> {
   if (!Number.isInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 600_000)
     return Promise.reject(new Error('ffmpeg timeoutMs must be between 1 and 600000'));
@@ -122,10 +134,7 @@ export async function probeFile(
     throw new Error('ffprobe timeoutMs must be between 1000 and 120000');
   const path = resolve(file);
   if (!(await stat(path)).isFile()) throw new Error(`${path} is not a file`);
-  const ffmpeg = process.env.AUDACITY_FFMPEG;
-  const executable =
-    process.env.AUDACITY_FFPROBE ??
-    (ffmpeg && /[\\/]/.test(ffmpeg) ? join(dirname(ffmpeg), `ffprobe${extname(ffmpeg)}`) : 'ffprobe');
+  const executable = ffprobeExecutable();
   const output = await new Promise<string>((resolveResult, reject) => {
     const child = spawn(
       executable,

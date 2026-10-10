@@ -6,6 +6,7 @@ import { preflightLabels } from './audacity/labels.js';
 import { SafeString } from './catalogue.js';
 import { catalogueCommand } from './format.js';
 import type { Ops } from './ops.js';
+import { Seconds } from './tool-input.js';
 import type { ToolRegistrar } from './tools.js';
 
 export interface Label {
@@ -18,8 +19,8 @@ export interface Label {
 }
 export const LabelInput = z
   .object({
-    start: z.number().finite().min(0).max(86400),
-    end: z.number().finite().min(0).max(86400).optional(),
+    start: Seconds,
+    end: Seconds.optional(),
     text: SafeString,
   })
   .strict()
@@ -108,10 +109,10 @@ export function registerLabelTools(tool: ToolRegistrar, ops: Ops): void {
       index: z.number().int().nonnegative().optional(),
       query: SafeString.optional(),
       trackName: SafeString.min(1).optional(),
-      start: z.number().finite().min(0).max(86400).optional(),
-      end: z.number().finite().min(0).max(86400).optional(),
+      start: Seconds.optional(),
+      end: Seconds.optional(),
       text: SafeString.optional(),
-      interval: z.number().finite().positive().max(86400).optional(),
+      interval: z.number().positive().max(86400).optional(),
     },
     async (args) => {
       const { action, index, query, trackName, start, end, text, interval } = args;
