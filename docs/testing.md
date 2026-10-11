@@ -1,8 +1,8 @@
 # Development and testing
 
 Node 24.21+ is the minimum. The runtime uses the official MCP SDK v2 and zod;
-Biome and Vitest/v8 coverage are development tools. No audio runtime or model
-is installed/downloaded by a server tool.
+Biome, Vitest/v8 coverage and fast-check are development tools. No audio runtime
+or model is installed/downloaded by a server tool.
 
 ```sh
 npm ci
@@ -19,6 +19,7 @@ npm audit --audit-level=high
 | Tier | What it establishes |
 | --- | --- |
 | Unit + contracts | Strict schemas, byte budgets, orchestration, state guards, public tools/argument shapes, annotations and output compatibility |
+| Properties | Generated commands and GetInfo replies (fast-check) checked against a model of Audacity 3.7.8's parameter parser and JSON output |
 | Coverage | All `src/**/*.ts`, including unimported files; enforced floors: statements 96%, branches 92%, functions 96%, lines 97% |
 | Built stdio E2E | Real production entry/helper and SDK boundary with recorded native bytes, fragmentation/delay/disconnect, uncertainty and recovery |
 | Package check | Allowlisted files, size limits, metadata and installed-tarball stdio startup; never publishes |
@@ -28,8 +29,11 @@ Unit tests mirror the source tree: `test/<path>/<module>.test.ts` covers
 `src/<path>/<module>.ts` (or `scripts/`), and `<module>.<aspect>.test.ts` splits a
 large module by behavior. Cross-module suites are `server.contract.test.ts`
 (`tools/list` snapshot and argument shapes), `server.docs.test.ts`,
-`safety-regressions.test.ts` and `tasks/contracts.test.ts`. Shared fakes live in
-`test/helpers/`; `test/e2e/` and `test/live/` hold the other tiers.
+`safety-regressions.test.ts` and `tasks/contracts.test.ts`. The property tests in
+`format.property.test.ts` check that an accepted command reads back unchanged,
+that text is refused exactly when native parsing would change it, and that GetInfo
+replies parse losslessly. Shared fakes live in `test/helpers/`; `test/e2e/` and
+`test/live/` hold the other tiers.
 
 CI uses only GitHub-hosted Ubuntu, Windows and macOS runners with Node 24 and
 current. Every job is bounded, permissions are explicit and actions are pinned

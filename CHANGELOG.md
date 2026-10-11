@@ -14,6 +14,8 @@ First public release of `@gizmos-quest/audacity-mcp`.
 - Reproducible synthetic voice-over example with reviewed cleanup, ducking,
   chapters/subtitles, measured delivery and an opt-in live stdio runner.
 - Stronger coverage floors: statements/functions 96%, branches 92%, lines 97%.
+- Property-based tests (fast-check) for command formatting and GetInfo parsing,
+  checked against a model of Audacity 3.7.8's parameter parser and JSON output.
 
 - 45 MCP tools over stdio for Audacity 3.7.x through `mod-script-pipe`: session
   and window control, discovery, editing and mixing, effects and reviewed
