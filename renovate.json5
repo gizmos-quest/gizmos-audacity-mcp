@@ -1,0 +1,5 @@
+// Dependency updates come from the gizmos-quest organisation's self-hosted
+// Renovate; its central configuration applies here unchanged.
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+}
