@@ -4,14 +4,19 @@
   "title": "Gizmos Audacity",
   "description": "Safe local audio editing, analysis and production in Audacity 3.7 through mod-script-pipe.",
   "version": "0.1.0",
-  "repository": { "url": "https://github.com/gizmos-quest/gizmos-audacity-mcp", "source": "github" },
+  "repository": {
+    "url": "https://github.com/gizmos-quest/gizmos-audacity-mcp",
+    "source": "github"
+  },
   "packages": [
     {
       "registryType": "npm",
       "identifier": "@gizmos-quest/audacity-mcp",
       "version": "0.1.0",
       "runtimeHint": "npx",
-      "transport": { "type": "stdio" },
+      "transport": {
+        "type": "stdio"
+      },
       "environmentVariables": [
         {
           "name": "AUDACITY_EXE",

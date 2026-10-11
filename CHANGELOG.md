@@ -7,6 +7,8 @@ input and result shapes, and environment variables.
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-11
+
 First public release of `@gizmos-quest/audacity-mcp`.
 
 ### Added
