@@ -64,17 +64,20 @@ rolled back by resetting Git.
 
 ## MCP Registry
 
-After npm has the new version, publish the registry entry from the release tag
-with [`mcp-publisher`](https://modelcontextprotocol.io/registry/quickstart) and a
-GitHub account in the `gizmos-quest` organization:
+After npm has the new version, dispatch **Registry** (*Actions → Registry → Run
+workflow* on `main`) with the release tag, for example `v0.1.0`. It checks out
+the tag, installs a checksum-pinned
+[`mcp-publisher`](https://modelcontextprotocol.io/registry/quickstart), signs in
+through GitHub Actions OIDC as the `gizmos-quest` organization and publishes
+`server.json`. Then check the entry:
 
 ```sh
-git checkout vX.Y.Z
-mcp-publisher login github
-mcp-publisher publish
 curl "https://registry.modelcontextprotocol.io/v0.1/servers?search=io.github.gizmos-quest/gizmos-audacity-mcp"
 ```
 
-The registry checks that the npm package's `mcpName` matches `server.json`. It is
-in preview, so this step stays manual. No MCPB bundle is prepared: the Node 24
-requirement of the bundled client runtime has not been qualified.
+The registry checks that the npm package's `mcpName` matches `server.json`. It
+grants `io.github.gizmos-quest/*` only to organization Owners whose role it can
+read, so an interactive `mcp-publisher login github` may reach only a personal
+namespace; OIDC needs no personal login or stored token. The registry is in
+preview, so this step stays a manual dispatch. No MCPB bundle is prepared: the
+Node 24 requirement of the bundled client runtime has not been qualified.

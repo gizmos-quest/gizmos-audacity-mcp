@@ -1,0 +1,57 @@
+name: Registry
+
+# Publishes a release tag's server.json to the official MCP Registry. GitHub
+# Actions OIDC proves the organization (io.github.gizmos-quest/*) without a
+# personal login or a stored token. The registry is in preview, so this stays a
+# manual dispatch after Release.
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish, for example v0.1.0
+        type: string
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: registry
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: github.repository == 'gizmos-quest/gizmos-audacity-mcp' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      TAG: ${{ inputs.tag }}
+      # mcp-publisher v1.8.1 for linux_amd64; the digest is the release's registry_1.8.1_checksums.txt entry.
+      PUBLISHER_URL: https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz
+      PUBLISHER_SHA256: a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc
+    steps:
+      - name: Check the tag
+        run: |
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::the tag must look like v1.2.3"
+            exit 1
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: refs/tags/${{ inputs.tag }}
+          persist-credentials: false
+      - name: Install mcp-publisher
+        run: |
+          curl -fsSL --retry 3 -o "$RUNNER_TEMP/publisher.tar.gz" "$PUBLISHER_URL"
+          echo "$PUBLISHER_SHA256  $RUNNER_TEMP/publisher.tar.gz" | sha256sum --check --strict
+          tar -xzf "$RUNNER_TEMP/publisher.tar.gz" -C "$RUNNER_TEMP" mcp-publisher
+      - name: Sign in through GitHub Actions OIDC
+        run: |
+          "$RUNNER_TEMP/mcp-publisher" login github-oidc
+      - name: Publish server.json
+        run: |
+          "$RUNNER_TEMP/mcp-publisher" publish server.json

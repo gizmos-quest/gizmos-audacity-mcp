@@ -7,6 +7,11 @@ input and result shapes, and environment variables.
 
 ## [Unreleased]
 
+### Added
+
+- A manual Registry workflow publishes a release's `server.json` to the MCP
+  Registry through GitHub Actions OIDC, without a personal login.
+
 ### Fixed
 
 - The release workflow waits up to ten minutes for npm to serve a new version
