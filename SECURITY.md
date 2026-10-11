@@ -1,11 +1,10 @@
 # Security policy
 
-The latest released version receives security fixes. This repository is preparing
-its first public release; no published version is claimed yet.
+The latest released version receives security fixes.
 
 Please report vulnerabilities through
 [GitHub private vulnerability reporting](https://github.com/gizmos-quest/gizmos-audacity-mcp/security/advisories/new).
-If that feature is not enabled yet, contact **admin [at] gizmos [dot] quest**.
+If you cannot use it, contact **admin [at] gizmos [dot] quest**.
 Do not include private audio, personal paths or exploit details in a public issue.
 Provide the affected version, reproducible steps and expected impact. Maintainers
 will acknowledge and coordinate a fix and disclosure; no response-time guarantee

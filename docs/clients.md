@@ -1,8 +1,8 @@
 # Client setup
 
-These examples use the upcoming npm package. Before publication, build the
-checkout and replace the command with `node` and the argument with an absolute
-path to `dist/main.js`. Node 24.21+ must be visible to the client process.
+These examples use the npm package. To run a source checkout instead, build it
+and replace the command with `node` and the argument with an absolute path to
+`dist/main.js`. Node 24.21+ must be visible to the client process.
 
 ## Claude Code
 

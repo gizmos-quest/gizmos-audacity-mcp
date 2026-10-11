@@ -29,8 +29,7 @@ the scripting FIFOs; their native window lifecycle is not qualified.
 
 ## Quick start
 
-The upcoming npm package is **`@gizmos-quest/audacity-mcp`**. These `npx`
-commands become available after the first publication. For a source checkout,
+The npm package is **`@gizmos-quest/audacity-mcp`**. For a source checkout,
 run `npm ci`, then `npm run build`; use `node dist/main.js` as the server command.
 
 1. Install Audacity 3.7.8. Enable `mod-script-pipe` in **Preferences →
