@@ -1,6 +1,6 @@
 // The release script in disposable Git repositories: real git, a fake npm registry
 // and a fake GitHub CLI. Covers prepare-then-lint and publication-success/main-divergence
-// recovery, including a rerun of the same dispatch after an interrupted landing.
+// recovery, a registry that serves a publication late, and reruns of the same dispatch.
 import type { SpawnSyncReturns } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -25,6 +25,9 @@ let registry: Map<string, string>;
 let releases: string[];
 let afterPublish: (() => void) | undefined;
 let failMerge: boolean;
+/** Lookups that answer E404 after a publication, as the real registry does while processing. */
+let registryLag: number;
+let hiddenLookups: number;
 
 const run = (cwd: string, ...args: string[]) => {
   const result = spawnSync('git', ['-c', 'user.name=Test', '-c', 'user.email=test@example.invalid', ...args], {
@@ -57,12 +60,17 @@ function fakeNpm(cwd: string, args: string[]): SpawnSyncReturns<string> {
     return result(0, JSON.stringify([{ filename: 'fixture.tgz', integrity: integrity(cwd) }]));
   }
   if (args[0] === 'view') {
+    if (hiddenLookups > 0) {
+      hiddenLookups--;
+      return result(1, '', 'npm error code E404');
+    }
     const published = registry.get(args[1]!);
     return published ? result(0, JSON.stringify(published)) : result(1, '', 'npm error code E404');
   }
   if (args[0] === 'publish') {
     const version = JSON.parse(readFileSync(join(cwd, 'package.json'), 'utf8')).version;
     registry.set(`${name}@${version}`, integrity(cwd));
+    hiddenLookups = registryLag;
     afterPublish?.();
     return result(0);
   }
@@ -75,6 +83,8 @@ beforeEach(() => {
   releases = [];
   afterPublish = undefined;
   failMerge = false;
+  registryLag = 0;
+  hiddenLookups = 0;
   hooks.spawn = (command, args, options) => {
     if (command === process.execPath && args[0] === 'fake-npm') return fakeNpm(options.cwd!, args.slice(1));
     if (command === 'gh') {
@@ -94,6 +104,7 @@ beforeEach(() => {
     GITHUB_REF: 'refs/heads/main',
     GITHUB_REPOSITORY: 'gizmos-quest/gizmos-audacity-mcp',
     RELEASE_LEVEL: 'patch',
+    RELEASE_REGISTRY_POLL_MS: '1',
     npm_execpath: 'fake-npm',
   }))
     vi.stubEnv(key, value);
@@ -181,6 +192,35 @@ describe('release script in a disposable repository', () => {
     rerun.publish();
     expect(contains(release)).toBe(true);
     expect(origin('log', '-1', '--format=%s', 'main')).toBe('chore(release): merge v0.1.1');
+    expect([...registry.keys(), ...releases]).toEqual([`${name}@0.1.1`, 'v0.1.1']);
+  }, 60_000);
+
+  it('waits for the registry to serve a fresh publication before landing it', async () => {
+    const base = repository();
+    const first = await job(base, 'job');
+    first.prepare();
+    registryLag = 3;
+    first.publish();
+    expect(origin('rev-parse', 'main')).toBe(origin('rev-parse', 'refs/tags/v0.1.1^{commit}'));
+    expect([...registry.keys(), ...releases]).toEqual([`${name}@0.1.1`, 'v0.1.1']);
+  }, 60_000);
+
+  it('leaves Git alone when the registry never serves the publication, and a rerun lands it', async () => {
+    const base = repository();
+    const first = await job(base, 'job');
+    first.prepare();
+    registryLag = 1_000;
+    expect(first.publish).toThrow('does not serve it yet');
+    expect(origin('rev-parse', 'main')).toBe(base);
+    expect(
+      spawnSync('git', ['rev-parse', '--verify', '--quiet', 'v0.1.1'], { cwd: join(root, 'origin.git') }).status,
+    ).toBe(1);
+    // Rerun of the same dispatch once the registry serves the version.
+    hiddenLookups = 0;
+    const rerun = await job(base, 'rerun');
+    rerun.prepare();
+    rerun.publish();
+    expect(origin('rev-parse', 'main')).toBe(origin('rev-parse', 'refs/tags/v0.1.1^{commit}'));
     expect([...registry.keys(), ...releases]).toEqual([`${name}@0.1.1`, 'v0.1.1']);
   }, 60_000);
 

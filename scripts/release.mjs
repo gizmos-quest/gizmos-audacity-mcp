@@ -99,6 +99,23 @@ export function prepare() {
   console.log(`Prepared ${original.name}@${version}; existing release commit: ${committed}.`);
 }
 
+/** npm accepts a publication before the registry serves it: on 2026-10-11 a new version
+ * answered E404 for one to five minutes. Poll for up to ten minutes before failing; a rerun
+ * of the same dispatch then verifies the served tarball and lands the release. */
+function servedIntegrity(state) {
+  const pause = Number(process.env.RELEASE_REGISTRY_POLL_MS ?? 15_000);
+  for (let attempt = 1; ; attempt++) {
+    const view = npm(['view', `${state.name}@${state.version}`, 'dist.integrity', '--json'], true);
+    if (view.status === 0) return JSON.parse(view.stdout);
+    assert(/\bE404\b/.test(view.stderr), view.stderr || 'npm lookup failed');
+    assert(
+      attempt < 40,
+      `npm accepted ${state.name}@${state.version} but does not serve it yet; rerun this dispatch to land it`,
+    );
+    Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, pause);
+  }
+}
+
 /** Main must contain the published release commit. A push to main after the pre-publish
  * check cannot be undone: merge the tagged release commit into the newer main instead. */
 function land(commit, state) {
@@ -138,10 +155,7 @@ export function publish() {
       assert.notEqual(tagged.status, 0, `tag ${state.tag} appeared during the gates; inspect it before releasing`);
     }
     npm(['publish', join('.release', packed.filename), '--access', 'public', '--provenance']);
-    assert.equal(
-      JSON.parse(npm(['view', `${state.name}@${state.version}`, 'dist.integrity', '--json']).stdout),
-      packed.integrity,
-    );
+    assert.equal(servedIntegrity(state), packed.integrity);
   }
   // Registry publication is irreversible. Git changes happen only after npm verifies the exact tarball.
   if (!state.committed) {

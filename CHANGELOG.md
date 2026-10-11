@@ -7,6 +7,11 @@ input and result shapes, and environment variables.
 
 ## [Unreleased]
 
+### Fixed
+
+- The release workflow waits up to ten minutes for npm to serve a new version
+  before verifying it, instead of failing right after `npm publish`.
+
 ## [0.1.0] - 2026-10-11
 
 First public release of `@gizmos-quest/audacity-mcp`.

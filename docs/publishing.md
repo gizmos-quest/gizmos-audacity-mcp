@@ -50,7 +50,10 @@ version in `package.json`, the lockfile and `server.json`, and runs the CI gates
 Right before `npm publish` it checks main and the tag again: a main that moved
 during the gates stops the run. It publishes the exact tarball through OIDC with
 provenance (no npm token), verifies its integrity on the registry, and then
-pushes `chore(release): vX.Y.Z`, the tag and the GitHub release.
+pushes `chore(release): vX.Y.Z`, the tag and the GitHub release. The registry
+serves a new version only after processing it, so the verification waits up to
+ten minutes; if that is not enough, rerun the same dispatch, which verifies the
+served tarball and finishes the Git steps.
 
 If main moves after publication, the job pushes the tag of the published release
 commit first and merges that commit into the newer main; when the merge needs a
