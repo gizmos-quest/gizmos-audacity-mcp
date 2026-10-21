@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { Client } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
+import { packedPackage } from './pack-result.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const npmCli = process.env.npm_execpath;
@@ -21,7 +22,7 @@ function npm(args, cwd = root) {
   return result.stdout;
 }
 
-const [packed] = JSON.parse(npm(['pack', '--dry-run', '--json', '--ignore-scripts']));
+const packed = packedPackage(npm(['pack', '--dry-run', '--json', '--ignore-scripts']));
 assert(packed.size < 512_000, 'compressed package exceeds 500 KiB');
 assert(packed.unpackedSize < 2_097_152, 'unpacked package exceeds 2 MiB');
 const paths = new Set(packed.files.map((file) => file.path));
@@ -64,7 +65,7 @@ assert(readFileSync(join(root, 'dist/main.js'), 'utf8').startsWith('#!/usr/bin/e
 const scratch = mkdtempSync(join(tmpdir(), 'audacity-package-'));
 const client = new Client({ name: 'package-check', version: '1' });
 try {
-  const [tarball] = JSON.parse(npm(['pack', '--json', '--ignore-scripts', '--pack-destination', scratch]));
+  const tarball = packedPackage(npm(['pack', '--json', '--ignore-scripts', '--pack-destination', scratch]));
   writeFileSync(join(scratch, 'package.json'), '{"name":"package-smoke","version":"1.0.0","private":true}\n');
   npm(
     ['install', '--ignore-scripts', '--omit=dev', '--no-audit', '--no-fund', resolve(scratch, tarball.filename)],

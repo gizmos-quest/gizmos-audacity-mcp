@@ -3,6 +3,7 @@ import { spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { packedPackage } from './pack-result.ts';
 
 const root = fileURLToPath(new URL('..', import.meta.url));
 const stateFile = join(root, '.release/state.json');
@@ -137,7 +138,7 @@ export function publish() {
     npmVersion[0] > 11 || (npmVersion[0] === 11 && (npmVersion[1] > 5 || (npmVersion[1] === 5 && npmVersion[2] >= 1))),
     'trusted publishing requires npm >=11.5.1',
   );
-  const [packed] = JSON.parse(npm(['pack', '--json', '--ignore-scripts', '--pack-destination', '.release']).stdout);
+  const packed = packedPackage(npm(['pack', '--json', '--ignore-scripts', '--pack-destination', '.release']).stdout);
   const published = npm(['view', `${state.name}@${state.version}`, 'dist.integrity', '--json'], true);
   if (published.status === 0)
     assert.equal(

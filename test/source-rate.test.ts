@@ -153,7 +153,7 @@ describe('source frame measurement', () => {
     expect(project.selection()).toEqual({ Start: 2, End: 4 });
     // Focus restoration targets just one track before restoring unrelated
     // sparse selection; SetTrackStatus takes no unlisted Track scope keys.
-    expect(project.setterSelections).toEqual([[focused >= 0 ? focused : 0]]);
+    expect(project.setterSelections).toEqual([[Math.max(focused, 0)]]);
     expect(project.calls.find((call) => call.command === 'SetTrackStatus')?.params).toEqual({ Focused: focused >= 0 });
     const focusCall = project.calls.findIndex((call) => call.command === 'SetTrackStatus');
     const deselectCall = project.calls.findIndex((call) => call.command === 'SelectNone');

@@ -121,7 +121,7 @@ function repository(): string {
   const seed = join(root, 'seed');
   run(root, 'clone', '--quiet', origin, seed);
   mkdirSync(join(seed, 'scripts'));
-  for (const file of ['server.json', 'biome.json', join('scripts', 'release.mjs')])
+  for (const file of ['server.json', 'biome.json', join('scripts', 'release.mjs'), join('scripts', 'pack-result.ts')])
     copyFileSync(join(project, file), join(seed, file));
   writeFileSync(join(seed, '.gitattributes'), '* text=auto eol=lf\n');
   writeFileSync(join(seed, 'package.json'), `${JSON.stringify({ name, version: '0.1.0' }, null, 2)}\n`);
