@@ -2,14 +2,7 @@ import assert from 'node:assert/strict';
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-const allowed = new Set([
-  'ubuntu-latest',
-  'ubuntu-24.04',
-  'ubuntu-22.04',
-  'macos-latest',
-  'macos-15',
-  'macos-14',
-]);
+const allowed = new Set(['ubuntu-latest', 'ubuntu-24.04', 'ubuntu-22.04', 'macos-latest', 'macos-15', 'macos-14']);
 const directory = fileURLToPath(new URL('../.github/workflows/', import.meta.url));
 for (const file of readdirSync(directory).filter((name) => /\.ya?ml$/.test(name))) {
   const source = readFileSync(`${directory}/${file}`, 'utf8');
