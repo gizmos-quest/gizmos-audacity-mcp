@@ -88,3 +88,5 @@ Attribute copied/adapted source by exact file/commit/license in NOTICE and retai
 applicable notices/license text. Never add personal machine paths, private
 project details or credential material. LICENSE copyright and Git author
 identities must stay unchanged.
+
+Windows runners are reserved for actual Windows release builds. Run CI and tests on Linux; do not add Windows test jobs or use the remote Windows guest for development checks.
