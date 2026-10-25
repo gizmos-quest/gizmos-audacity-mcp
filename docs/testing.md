@@ -35,11 +35,14 @@ that text is refused exactly when native parsing would change it, and that GetIn
 replies parse losslessly. Shared fakes live in `test/helpers/`; `test/e2e/` and
 `test/live/` hold the other tiers.
 
-CI uses only GitHub-hosted Ubuntu, Windows and macOS runners with Node 24 and
-current. Every job is bounded, permissions are explicit and actions are pinned
-by full commit SHA. One cell also runs `npm audit signatures`; CodeQL analyzes
-the code and the workflows, and OpenSSF Scorecard reports supply-chain checks.
-Replay CI does not qualify native GUI behavior on POSIX.
+CI uses only GitHub-hosted Ubuntu and macOS runners with Node 24 and current;
+Windows test jobs are not used. Every job is bounded, permissions are explicit
+and actions are pinned by full commit SHA. One cell also runs
+`npm audit signatures`; CodeQL analyzes the code and the workflows, and OpenSSF
+Scorecard reports supply-chain checks. Replay CI does not qualify native GUI
+behavior on POSIX. It replays POSIX FIFOs only: the Windows named-pipe replay
+and the `win32`-only cases in `format.test.ts`, `controls.test.ts` and
+`e2e/recovery.test.ts` run only in `npm test` and `npm run test:e2e` on Windows.
 Before publication, workflow steps must be verified locally; a configured
 workflow or badge is not evidence that GitHub ran it.
 

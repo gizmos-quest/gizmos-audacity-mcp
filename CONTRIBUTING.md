@@ -17,8 +17,8 @@ npm run check:workflows
 npm audit --audit-level=high
 ```
 
-Coverage includes all source modules and enforces 95% statements, 91% branches,
-95% functions and 96% lines. Do not exclude untested logic to reach thresholds.
+Coverage includes all source modules and enforces the floors in
+`vitest.config.ts`. Do not exclude untested logic to reach thresholds.
 Lint fails on warnings. Prefer domain modules of about 300 lines or less and
 meaningful tests around trust boundaries/native behavior; tests mirror `src/`
 (`test/<path>/<module>.test.ts`). See [architecture](docs/architecture.md).

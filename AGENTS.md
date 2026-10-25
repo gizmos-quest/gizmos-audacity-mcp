@@ -1,92 +1,109 @@
-# Contributor and agent instructions
+# AGENTS.md
 
-Read README, NOTICE, `src/` and `test/` before changing code. Native evidence and
-limits are in [docs/safety.md](docs/safety.md) and [docs/effects.md](docs/effects.md).
-Keep those facts, the tool reference and capability matrix consistent with
-registrations. `CLAUDE.md` points here.
+Local stdio MCP server (`@gizmos-quest/audacity-mcp`) that edits, processes and
+measures audio through Audacity 3.7.x `mod-script-pipe`. This repository is
+**public**. The product contract is the registered tool surface: README (users),
+[docs/tools.md](docs/tools.md) and [docs/feature-matrix.md](docs/feature-matrix.md)
+must match `tools/list`, and the native limits in [docs/safety.md](docs/safety.md)
+and [docs/effects.md](docs/effects.md) must match the code.
 
-## Commands
+## Start
+
+Run `git pull --ff-only`, then read only what the task needs:
+
+- Code layout and module ownership: [docs/architecture.md](docs/architecture.md)
+- Test tiers, fixtures, live suite, catalogue/parameter regeneration: [docs/testing.md](docs/testing.md)
+- Tool arguments and units: [docs/tools.md](docs/tools.md); `tools/list` snapshot `test/fixtures/tools.json`
+- Doctor/config, clients: [docs/configuration.md](docs/configuration.md), [docs/clients.md](docs/clients.md)
+- Release and registry (owner only): [docs/publishing.md](docs/publishing.md)
+- Contributor flow: [CONTRIBUTING.md](CONTRIBUTING.md)
+
+## Verify fast
+
+Organization sessions run checks on Linux through `remote-run` (host per the
+organization's remote-build topic), never as Windows test jobs or on the remote
+Windows guest; others run the same `npm` lines locally.
 
 ```sh
-npm ci
-npm run lint
-npm run typecheck
-npm test
-npm run build
-npm run test:e2e
-npm run check:package
-npm run check:workflows
-npm audit --audit-level=high
+# Focused: one mirrored test file (seconds)
+remote-run --sh 'npm ci && npx vitest run test/<path>/<module>.test.ts'
+# Full gate, CI order (10-40 s wall with a warm npm cache, ~1 min on a loaded host)
+remote-run --sh 'npm ci && npm run check:workflows && npm run lint && npm run typecheck && npm test && npm run build && npm run test:e2e && npm run check:package && npm audit --audit-level=high && npm audit signatures'
 ```
 
-Lint fails on Biome warnings as well as errors. Native changes also need
-`npm run test:live` on exact English Audacity 3.7.8. Check package freshness
-with `npm view <package> version`. Do not claim skipped or incomplete checks
-passed. [Testing](docs/testing.md) explains preservation, recorded fixtures,
-architecture/platform evidence and teardown.
+After adding or changing a tool, refresh and review the `tools/list` snapshot:
+`npx vitest run test/server.contract.test.ts -u`. Lint fails on Biome warnings;
+coverage floors live in `vitest.config.ts`; never exclude untested logic to
+reach them. No known flakes.
 
-Native source facts are pinned to the upstream tag `Audacity-3.7.8` (commit
-`6120ce4`); comments cite `file:line` at that tag. Clone it beside the checkout
-(`git clone --depth 1 --branch Audacity-3.7.8 https://github.com/audacity/audacity.git ../audacity`)
-and regenerate parameter limits with `npm run parameters -- ../audacity`.
+Native changes also need the opt-in live suite (`npm run test:live`) on exact
+English Audacity 3.7.8: a native desktop run after a local `npm ci` against a
+`dist/` built remotely (`remote-run --fetch dist --sh 'npm ci && npm run build'`),
+never a Windows CI job. `win32`-only replay cases skip on Linux, so report
+Windows pipe, path or dialog changes as not covered by the gate. Never claim
+skipped checks passed.
 
-## Architecture
+## Rules
 
-- `main.ts` / `server.ts`: CLI/stdio entry and MCP assembly.
-- `tools.ts` / `tool-*.ts`: strict registrations, metadata, reports/progress;
-  `tool-input.ts` holds the shared input schemas, `errors.ts` the error helpers.
-- `pipe.ts` / `pipe-worker.ts` / `format.ts`: byte framing, bounded transport.
-- `app.ts` and platform modules: discovery, config, native window lifecycle.
-- `catalogue.ts` / `effects/`: safe catalogue and native effect policy.
-- `ops.ts` / `audacity/`: stateful native operations, validated GetInfo readers
-  and selection transactions.
-- `tasks/`, `analysis/`, `controls/`, labels and batch: domain workflows.
+Code:
 
-Use TypeScript, Node 24.21+, official MCP SDK v2 (`@modelcontextprotocol/server`)
-and zod. No extra runtime dependency without a measured need. Keep source/tests
-about 300 lines or less; generated catalogue JSON and lockfile are exceptions.
-Prefer the smallest domain change over speculative abstractions. Tests mirror
-`src/` as `test/<path>/<module>.test.ts`; shared fakes live in `test/helpers/`.
+- TypeScript, Node 24.21+, official MCP SDK v2 (`@modelcontextprotocol/server`)
+  and zod. No extra runtime dependency without a measured need; check freshness
+  with `npm view <package> version`.
+- Source/test modules about 300 lines or less (generated catalogue JSON and the
+  lockfile excepted); smallest domain change, no speculative abstractions.
+  Tests mirror `src/` as `test/<path>/<module>.test.ts`; fakes in `test/helpers/`.
+- Native source facts are pinned to upstream tag `Audacity-3.7.8` (commit
+  `6120ce4`); comments cite `file:line` there.
 
-## Invariants
+Invariants:
 
 - Validate strict root/nested inputs, finite ranges and action-specific fields
   before mutation. Generic calls stay bound to the safe bundled catalogue.
   Preserve native error text and existing tool/argument/result contracts.
-- Verify actual executable/version before live mutations. A `3.7.*` pin is not
-  exact 3.7.8. New noncatalogue values need pinned live evidence beside the code.
-  Explicit executable overrides must not attach/restart a different installation.
+- Verify the actual executable/version before live mutations; a `3.7.*` pin is
+  not exact 3.7.8. New noncatalogue values need pinned live evidence beside the
+  code. Explicit executable overrides never attach/restart another installation.
 - Serialize complete operations and pipe exchanges, recreate handles and bound
   blocked I/O with a disposable helper. Never kill Audacity or replay uncertain
-  edits. Dialog/window native messages remain available while pipe calls wait.
+  edits. Dialog/window native messages stay available while pipe calls wait.
 - Booleans are 1/0. Enforce the encoded native request budget; never truncate or
   split commands. Native parsing unescapes `\n` and `\\`: send Windows paths with
   forward slashes and refuse other text it would change. A lone LF reply means no
   active project. Reject ignored native setter scope keys and select explicitly.
-  Track gain input is dB/readback linear; public pan is -1..1/native percentage.
+  Track gain input is dB, readback linear; public pan is -1..1, native percentage.
 - Never offer known modal commands or raw lifecycle/recording/program/preference
-  bypasses. Preserve all source-rate/frame/context guards and import guards.
+  bypasses. Keep all source-rate/frame/context and import guards.
 - Save to new `.aup3` destinations, preserve tracks before fresh, restart empty
   projects too, and prove orderly exit before deleting disposable saves. No New.
-- Keep noise state unknown on attach/recovery/process changes; profile only an
-  explicit one-clip room-tone interval with both source/render frame minimums.
+- Noise state is unknown on attach/recovery/process changes; profile only an
+  explicit one-clip room-tone interval meeting both source/render frame minimums.
   No guessed noise parameters, cross-track reduction or batch noise profiling.
 - Scripted effects add no per-call undo state. Normalization, limiting and
-  timing changes stay explicit and reviewable with dry-run plans/backups.
-- Distinguish peak/RMS/true peak/LUFS and keep unavailable metrics unknown.
+  timing changes stay explicit and reviewable with dry-run plans and backups.
+- Distinguish peak/RMS/true peak/LUFS; unavailable metrics stay unknown.
   Advisory estimates do not certify targets or recover clipping information.
-- Preserve actual user projects/visibility and retain backups before live work.
-  Cleanly quit tests, inspect dialogs/recovery entries, then restore original state.
-  Stopped-only recovery clearing backs up config and retains every project file.
-- Runtime tools never install/download models/executables, simulate mouse/keyboard
-  input, or introduce a network listener. Windows native messages are allowed.
-- GitHub Actions uses hosted runners only, full-SHA actions, explicit permissions
-  and positive job timeouts. Preserve this repository's runner restrictions.
+- Preserve real user projects and visibility; keep backups before live work.
+  Tests quit cleanly, inspect dialogs/recovery entries and restore the original
+  state. Stopped-only recovery clearing backs up config and keeps every project file.
+- Runtime tools never install/download models or executables, simulate
+  mouse/keyboard input, or open a network listener. Windows native messages are allowed.
+- Workflows use GitHub-hosted Ubuntu/macOS runners only, full-SHA actions,
+  explicit permissions and positive job timeouts (`npm run check:workflows`
+  enforces this). No Windows test jobs and no self-hosted runners.
 
-Keep public source/comments/docs/commits English and use Conventional Commits.
-Attribute copied/adapted source by exact file/commit/license in NOTICE and retain
-applicable notices/license text. Never add personal machine paths, private
-project details or credential material. LICENSE copyright and Git author
-identities must stay unchanged.
+Public content: English source, comments, docs and Conventional Commits. Attribute
+copied/adapted source by exact file/commit/license in NOTICE.md and keep the
+required notices and license text. Never add personal machine paths, private
+project details or credentials. LICENSE copyright and Git author identities stay
+unchanged.
 
-Windows runners are reserved for actual Windows release builds. Run CI and tests on Linux; do not add Windows test jobs or use the remote Windows guest for development checks.
+## Deliver
+
+Organization sessions: branch `<kind>/<tool>-<id>/<topic>` (organization branch
+convention), rebase on `origin/main`, run the full gate, fast-forward `main`, push,
+delete the branch and watch the push's `Check` run; fix forward if it fails. No
+pull requests from them; other contributors follow CONTRIBUTING.md.
+Publishing, tags, the `Release` and `Registry` workflows and repository settings
+are owner actions. Never bump the version or date a `CHANGELOG.md` release
+section by hand: record user-visible changes under `## [Unreleased]`.
