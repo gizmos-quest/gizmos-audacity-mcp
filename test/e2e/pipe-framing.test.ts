@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events';
 import type { FileHandle } from 'node:fs/promises';
 import { PassThrough } from 'node:stream';
+import { fileURLToPath } from 'node:url';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 // @ts-expect-error E2E intentionally imports the generated, distributable runtime after npm run build.
 import { AudacityNeedsRecovery, AudacityNoProject, AudacityPipe } from '../../dist/pipe.js';
@@ -90,6 +91,50 @@ async function session(replay: (command: string) => Delivery) {
 }
 
 describe('Windows framing through portable handle doubles', () => {
+  it('exits the built helper after flushing a projectless reply with an abandoned read', async () => {
+    const { spawn } = await vi.importActual<typeof import('node:child_process')>('node:child_process');
+    const child = spawn(
+      process.execPath,
+      [
+        '--import',
+        new URL('../helpers/projectless-worker.ts', import.meta.url).href,
+        fileURLToPath(new URL('../../dist/pipe-worker.js', import.meta.url)),
+      ],
+      { windowsHide: true, stdio: ['pipe', 'pipe', 'pipe'] },
+    );
+    let output = '';
+    let error = '';
+    child.stdout.setEncoding('utf8').on('data', (chunk: string) => {
+      output += chunk;
+    });
+    child.stderr.setEncoding('utf8').on('data', (chunk: string) => {
+      error += chunk;
+    });
+    const closed = new Promise<void>((resolve, reject) => {
+      child.once('error', reject);
+      child.once('close', () => resolve());
+    });
+    // A missing self-exit must fail and still clean up this test's own helper.
+    const deadline = setTimeout(() => child.kill(), 10_000);
+    try {
+      child.stdin.end(
+        JSON.stringify({
+          paths: { to: '\\\\.\\pipe\\portable-to', from: '\\\\.\\pipe\\portable-from' },
+          command: 'GetInfo: Type=Tracks Format=JSON',
+        }),
+      );
+      await closed;
+      expect(error).toBe('');
+      expect(JSON.parse(output)).toEqual({ raw: '\n', idle: true });
+      expect(child.killed, 'the helper must exit without parent cancellation').toBe(false);
+      expect(child.signalCode).toBe('SIGTERM');
+    } finally {
+      clearTimeout(deadline);
+      if (child.exitCode === null && child.signalCode === null) child.kill();
+      await closed;
+    }
+  });
+
   it('writes CRLF/NUL once and decodes byte-fragmented recorded UTF-8 through the built worker', async () => {
     const { pipe, requests, exchanges } = await session(() => ({ bytes: wire('11-audio-tracks'), fragmentBytes: 1 }));
     const reply = await pipe.send('GetInfo: Type=Tracks Format=JSON');

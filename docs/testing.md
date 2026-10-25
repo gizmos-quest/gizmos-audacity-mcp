@@ -42,7 +42,9 @@ Scorecard reports supply-chain checks. Organization sessions run these checks
 on Linux through `remote-run`, never Windows or desktop test suites.
 The gate covers Windows CRLF/NUL framing, fragmented UTF-8, the default lone-LF
 idle deadline and recovery latch through portable handle/process doubles in
-`e2e/pipe-framing.test.ts`. Windows drive-relative/rooted and UNC paths use
+`e2e/pipe-framing.test.ts`. A preloaded handle fake also checks that the real
+built helper flushes its idle reply and exits while a simulated read stays blocked.
+Windows drive-relative/rooted and UNC paths use
 `node:path.win32` with a controlled working directory in `format.test.ts`.
 `controls.test.ts` uses the native window fake to prove dialog refusal before
 reconnect and acceptance after closure; ownership aliases also run on every host.
