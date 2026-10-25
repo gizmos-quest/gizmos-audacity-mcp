@@ -36,6 +36,10 @@ async function session(replay: (command: string) => Delivery) {
   const requests: string[] = [];
   const exchanges: { reader: ReturnType<typeof vi.fn>; close: ReturnType<typeof vi.fn> }[] = [];
   const children: { kill: ReturnType<typeof vi.fn> }[] = [];
+  let blocked!: () => void;
+  const blockedRead = new Promise<void>((resolve) => {
+    blocked = resolve;
+  });
   fake.spawn.mockImplementation(() => {
     const stdin = new PassThrough();
     const stdout = new PassThrough();
@@ -64,10 +68,12 @@ async function session(replay: (command: string) => Delivery) {
       };
       const from = {
         read: vi.fn(async (buffer: Buffer) => {
-          if (!bytes.length && holdOpen)
+          if (!bytes.length && holdOpen) {
+            blocked();
             await new Promise<void>((resolve) => {
               unblock = resolve;
             });
+          }
           const length = Math.min(bytes.length, buffer.length, fragmentBytes);
           bytes.copy(buffer, 0, 0, length);
           bytes = bytes.subarray(length);
@@ -87,7 +93,7 @@ async function session(replay: (command: string) => Delivery) {
   });
   const pipe = new AudacityPipe({ to: '\\\\.\\pipe\\portable-to', from: '\\\\.\\pipe\\portable-from' }, 120_000);
   cleanup.push(() => pipe.release());
-  return { pipe, requests, exchanges, children };
+  return { pipe, requests, exchanges, children, blockedRead };
 }
 
 describe('Windows framing through portable handle doubles', () => {
@@ -145,20 +151,32 @@ describe('Windows framing through portable handle doubles', () => {
 
   it('ends the recorded projectless LF at the Windows idle deadline and recovers without replaying an edit', async () => {
     let projectless = true;
-    const { pipe, requests, exchanges, children } = await session((command) => {
+    const { pipe, requests, exchanges, children, blockedRead } = await session((command) => {
       if (projectless) return { bytes: wire('02-no-project-tracks'), holdOpen: true };
       if (command.startsWith('Message: Text=')) return { bytes: recoveryReply(command) };
       return { bytes: wire('01-empty-tracks') };
     });
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-    const refused = expect(pipe.send('GetInfo: Type=Tracks Format=JSON')).rejects.toMatchObject({
+    let settled = false;
+    const outcome = pipe
+      .send('GetInfo: Type=Tracks Format=JSON')
+      .catch((error: unknown) => error)
+      .finally(() => {
+        settled = true;
+      });
+    // Wait for the fake's blocked read without advancing the worker's clock.
+    await blockedRead;
+    expect(exchanges[0]?.reader).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1_999);
+    expect(settled).toBe(false);
+    expect(pipe.needsRecovery).toBe(false);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(settled).toBe(true);
+    expect(await outcome).toMatchObject({
       constructor: AudacityNoProject,
       message: expect.stringContaining('no active project'),
       uncertainOutcome: true,
     });
-    await vi.waitFor(() => expect(exchanges[0]?.reader).toHaveBeenCalledTimes(2));
-    await vi.advanceTimersByTimeAsync(2_000);
-    await refused;
     expect(children[0]?.kill).not.toHaveBeenCalled();
     expect(exchanges[0]?.close).not.toHaveBeenCalled();
     expect(pipe.needsRecovery).toBe(true);
