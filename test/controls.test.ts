@@ -1,10 +1,15 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { z } from 'zod';
 import { parseMacro } from '../src/controls/macros.js';
 import { registerControlTools } from '../src/controls.js';
 import type { Ops } from '../src/ops.js';
 import { AudacityTimeout } from '../src/pipe.js';
 import type { ToolRegistrar } from '../src/tools.js';
+
+const platform = Object.getOwnPropertyDescriptor(process, 'platform')!;
+afterEach(() => {
+  Object.defineProperty(process, 'platform', platform);
+});
 
 const fixtures = vi.hoisted(() => ({
   readFile: vi.fn(),
@@ -255,10 +260,27 @@ describe('real reconnection requirement', () => {
     expect(ops.pipe.reconnect).not.toHaveBeenCalled();
   });
 
-  it.skipIf(process.platform !== 'win32')('reconnects only after blocking dialogs are closed', async () => {
+  it.each([false, true])('refuses reconnect while a dialog remains open with closeDialogs=%s', async (closeDialogs) => {
+    Object.defineProperty(process, 'platform', { ...platform, value: 'win32' });
     fixtures.listWindows.mockResolvedValue([{ title: 'Error', dialog: true, closed: false }]);
     const { call, ops } = controls();
-    await expect(call('audacity_recover', {})).rejects.toThrow('closeDialogs=true');
+    await expect(call('audacity_recover', { closeDialogs })).rejects.toThrow('closeDialogs=true');
+    expect(fixtures.listWindows).toHaveBeenCalledExactlyOnceWith(closeDialogs);
     expect(ops.pipe.reconnect).not.toHaveBeenCalled();
+    expect(ops.unknownApplication).not.toHaveBeenCalled();
+    expect(fixtures.launch).not.toHaveBeenCalled();
+    expect(ops.restoreImportPreferences).not.toHaveBeenCalled();
+  });
+
+  it('reconnects after the native dialog fake confirms closure', async () => {
+    Object.defineProperty(process, 'platform', { ...platform, value: 'win32' });
+    fixtures.listWindows
+      .mockResolvedValueOnce([{ title: 'Error', dialog: true, closed: true }])
+      .mockResolvedValueOnce([]);
+    const { call, ops } = controls();
+    expect(await call('audacity_recover', { closeDialogs: true })).toMatchObject({ synchronized: true, windows: [] });
+    expect(fixtures.listWindows.mock.calls).toEqual([[true], [false]]);
+    expect(ops.pipe.reconnect).toHaveBeenCalledOnce();
+    expect(ops.restoreImportPreferences).toHaveBeenCalledOnce();
   });
 });

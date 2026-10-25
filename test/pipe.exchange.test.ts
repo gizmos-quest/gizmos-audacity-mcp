@@ -1,5 +1,5 @@
-// The production exchange: a disposable helper process against native named pipes
-// (Windows) or FIFOs (POSIX) that replay bytes recorded from Audacity 3.7.8.
+// The production exchange: a disposable helper process against portable POSIX
+// FIFOs that replay bytes recorded from Audacity 3.7.8.
 import { afterEach, describe, expect, it } from 'vitest';
 import { parseInfoJson } from '../src/format.js';
 import { AudacityNeedsRecovery, AudacityPipe, AudacityTimeout, AudacityUnavailable } from '../src/pipe.js';

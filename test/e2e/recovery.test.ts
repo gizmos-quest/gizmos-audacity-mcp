@@ -34,34 +34,6 @@ describe('real disposable helper recovery', () => {
     }
   });
 
-  it.skipIf(process.platform !== 'win32')(
-    'fails fast and stays latched on the recorded projectless lone-LF reply',
-    async () => {
-      let projectless = true;
-      const fake = await replayPipe((command) => {
-        if (projectless) return { bytes: wire('02-no-project-tracks'), holdOpen: true };
-        if (command.startsWith('Message: Text=')) return { bytes: recoveryReply(command) };
-        return { bytes: wire('01-empty-tracks') };
-      });
-      // The projectless rule ends this call long before the generous exchange timeout.
-      const pipe = new AudacityPipe(fake.paths, 120_000);
-      const started = performance.now();
-      try {
-        await expect(pipe.send('GetInfo: Type=Tracks Format=JSON')).rejects.toThrow(/no active project/);
-        expect(performance.now() - started).toBeLessThan(60_000);
-        expect(pipe.needsRecovery).toBe(true);
-        projectless = false;
-        expect((await pipe.reconnect()).body).toBe('[  ]');
-        expect(pipe.needsRecovery).toBe(false);
-        fake.assertHealthy();
-      } finally {
-        pipe.release();
-        await fake.close();
-      }
-    },
-    90_000,
-  );
-
   it('bounds delayed I/O by terminating only its disposable helper', async () => {
     let sent!: () => void;
     const requestSent = new Promise<void>((resolve) => {

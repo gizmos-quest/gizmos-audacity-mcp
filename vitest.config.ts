@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     include: ['test/**/*.test.ts'],
-    exclude: ['test/live*.test.ts', 'test/live/**', 'test/e2e/**'],
+    exclude: ['test/e2e/**'],
     // Coverage and slower hosted runners stretch process-spawning tests; a hang still fails.
     testTimeout: 30_000,
     hookTimeout: 30_000,

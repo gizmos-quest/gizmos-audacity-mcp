@@ -35,7 +35,7 @@ Native changes require exact English Audacity 3.7.8 evidence before trusting
 noncatalogue parameters. Preserve a user's actual project/visibility and retain
 backups; quit test sessions cleanly. Never simulate input, kill Audacity, retry
 uncertain edits, or download/install runtimes/models from tools. Full native
-verification and fixture capture guidance is in [testing](docs/testing.md).
+evidence boundaries and fixture capture guidance are in [testing](docs/testing.md).
 
 Use English public code/docs and Conventional Commits. Keep runtime dependencies
 limited to the official MCP SDK v2 and zod unless a measured need justifies more.

@@ -1,12 +1,18 @@
 import { randomUUID } from 'node:crypto';
-import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const fake = vi.hoisted(() => ({
   write: vi.fn(),
+  homedir: undefined as string | undefined,
   originalWrite: undefined as unknown as typeof import('node:fs')['writeFileSync'],
 }));
+vi.mock('node:os', async (original) => {
+  const actual = await original<typeof import('node:os')>();
+  return { ...actual, userInfo: () => ({ ...actual.userInfo(), homedir: fake.homedir ?? actual.userInfo().homedir }) };
+});
 vi.mock('node:fs', async (original) => {
   const actual = await original<typeof import('node:fs')>();
   fake.originalWrite = actual.writeFileSync;
@@ -24,6 +30,7 @@ afterEach(() => {
   for (const dir of directories.splice(0)) rmSync(dir, { recursive: true, force: true });
   vi.restoreAllMocks();
   fake.write.mockReset().mockImplementation(fake.originalWrite);
+  fake.homedir = undefined;
 });
 function fixture() {
   const paths = { to: `\\\\.\\pipe\\ElectionTo-${randomUUID()}`, from: `\\\\.\\pipe\\ElectionFrom-${randomUUID()}` };
@@ -37,12 +44,13 @@ const dead = () => {
 
 describe('endpoint owner election', () => {
   it('normalizes Windows pipe casing to one session lock', () => {
+    fake.homedir = mkdtempSync(join(tmpdir(), 'audacity-owner-home-'));
+    directories.push(fake.homedir);
+    mkdirSync(join(fake.homedir, 'AppData', 'Local', 'Temp'), { recursive: true });
+    Object.defineProperty(process, 'platform', { value: 'win32' });
     const state = fixture();
     const alias = { to: state.paths.to.toUpperCase(), from: state.paths.from.toUpperCase() };
-    Object.defineProperty(process, 'platform', { value: 'win32' });
     expect(ownershipDirectory(alias)).toBe(ownershipDirectory(state.paths));
-    Object.defineProperty(process, 'platform', { value: originalPlatform });
-    if (originalPlatform !== 'win32') return;
     acquirePipeOwnership(state.paths);
     const before = readFileSync(state.owner, 'utf8');
     acquirePipeOwnership(alias);

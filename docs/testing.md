@@ -21,9 +21,8 @@ npm audit --audit-level=high
 | Unit + contracts | Strict schemas, byte budgets, orchestration, state guards, public tools/argument shapes, annotations and output compatibility |
 | Properties | Generated commands and GetInfo replies (fast-check) checked against a model of Audacity 3.7.8's parameter parser and JSON output |
 | Coverage | All `src/**/*.ts`, including unimported files; enforced floors: statements 96%, branches 92%, functions 96%, lines 97% |
-| Built stdio E2E | Real production entry/helper and SDK boundary with recorded native bytes, fragmentation/delay/disconnect, uncertainty and recovery |
+| Built E2E | Production stdio entry/helper and SDK boundary with recorded native bytes, fragmentation/delay/disconnect, uncertainty and recovery; Windows framing through portable handle doubles |
 | Package check | Allowlisted files, size limits, metadata and installed-tarball stdio startup; never publishes |
-| Live | Actual native project/lifecycle/effect behavior on the measured Audacity build |
 
 Unit tests mirror the source tree: `test/<path>/<module>.test.ts` covers
 `src/<path>/<module>.ts` (or `scripts/`), and `<module>.<aspect>.test.ts` splits a
@@ -32,17 +31,23 @@ large module by behavior. Cross-module suites are `server.contract.test.ts`
 `safety-regressions.test.ts` and `tasks/contracts.test.ts`. The property tests in
 `format.property.test.ts` check that an accepted command reads back unchanged,
 that text is refused exactly when native parsing would change it, and that GetInfo
-replies parse losslessly. Shared fakes live in `test/helpers/`; `test/e2e/` and
-`test/live/` hold the other tiers.
+replies parse losslessly. Shared fakes live in `test/helpers/`; `test/e2e/`
+holds the built-runtime tier.
 
 CI uses only GitHub-hosted Ubuntu and macOS runners with Node 24 and current;
 Windows test jobs are not used. Every job is bounded, permissions are explicit
 and actions are pinned by full commit SHA. One cell also runs
 `npm audit signatures`; CodeQL analyzes the code and the workflows, and OpenSSF
-Scorecard reports supply-chain checks. Replay CI does not qualify native GUI
-behavior on POSIX. It replays POSIX FIFOs only: the Windows named-pipe replay
-and the `win32`-only cases in `format.test.ts`, `controls.test.ts` and
-`e2e/recovery.test.ts` run only in `npm test` and `npm run test:e2e` on Windows.
+Scorecard reports supply-chain checks. Organization sessions run these checks
+on Linux through `remote-run`, never Windows or desktop test suites.
+The gate covers Windows CRLF/NUL framing, fragmented UTF-8, the default lone-LF
+idle deadline and recovery latch through portable handle/process doubles in
+`e2e/pipe-framing.test.ts`. Windows drive-relative/rooted and UNC paths use
+`node:path.win32` with a controlled working directory in `format.test.ts`.
+`controls.test.ts` uses the native window fake to prove dialog refusal before
+reconnect and acceptance after closure; ownership aliases also run on every host.
+These cases exercise the production Windows branches without host-based skips.
+Replay and fakes do not qualify Windows kernel pipe I/O or native GUI behavior.
 Before publication, workflow steps must be verified locally; a configured
 workflow or badge is not evidence that GitHub ran it.
 
@@ -60,43 +65,14 @@ and retain exact framing/UTF-8 bytes. Check provenance and privacy before adding
 fixtures. Never probe oversized native requests or deliberately provoke a
 source-proven native crash to increase coverage.
 
-## Native verification
+## Native evidence boundary
 
-```sh
-npm run build
-npm run test:live
-```
-
-`vitest.live.config.ts` is the explicit opt-in (it sets `AUDACITY_LIVE=1`); the
-suite runs on Windows and drives the built server over stdio against hidden
-Audacity. It verifies the
-**actual executable/file version** before mutation: 3.7.8.0 by default, or the
-value of `AUDACITY_LIVE_VERSION` (`3.7.9.0` is the only other accepted one). The
-reference build is **3.7.8 ARM64 and x64**, and 3.7.9 is verified. Admit another
-patch level only after its source diff against `Audacity-3.7.8` and a live run,
-rather than silently broadening the catalogue.
-Use English UI/registry and disable cloud/musehub modules in the isolated config.
-Forward explicit `AUDACITY_*` overrides through the SDK's restricted environment.
-`AUDACITY_CONFIG` only selects inspection; Audacity itself must use that config,
-for example Portable Settings beside a portable executable.
-
-Keep one session owner because Windows pipe names are fixed. The suite's first
-call saves any open project to `.work/live-backups/before-live-*.aup3` and never
-deletes it. Teardown discards only the disposable test project, then reopens that
-backup with the original window visibility in an Audacity that was running before.
-If setup could not preserve the open project, teardown leaves Audacity untouched.
-Generate synthetic audio/projects. Cover every tool with
-separate attempted/succeeded/expected-refusal accounting, plus save-over refusal,
-blocking-dialog closure, restart/recovery and non-silent generated exports.
-Unavailable device recording or optional ffmpeg is untested/refused, not passed.
-`AUDACITY_LIVE_DEVICE_INDEPENDENT=1` skips the microphone/playback case; report
-such a run as incomplete hardware coverage.
-
-At teardown, quit orderly and verify actual process exit, no dialogs and no
-stale ActiveProjects entries; a failed teardown is not a pass.
-Running-project entries are legitimate. Config recovery clearing is stopped-only,
-with backup and all project files retained. Never terminate Audacity or simulate
-mouse/keyboard input from the server. Retain uncertain saves and scratch.
+The retained recordings and adjacent source/effect evidence refer to exact
+English Audacity **3.7.8 ARM64 and x64**; 3.7.9 is also verified. Portable gates
+do not establish new native project/lifecycle, hardware or DSP results. Admit
+another patch level only with its source diff against `Audacity-3.7.8` and
+separately authorized native evidence, rather than broadening the catalogue
+from replay results.
 
 ## Example workflow
 

@@ -12,7 +12,7 @@ and [docs/effects.md](docs/effects.md) must match the code.
 Run `git pull --ff-only`, then read only what the task needs:
 
 - Code layout and module ownership: [docs/architecture.md](docs/architecture.md)
-- Test tiers, fixtures, live suite, catalogue/parameter regeneration: [docs/testing.md](docs/testing.md)
+- Test tiers, fixtures, catalogue/parameter regeneration: [docs/testing.md](docs/testing.md)
 - Tool arguments and units: [docs/tools.md](docs/tools.md); `tools/list` snapshot `test/fixtures/tools.json`
 - Doctor/config, clients: [docs/configuration.md](docs/configuration.md), [docs/clients.md](docs/clients.md)
 - Release and registry (owner only): [docs/publishing.md](docs/publishing.md)
@@ -36,12 +36,11 @@ After adding or changing a tool, refresh and review the `tools/list` snapshot:
 coverage floors live in `vitest.config.ts`; never exclude untested logic to
 reach them. No known flakes.
 
-Native changes also need the opt-in live suite (`npm run test:live`) on exact
-English Audacity 3.7.8: a native desktop run after a local `npm ci` against a
-`dist/` built remotely (`remote-run --fetch dist --sh 'npm ci && npm run build'`),
-never a Windows CI job. `win32`-only replay cases skip on Linux, so report
-Windows pipe, path or dialog changes as not covered by the gate. Never claim
-skipped checks passed.
+The gate exercises Windows framing with portable handle doubles, drive paths
+with `node:path.win32`, and dialog refusal with native fakes. Never run Windows
+or desktop test suites. Replay proves protocol and control logic; actual native
+I/O, GUI, hardware and DSP qualification remain separate evidence. Never claim
+that replay or a fake qualifies the native operating system.
 
 ## Rules
 
